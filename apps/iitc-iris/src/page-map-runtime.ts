@@ -1,3 +1,9 @@
+import {createCommRuntime, normalizeCommTab} from './comm/comm-runtime';
+import {createScoresRuntime} from './map/scores-runtime';
+import {createPasscodeRuntime} from './agent/passcode-runtime';
+import {createInventoryRuntime} from './agent/inventory-runtime';
+import {createMissionsRuntime} from './map/missions/missions-runtime';
+import {createPlayerTrackerRuntime} from './map/player-tracker-runtime';
 import {createMapRequest, type TileDiagnostics} from './map/map-request';
 import {createIntelRequest, getCsrfToken, extractVersion, looksLikeHtml, isIitcAuthMessage, isIitcAuthError, createIitcAuthError} from './intel/intel-request';
 import {createMapRenderer} from './map/entities/map-renderer';
@@ -7,11 +13,9 @@ import {createDrawToolsRuntime} from './map/draw-tools/draw-tools-runtime';
 import {createMissionOverlay} from './map/missions/mission-overlay';
 import {createBaseLayerController} from './map/base-layer-controller';
 import {DEFAULT_BASE_LAYER_ID, normalizeBaseLayerId} from './map/layers/base-layer-settings';
-import {createPlayerTrackerMarkers, type PlayerTrackerMarkerGroup} from './map/player-tracker-markers';
-import {createPlayerTrackerGroupPopup} from './map/player-tracker-group-popup';
 import {createIitcIrisMapLifetime, type IitcIrisMapLifetime} from './map/map-runtime-lifetime';
 import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap} from 'leaflet';
-import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisCommState, type IitcIrisDataSourceSettings, type IitcIrisHighlighterSettings, type IitcIrisInteractionUpdateTimingDiagnostics, type IitcIrisInventoryState, type IitcIrisLayerSettings, type IitcIrisLayerUpdateTimingDiagnostics, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisMissionDetails, type IitcIrisMissionSource, type IitcIrisMissionSummary, type IitcIrisMissionWaypoint, type IitcIrisMissionsState, type IitcIrisPasscodeRewardItem, type IitcIrisPasscodeState, type IitcIrisPortalDetailsState, type IitcIrisRequestDiagnostics, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisScoresState, type IitcIrisSelectedPortal, type IitcIrisSubscriptionState} from './messages';
+import {IITC_IRIS_MESSAGES, type IitcIrisAgentState, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisHighlighterSettings, type IitcIrisInteractionUpdateTimingDiagnostics, type IitcIrisLayerSettings, type IitcIrisLayerUpdateTimingDiagnostics, type IitcIrisLifecycleSettings, type IitcIrisMapContextPortalAnchor, type IitcIrisMessage, type IitcIrisMissionWaypoint, type IitcIrisPortalDetailsState, type IitcIrisRequestDiagnostics, type IitcIrisRenderEntities, type IitcIrisRenderField, type IitcIrisRenderLink, type IitcIrisRenderPortal, type IitcIrisSelectedPortal} from './messages';
 import {DEFAULT_LAYER_SETTINGS} from './map/layers/layer-registry';
 import {DEFAULT_HIGHLIGHTER_ID, PORTAL_HIGHLIGHTER_REGISTRY} from './map/layers/highlighter-registry';
 import {getLayerUpdatePlan} from './map/layers/layer-update-routing';
@@ -21,11 +25,6 @@ import {
   beginIitcRequestDiagnostics,
   createIitcRequestDiagnosticsSnapshot,
   createIitcRequestDiagnosticsState,
-  createIitcCommChannelData,
-  genIitcCommSendPlextPostData,
-  getIitcCommChannelMessages,
-  getIitcInventoryPortalKeyCount,
-  getIitcMissionBounds,
   getIitcMapContextFieldPerimeterMeters,
   getIitcMapContextFieldPortalAnchors,
   getIitcMapContextFieldPortalGuids,
@@ -33,53 +32,20 @@ import {
   getIitcMapContextLinkPortalAnchors,
   getIitcMapContextLinkPortalGuids,
   getIitcPortalAnalysis,
-  applyIitcPlayerTrackerCommMessages,
-  getIitcPlayerTrackerDiagnostics,
-  getIitcPlayerTrackerLatLng,
-  getIitcPlayerTrackerEventOpacity,
-  getIitcPlayerTrackerTraceAgeBucket,
   findIitcPortalByGuidOrLatLng,
   finishIitcRequestDiagnostics,
-  isIitcPlayerTrackerEnabled,
-  isIitcPlayerTrackerTeamVisible,
-  isIitcPlayerTrackerVisibleForZoom,
-  IITC_PLAYER_TRACKER_LINE_COLOR,
-  IITC_PLAYER_TRACKER_MAX_DISPLAY_EVENTS,
-  IITC_PLAYER_TRACKER_MAX_TIME,
-  IITC_PLAYER_TRACKER_MIN_ZOOM,
-  parseIitcInventoryResponse,
-  parseIitcMissionDetailsResponse,
-  parseIitcTopMissionsResponse,
   planIitcPortalLinkNavigation,
   planIitcMapContextPoint,
-  pruneIitcPlayerTrackerStored,
-  renderIitcCommMarkup,
   resolveIitcPendingPortalSelection,
-  summarizeIitcInventory,
-  planIitcCommRequest,
-  applyIitcCommResponse,
-  createIitcCommAuthState,
-  createIitcCommErrorState,
-  createIitcCommLoadingState,
-  createIitcCommSuccessState,
   applyIitcPortalDetailsResponse,
   createIitcPortalDetailsAuthState,
   createIitcPortalDetailsErrorState,
   createIitcPortalDetailsLoadingState,
-  formatIitcMissionDuration,
   getIitcCachedPortalDetails,
-  type IitcCommChannel,
-  type IitcCommChannelData,
-  type IitcCommMessage,
   type IitcGetEntitiesResponse,
-  type IitcInventorySummary,
-  type IitcMissionDetails as CoreIitcMissionDetails,
-  type IitcMissionSummary as CoreIitcMissionSummary,
   type IitcMapDataPlan,
   type IitcPortalDetailsCache,
   type IitcPortalDetailsResponse,
-  type IitcPlayerTrackerDiagnostics,
-  type IitcPlayerTrackerStored,
   type IitcRequestDiagnosticsState,
   writeIitcPortalDetailsCache,
 } from '@iris/iitc-core';
@@ -89,31 +55,17 @@ const DEFAULT_CENTER: [number, number] = [52.3730796, 4.8924534];
 const DEFAULT_ZOOM = 11;
 const MAP_VIEW_STORAGE_KEY = 'iitc-iris:map-view';
 const BASE_LAYER_STORAGE_KEY = 'iitc-iris:base-layer';
-const COMM_TAB_STORAGE_KEY = 'iitc-chat-tab';
 
 const LONG_PRESS_MS = 600;
 const LONG_PRESS_MOVE_TOLERANCE_PX = 12;
 const LONG_PRESS_CLICK_SUPPRESS_MS = 700;
 const PORTAL_CONTEXT_HIT_TOLERANCE_PX = 10;
 const LINK_CONTEXT_HIT_TOLERANCE_PX = 7;
-const PLAYER_TRACKER_COMM_REFRESH_MS = 120_000;
 const MAX_INTERACTION_UPDATE_DIAGNOSTICS = 10;
-const MISSION_DETAILS_CACHE_MS = 3 * 24 * 60 * 60 * 1000;
-const PORTAL_MISSIONS_CACHE_MS = 21 * 24 * 60 * 60 * 1000;
-const MISSION_DETAILS_CACHE_STORAGE_KEY = 'iitc-iris:missions:details-cache';
-const PORTAL_MISSIONS_CACHE_STORAGE_KEY = 'iitc-iris:missions:portal-cache';
-const MISSION_DETAILS_CACHE_STORAGE_MAX_CHARS = 2_000_000;
-const PORTAL_MISSIONS_CACHE_STORAGE_MAX_CHARS = 1_000_000;
 const IITC_IRIS_ASSET_BASE_URL = ((): string => {
   const script = document.currentScript instanceof HTMLScriptElement ? document.currentScript.src : '';
   return script ? new URL('.', script).toString() : '';
 })();
-const PLAYER_TRACKER_MARKER_ICON_OPTIONS = {
-  iconSize: [25, 41] as [number, number],
-  iconAnchor: [12, 41] as [number, number],
-  popupAnchor: [1, -34] as [number, number],
-  shadowSize: [41, 41] as [number, number],
-};
 const DEFAULT_HIGHLIGHTER_SETTINGS: IitcIrisHighlighterSettings = {
   active: DEFAULT_HIGHLIGHTER_ID,
 };
@@ -142,69 +94,6 @@ let lifecycleSettings: IitcIrisLifecycleSettings = {iitcMovementDelay: false};
 let authRecoveryActive = false;
 
 let currentPortalDetailsAbortController: AbortController | undefined;
-let currentCommAbortController: AbortController | undefined;
-let currentScoresAbortController: AbortController | undefined;
-let currentPasscodeAbortController: AbortController | undefined;
-let currentInventoryAbortController: AbortController | undefined;
-let currentSubscriptionAbortController: AbortController | undefined;
-let currentMissionsAbortController: AbortController | undefined;
-let currentMissionDetailsAbortController: AbortController | undefined;
-let currentSubscriptionPromise: Promise<IitcIrisSubscriptionState> | undefined;
-let latestCommState: IitcIrisCommState = {status: 'idle', tab: loadStoredCommTab(), messages: 0};
-let latestScoresState: IitcIrisScoresState = {status: 'idle', requestState: 'idle', region: {status: 'idle'}};
-let latestPasscodeState: IitcIrisPasscodeState = {status: 'idle', requestState: 'idle'};
-let latestSubscriptionState: IitcIrisSubscriptionState = {status: 'unknown'};
-let latestInventorySummary: IitcInventorySummary | undefined;
-let latestInventoryState: IitcIrisInventoryState = {
-  status: 'idle',
-  requestState: 'idle',
-  subscription: latestSubscriptionState,
-  items: 0,
-  keys: 0,
-  portalsWithKeys: 0,
-  capsules: 0,
-  portalKeysForSelectedPortal: null,
-};
-let latestMissionsState: IitcIrisMissionsState = {
-  status: 'idle',
-  requestState: 'idle',
-  missions: [],
-  detailsStatus: 'idle',
-};
-interface MissionCacheEntry<T> {time: number; data: T}
-const missionDetailsCache = new Map<string, MissionCacheEntry<IitcIrisMissionDetails>>();
-const portalMissionsCache = new Map<string, MissionCacheEntry<IitcIrisMissionSummary[]>>();
-let playerTrackerStored: IitcPlayerTrackerStored = {};
-let playerTrackerLatestCommTime: number | null = null;
-let playerTrackerDiagnostics: IitcPlayerTrackerDiagnostics = getIitcPlayerTrackerDiagnostics(playerTrackerStored);
-let playerTrackerRefreshTimer: number | undefined;
-let currentPlayerTrackerCommAbortController: AbortController | undefined;
-const playerTrackerProcessedCommGuids = new Set<string>();
-const playerTrackerMarkers = createPlayerTrackerMarkers({
-  createMarker: (group, now) => {
-    const {name, player} = group.members[0];
-    const last = player.events[player.events.length - 1];
-    const marker = createPlayerTrackerMarker(group.latLng, name, player.team,
-      getIitcPlayerTrackerEventOpacity(last.time, now), last.time);
-    marker.setIcon(getPlayerTrackerGroupIcon(group));
-    marker.options.title = getPlayerTrackerGroupTitle(group);
-    marker.options.keyboard = group.members.length > 1;
-    const map = window.__iitcIrisMap;
-    if (map) marker.addTo(map);
-    return marker;
-  },
-  createPopup: (group, selectedName, select) => createPlayerTrackerGroupPopup(
-    group, selectedName, select, createPlayerTrackerPopup, formatPlayerTrackerAgo),
-  updateMarker: (marker, group, previous) => {
-    if (group.members.length !== previous.members.length || getPlayerTrackerGroupTeam(group) !== getPlayerTrackerGroupTeam(previous)) {
-      marker.setIcon(getPlayerTrackerGroupIcon(group));
-    }
-    const title = getPlayerTrackerGroupTitle(group);
-    marker.options.title = title;
-    const icon = marker.getElement();
-    if (icon) icon.title = title;
-  },
-});
 let requestDiagnosticsState: IitcRequestDiagnosticsState = createIitcRequestDiagnosticsState();
 
 interface IitcPagePlayer {
@@ -219,11 +108,17 @@ interface IitcPagePlayer {
   level?: unknown;
   xm_capacity?: unknown;
 }
-const commChannelsData: Record<IitcCommChannel, IitcCommChannelData> = {
-  all: createIitcCommChannelData(),
-  faction: createIitcCommChannelData(),
-  alerts: createIitcCommChannelData(),
-};
+const {refreshScores, cancelActiveScoresFetch} = createScoresRuntime({
+  getMapCenterE6, postIntelEndpoint, getIitcRequestDiagnostics,
+});
+const {redeemPasscode, cancelActivePasscodeFetch} = createPasscodeRuntime({
+  postIntelEndpoint, getIitcRequestDiagnostics,
+});
+const inventory = createInventoryRuntime({
+  getSelectedPortal: () => ({guid: selectedPortalGuid, title: selectedPortal?.title}),
+  postIntelEndpoint, getIitcRequestDiagnostics, postAgentState,
+});
+const {getPortalKeyCount, refreshInventory, refreshSubscriptionStatus, cancelActiveInventoryFetch} = inventory;
 
 const {
   renderEntities, getPortalRadius, getRenderPolicy, isPortalVisible, isLinkVisible, isFieldVisible,
@@ -277,7 +172,7 @@ const {applyIitcDrawToolsAction, renderIitcDrawTools, postIitcDrawToolsStatus} =
 const {clearMissionOverlay, renderMissionOverlay, panToMissionStart, zoomToSelectedMission} = createMissionOverlay({
   getMap: () => window.__iitcIrisMap,
   getPortals: () => latestEntities?.portals ?? [],
-  getSelectedMission: () => latestMissionsState.selectedMission,
+  getSelectedMission: () => missions.getState().selectedMission,
   getPortalRadius,
   isPortalClickSuppressed: () => Date.now() < suppressPortalClickUntil,
   selectMissionWaypoint,
@@ -287,7 +182,41 @@ const {clearMissionOverlay, renderMissionOverlay, panToMissionStart, zoomToSelec
   pane: getLayerPane('missions'),
 });
 
+const missions = createMissionsRuntime({
+  getMap: () => window.__iitcIrisMap,
+  getSelectedPortal: () => ({guid: selectedPortalGuid, title: selectedPortal?.title}),
+  postIntelEndpoint, getIitcRequestDiagnostics, clearMissionOverlay, renderMissionOverlay, panToMissionStart,
+});
+const {refreshMissions, refreshMissionDetails} = missions;
+
 const {fetchIitcEndpointText} = createIntelRequest({getLifetime: () => mapLifetime, beginRequest: beginIitcRequest});
+const comm = createCommRuntime({
+  getMap: () => window.__iitcIrisMap,
+  getLifetime: () => mapLifetime,
+  getMapCenterE6, fetchIitcEndpointText, getIitcRequestDiagnostics,
+  onPublicMessages: (messages) => {
+    processPlayerTrackerCommMessages(messages);
+    renderPlayerTracker();
+  },
+});
+const {refreshComm, sendComm, cancelActiveCommFetch} = comm;
+
+const playerTracker = createPlayerTrackerRuntime({
+  getMap: () => window.__iitcIrisMap,
+  getLifetime: () => mapLifetime,
+  getLayerSettings: () => layerSettings,
+  isAuthRecoveryActive: () => authRecoveryActive && dataSource.mode === 'live',
+  getCommRequest: comm.getPlayerTrackerCommRequest,
+  applyCommResponse: comm.applyPlayerTrackerCommResponse,
+  clearLayers: () => clearRenderedLayers(ensureLayers().playerTracker),
+  addLayer: (layer) => addRenderedLayer(ensureLayers().playerTracker, layer),
+  repostLatestEntityStatus, zoomToAndShowPortal,
+  defaultZoom: DEFAULT_ZOOM,
+  assetBaseUrl: IITC_IRIS_ASSET_BASE_URL,
+  pane: getLayerPane('playerTracker'),
+});
+const {renderPlayerTracker, processPlayerTrackerCommMessages, schedulePlayerTrackerRefresh, clearPlayerTrackerRefreshTimer} = playerTracker;
+
 const mapRequests = createMapRequest({
   getMap: () => window.__iitcIrisMap,
   getLifetime: () => mapLifetime,
@@ -424,14 +353,6 @@ function storeBaseLayerId(value: IitcIrisBaseLayerId): void {
   }
 }
 
-function loadStoredCommTab(): IitcCommChannel {
-  try {
-    return normalizeCommTab(window.localStorage.getItem(COMM_TAB_STORAGE_KEY));
-  } catch {
-    return 'all';
-  }
-}
-
 function setIntelMapCookie(name: string, value: string): void {
   document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=31536000; SameSite=Lax`;
 }
@@ -463,34 +384,13 @@ function cancelActivePortalDetailsFetch(): void {
   currentPortalDetailsAbortController = undefined;
 }
 
-function cancelActiveCommFetch(): void {
-  currentCommAbortController?.abort();
-  currentCommAbortController = undefined;
-}
-
-function cancelActiveScoresFetch(): void {
-  currentScoresAbortController?.abort();
-  currentScoresAbortController = undefined;
-}
-
-function cancelActivePasscodeFetch(): void {
-  currentPasscodeAbortController?.abort();
-  currentPasscodeAbortController = undefined;
-}
-
-function cancelActiveInventoryFetch(): void {
-  currentInventoryAbortController?.abort();
-  currentInventoryAbortController = undefined;
-}
-
 function cancelActivePanelRequests(): void {
   cancelActivePortalDetailsFetch();
   cancelActiveCommFetch();
   cancelActiveScoresFetch();
   cancelActivePasscodeFetch();
   cancelActiveInventoryFetch();
-  cancelActiveMissionsFetch();
-  cancelActiveMissionDetailsFetch();
+  missions.cancelRequests();
 }
 
 function postMapMoveStarted(): void {
@@ -534,11 +434,6 @@ declare global {
 
 function toLatLng(latE6: number, lngE6: number): [number, number] {
   return [latE6 / 1e6, lngE6 / 1e6];
-}
-
-function getPortalKeyCount(portalGuid: string): number | undefined {
-  if (!latestInventorySummary) return undefined;
-  return getIitcInventoryPortalKeyCount(latestInventorySummary, portalGuid)?.count ?? 0;
 }
 
 function ensureLayers(): NonNullable<Window['__iitcIrisLayers']> {
@@ -607,7 +502,7 @@ function clearAllRenderedLayers(): void {
   clearRenderedLayers(layers.labels);
   clearRenderedLayers(layers.drawnItems);
   clearRenderedLayers(layers.playerTracker);
-  playerTrackerMarkers.clear();
+  playerTracker.clearMarkers();
   clearRenderedLayers(layers.missions);
   clearRenderedLayers(layers.userLocation);
   clearEntityLayerIndexes(layers);
@@ -733,8 +628,7 @@ function selectPortal(portal: IitcIrisRenderPortal, rerender = true): void {
   selectedPortalGuid = portal.guid;
   selectedPortal = toSelectedPortal(portal);
   pendingPortalSelection = null;
-  refreshInventorySelectedPortalState();
-  postInventoryState();
+  inventory.selectedPortalChanged();
   void refreshSelectedPortalDetails(portal.guid);
   if (rerender && latestEntities) renderEntities(latestEntities);
   repostLatestEntityStatus();
@@ -995,8 +889,7 @@ function clearPortalSelection(): void {
   selectedPortal = null;
   pendingPortalSelection = null;
   latestPortalDetails = null;
-  refreshInventorySelectedPortalState();
-  postInventoryState();
+  inventory.selectedPortalChanged();
   cancelActivePortalDetailsFetch();
   clearRenderedLayers(ensureLayers().selectedPortal);
   repostLatestEntityStatus();
@@ -1067,176 +960,6 @@ function renderLatestTileDebug(): void {
   renderTileDebug(latestPlan, latestResponse);
 }
 
-function formatPlayerTrackerAgo(time: number, now = Date.now()): string {
-  const seconds = Math.max(0, Math.floor((now - time) / 1000));
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-  if (days > 0) return `${days}d${hours % 24}h${minutes % 60}m`;
-  if (hours > 0) return `${hours}h${minutes % 60}m`;
-  return `${minutes}m`;
-}
-
-function createPlayerTrackerPopup(playerName: string, player: IitcPlayerTrackerStored[string]): HTMLElement {
-  const root = document.createElement('div');
-  root.className = 'plugin-player-tracker-popup iitc-iris-player-tracker-popup';
-  const title = document.createElement('span');
-  title.className = `nickname ${player.team === 'R' ? 'res' : player.team === 'E' ? 'enl' : 'mac'} iitc-iris-player-tracker-name iitc-iris-player-tracker-${player.team}`;
-  title.textContent = playerName;
-  root.append(title);
-
-  const last = player.events[player.events.length - 1];
-  root.append(document.createElement('br'));
-  root.append(document.createTextNode(formatPlayerTrackerAgo(last.time)));
-  root.append(document.createElement('br'));
-  root.append(createPlayerTrackerPortalLink(last));
-
-  const previous = player.events.slice(-IITC_PLAYER_TRACKER_MAX_DISPLAY_EVENTS, -1).reverse();
-  if (previous.length > 0) {
-    root.append(document.createElement('br'));
-    root.append(document.createElement('br'));
-    root.append(document.createTextNode('previous locations:'));
-    root.append(document.createElement('br'));
-
-    const table = document.createElement('table');
-    table.className = 'iitc-iris-player-tracker-previous-table';
-    for (const event of previous) {
-      const row = document.createElement('tr');
-      const ageCell = document.createElement('td');
-      ageCell.textContent = `${formatPlayerTrackerAgo(event.time)} ago`;
-      const portalCell = document.createElement('td');
-      portalCell.append(createPlayerTrackerPortalLink(event));
-      row.append(ageCell, portalCell);
-      table.append(row);
-    }
-    root.append(table);
-  }
-
-  return root;
-}
-
-function createPlayerTrackerPortalLink(event: IitcPlayerTrackerStored[string]['events'][number]): HTMLButtonElement {
-  const latLng = getIitcPlayerTrackerLatLng(event);
-  const link = document.createElement('button');
-  link.type = 'button';
-  link.className = 'iitc-iris-player-tracker-link';
-  link.textContent = event.name || event.address || 'portal';
-  link.title = event.address ? `${event.name || 'portal'}\n${event.address}` : link.textContent;
-  link.addEventListener('click', (clickEvent) => {
-    clickEvent.preventDefault();
-    const map = window.__iitcIrisMap;
-    zoomToAndShowPortal(undefined, latLng[0], latLng[1], map ? Math.max(map.getZoom(), DEFAULT_ZOOM) : DEFAULT_ZOOM);
-  });
-  link.addEventListener('dblclick', (clickEvent) => {
-    clickEvent.preventDefault();
-    zoomToAndShowPortal(undefined, latLng[0], latLng[1], DEFAULT_ZOOM);
-  });
-  return link;
-}
-
-function createPlayerTrackerMarker(latLng: [number, number], playerName: string, team: IitcIrisRenderPortal['team'], opacity: number, latestTime: number): L.Marker {
-  const icon = getPlayerTrackerMarkerIcon(team, playerName);
-  return L.marker(latLng, {
-    icon,
-    opacity,
-    keyboard: false,
-    pane: getLayerPane('playerTracker'),
-    title: `${playerName}, ${formatPlayerTrackerAgo(latestTime)} ago`,
-  });
-}
-
-function getPlayerTrackerMarkerIcon(team: IitcIrisRenderPortal['team'], playerName: string): L.Icon | L.DivIcon {
-  if ((team === 'R' || team === 'E') && IITC_IRIS_ASSET_BASE_URL) {
-    const color = team === 'R' ? 'blue' : 'green';
-    return L.icon({
-      iconUrl: `${IITC_IRIS_ASSET_BASE_URL}images/marker-${color}.png`,
-      iconRetinaUrl: `${IITC_IRIS_ASSET_BASE_URL}images/marker-${color}-2x.png`,
-      shadowUrl: `${IITC_IRIS_ASSET_BASE_URL}images/marker-shadow.png`,
-      className: `iitc-iris-player-tracker-marker-image iitc-iris-player-tracker-marker-${team}`,
-      ...PLAYER_TRACKER_MARKER_ICON_OPTIONS,
-    });
-  }
-
-  return L.divIcon({
-    className: `iitc-iris-player-tracker-marker iitc-iris-player-tracker-marker-${team}`,
-    html: `<span>${playerName.slice(0, 1).toUpperCase()}</span>`,
-    iconSize: [22, 30],
-    iconAnchor: [11, 30],
-    popupAnchor: [1, -24],
-  });
-}
-
-function getPlayerTrackerGroupTeam(group: PlayerTrackerMarkerGroup): string {
-  const team = group.members[0].player.team;
-  return group.members.every(member => member.player.team === team) ? team : 'mixed';
-}
-
-function getPlayerTrackerGroupTitle(group: PlayerTrackerMarkerGroup): string {
-  if (group.members.length > 1) return `${group.members.length} agents last seen here`;
-  const {name, player} = group.members[0];
-  return `${name}, ${formatPlayerTrackerAgo(player.events[player.events.length - 1].time)} ago`;
-}
-
-function getPlayerTrackerGroupIcon(group: PlayerTrackerMarkerGroup): L.Icon | L.DivIcon {
-  if (group.members.length === 1) {
-    const {name, player} = group.members[0];
-    return getPlayerTrackerMarkerIcon(player.team, name);
-  }
-  return L.divIcon({
-    className: `iitc-iris-player-tracker-count iitc-iris-player-tracker-marker-${getPlayerTrackerGroupTeam(group)}`,
-    html: `<span>${group.members.length}</span>`,
-    iconSize: [34, 34],
-    iconAnchor: [17, 34],
-    popupAnchor: [0, -30],
-  });
-}
-
-function renderPlayerTracker(): void {
-  const layers = ensureLayers();
-  clearRenderedLayers(layers.playerTracker);
-  playerTrackerStored = pruneIitcPlayerTrackerStored(playerTrackerStored);
-
-  if (!isPlayerTrackerVisible()) {
-    playerTrackerMarkers.clear();
-    updatePlayerTrackerDiagnostics(0, 0);
-    repostLatestEntityStatus();
-    return;
-  }
-
-  const now = Date.now();
-  let traces = 0;
-  const visiblePlayers: IitcPlayerTrackerStored = {};
-
-  for (const [playerName, player] of Object.entries(playerTrackerStored)) {
-    if (player.events.length === 0) continue;
-    if (!isIitcPlayerTrackerTeamVisible(player.team, layerSettings)) continue;
-
-    for (let index = 1; index < player.events.length; index += 1) {
-      const current = player.events[index];
-      const previous = player.events[index - 1];
-      const currentLatLng = getIitcPlayerTrackerLatLng(current);
-      const previousLatLng = getIitcPlayerTrackerLatLng(previous);
-      if (currentLatLng[0] === previousLatLng[0] && currentLatLng[1] === previousLatLng[1]) continue;
-      const ageBucket = getIitcPlayerTrackerTraceAgeBucket(current.time, now);
-      addRenderedLayer(layers.playerTracker, L.polyline([previousLatLng, currentLatLng], {
-        pane: getLayerPane('playerTracker'),
-        color: IITC_PLAYER_TRACKER_LINE_COLOR,
-        weight: 2 - 0.25 * ageBucket,
-        opacity: 1 - 0.2 * ageBucket,
-        dashArray: '5,8',
-        interactive: false,
-      }));
-      traces += 1;
-    }
-
-    visiblePlayers[playerName] = player;
-  }
-
-  const markers = playerTrackerMarkers.render(visiblePlayers, now);
-  updatePlayerTrackerDiagnostics(markers, traces);
-  repostLatestEntityStatus();
-}
-
 function repostLatestEntityStatus(): void {
   if (!latestEntities || !latestTileDiagnostics) return;
   postEntityStatus(latestEntityStatus, latestEntities, latestTileDiagnostics);
@@ -1295,7 +1018,7 @@ function getIitcAgentState(): IitcIrisAgentState {
     apToNextLevel: maxLevel || ap === undefined || minApForNextLevel === undefined ? undefined : Math.max(0, minApForNextLevel - ap),
     maxLevel,
     staticFromPage: true,
-    subscription: latestSubscriptionState,
+    subscription: inventory.getSubscriptionState(),
   };
 }
 
@@ -1323,475 +1046,6 @@ function beginIitcRequest(endpoint: string, group?: string): () => void {
     requestDiagnosticsState = nextState;
     postRequestDiagnostics();
   };
-}
-
-function postCommState(): void {
-  window.postMessage({
-    type: IITC_IRIS_MESSAGES.commStatus,
-    comm: latestCommState,
-    requestDiagnostics: getIitcRequestDiagnostics(),
-  } satisfies IitcIrisMessage, '*');
-}
-
-function postScoresState(): void {
-  window.postMessage({
-    type: IITC_IRIS_MESSAGES.scoresStatus,
-    scores: latestScoresState,
-    requestDiagnostics: getIitcRequestDiagnostics(),
-  } satisfies IitcIrisMessage, '*');
-}
-
-function postPasscodeState(): void {
-  window.postMessage({
-    type: IITC_IRIS_MESSAGES.passcodeStatus,
-    passcode: latestPasscodeState,
-    requestDiagnostics: getIitcRequestDiagnostics(),
-  } satisfies IitcIrisMessage, '*');
-}
-
-function postInventoryState(): void {
-  latestInventoryState = {
-    ...latestInventoryState,
-    subscription: latestSubscriptionState,
-  };
-  window.postMessage({
-    type: IITC_IRIS_MESSAGES.inventoryStatus,
-    inventory: latestInventoryState,
-    requestDiagnostics: getIitcRequestDiagnostics(),
-  } satisfies IitcIrisMessage, '*');
-}
-
-function postMissionsState(): void {
-  window.postMessage({
-    type: IITC_IRIS_MESSAGES.missionsStatus,
-    missions: latestMissionsState,
-    requestDiagnostics: getIitcRequestDiagnostics(),
-  } satisfies IitcIrisMessage, '*');
-}
-
-function toIrisMissionSummary(mission: CoreIitcMissionSummary): IitcIrisMissionSummary {
-  return {
-    guid: mission.guid,
-    title: mission.title,
-    image: mission.image,
-    ratingE6: mission.ratingE6,
-    ratingPercent: mission.ratingE6 === undefined ? undefined : Math.round(mission.ratingE6 / 10_000),
-    medianCompletionTimeMs: mission.medianCompletionTimeMs,
-    durationLabel: formatIitcMissionDuration(mission.medianCompletionTimeMs),
-  };
-}
-
-function toMissionCacheSummary(mission: IitcIrisMissionSummary): IitcIrisMissionSummary {
-  return {
-    guid: mission.guid,
-    title: mission.title,
-    image: mission.image,
-    ratingE6: mission.ratingE6,
-    ratingPercent: mission.ratingPercent,
-    medianCompletionTimeMs: mission.medianCompletionTimeMs,
-    durationLabel: mission.durationLabel,
-  };
-}
-
-function toIrisMissionDetails(mission: CoreIitcMissionDetails): IitcIrisMissionDetails {
-  return {
-    ...toIrisMissionSummary(mission),
-    description: mission.description,
-    authorNickname: mission.authorNickname,
-    authorTeam: mission.authorTeam,
-    typeNum: mission.typeNum,
-    type: mission.type,
-    numUniqueCompletedPlayers: mission.numUniqueCompletedPlayers,
-    waypoints: mission.waypoints,
-    routeLengthMeters: mission.routeLengthMeters,
-    bounds: getIitcMissionBounds(mission) ?? undefined,
-  };
-}
-
-function sortMissionSummaries(missions: IitcIrisMissionSummary[]): IitcIrisMissionSummary[] {
-  const collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
-  return missions.slice().sort((a, b) => collator.compare(a.title, b.title));
-}
-
-function getMissionSummaryDetails(missionGuid: string): Partial<IitcIrisMissionSummary> | undefined {
-  const details = getFreshMissionDetailsCache(missionGuid);
-  if (!details) return undefined;
-  return {
-    authorNickname: details.authorNickname,
-    authorTeam: details.authorTeam,
-    typeNum: details.typeNum,
-    type: details.type,
-    numUniqueCompletedPlayers: details.numUniqueCompletedPlayers,
-    waypointCount: details.waypoints.length,
-    routeLengthMeters: details.routeLengthMeters,
-  };
-}
-
-function enrichMissionSummariesWithCache(missions: IitcIrisMissionSummary[]): IitcIrisMissionSummary[] {
-  return missions.map((mission) => ({
-    ...toMissionCacheSummary(mission),
-    ...getMissionSummaryDetails(mission.guid),
-  }));
-}
-
-function isMissionCacheEntry<T>(value: unknown, isData: (data: unknown) => data is T): value is MissionCacheEntry<T> {
-  if (!value || typeof value !== 'object') return false;
-  const entry = value as {time?: unknown; data?: unknown};
-  return Number.isFinite(entry.time) && isData(entry.data);
-}
-
-function isMissionSummaryArray(value: unknown): value is IitcIrisMissionSummary[] {
-  return Array.isArray(value);
-}
-
-function isMissionDetails(value: unknown): value is IitcIrisMissionDetails {
-  return !!value && typeof value === 'object' && typeof (value as {guid?: unknown}).guid === 'string';
-}
-
-function loadMissionCache<T>(
-  key: string,
-  cache: Map<string, MissionCacheEntry<T>>,
-  isData: (data: unknown) => data is T,
-): void {
-  try {
-    const stored = window.localStorage.getItem(key);
-    if (!stored) return;
-    const parsed = JSON.parse(stored) as unknown;
-    if (!parsed || typeof parsed !== 'object') return;
-    for (const [guid, value] of Object.entries(parsed)) {
-      if (isMissionCacheEntry(value, isData)) cache.set(guid, value);
-    }
-  } catch {
-    // Ignore corrupt or inaccessible mission caches; live requests can refill them.
-  }
-}
-
-function pruneMissionCache<T>(cache: Map<string, MissionCacheEntry<T>>, maxAgeMs: number): void {
-  const expiredBefore = Date.now() - maxAgeMs;
-  for (const [guid, entry] of cache.entries()) {
-    if (entry.time <= expiredBefore) cache.delete(guid);
-  }
-}
-
-function trimMissionCacheEntries<T>(cache: Map<string, MissionCacheEntry<T>>, maxEntries: number): void {
-  while (cache.size > maxEntries) {
-    const oldest = [...cache.entries()].sort((a, b) => a[1].time - b[1].time)[0]?.[0];
-    if (!oldest) return;
-    cache.delete(oldest);
-  }
-}
-
-function storeMissionCache<T>(key: string, cache: Map<string, MissionCacheEntry<T>>, maxChars: number): void {
-  try {
-    const entries = [...cache.entries()].sort((a, b) => b[1].time - a[1].time);
-    let serialized = JSON.stringify(Object.fromEntries(entries));
-    while (serialized.length > maxChars && entries.length > 1) {
-      const oldest = entries.pop();
-      if (oldest) cache.delete(oldest[0]);
-      serialized = JSON.stringify(Object.fromEntries(entries));
-    }
-    window.localStorage.setItem(key, serialized);
-  } catch {
-    // Storage quota/private-mode failures should not block mission display.
-  }
-}
-
-function storePortalMissionsCache(): void {
-  pruneMissionCache(portalMissionsCache, PORTAL_MISSIONS_CACHE_MS);
-  trimMissionCacheEntries(portalMissionsCache, 50);
-  storeMissionCache(PORTAL_MISSIONS_CACHE_STORAGE_KEY, portalMissionsCache, PORTAL_MISSIONS_CACHE_STORAGE_MAX_CHARS);
-}
-
-function storeMissionDetailsCache(): void {
-  pruneMissionCache(missionDetailsCache, MISSION_DETAILS_CACHE_MS);
-  trimMissionCacheEntries(missionDetailsCache, 100);
-  storeMissionCache(MISSION_DETAILS_CACHE_STORAGE_KEY, missionDetailsCache, MISSION_DETAILS_CACHE_STORAGE_MAX_CHARS);
-}
-
-loadMissionCache(PORTAL_MISSIONS_CACHE_STORAGE_KEY, portalMissionsCache, isMissionSummaryArray);
-loadMissionCache(MISSION_DETAILS_CACHE_STORAGE_KEY, missionDetailsCache, isMissionDetails);
-storePortalMissionsCache();
-storeMissionDetailsCache();
-
-function getFreshPortalMissionsCache(portalGuid: string): IitcIrisMissionSummary[] | undefined {
-  const cached = portalMissionsCache.get(portalGuid);
-  if (!cached || cached.time <= Date.now() - PORTAL_MISSIONS_CACHE_MS) {
-    if (cached) {
-      portalMissionsCache.delete(portalGuid);
-      storePortalMissionsCache();
-    }
-    return undefined;
-  }
-  return cached.data.slice();
-}
-
-function setPortalMissionsCache(portalGuid: string, missions: IitcIrisMissionSummary[]): void {
-  portalMissionsCache.set(portalGuid, {time: Date.now(), data: missions.map(toMissionCacheSummary)});
-  storePortalMissionsCache();
-}
-
-function getFreshMissionDetailsCache(missionGuid: string): IitcIrisMissionDetails | undefined {
-  const cached = missionDetailsCache.get(missionGuid);
-  if (!cached || cached.time <= Date.now() - MISSION_DETAILS_CACHE_MS) {
-    if (cached) {
-      missionDetailsCache.delete(missionGuid);
-      storeMissionDetailsCache();
-    }
-    return undefined;
-  }
-  return cached.data;
-}
-
-function setMissionDetailsCache(missionGuid: string, mission: IitcIrisMissionDetails): void {
-  missionDetailsCache.set(missionGuid, {time: Date.now(), data: mission});
-  storeMissionDetailsCache();
-  latestMissionsState = {
-    ...latestMissionsState,
-    missions: latestMissionsState.missions.map((summary) => summary.guid === missionGuid
-      ? {...summary, ...getMissionSummaryDetails(missionGuid)}
-      : summary),
-  };
-}
-
-function getCurrentMissionBoundsPayload(): {northE6: number; southE6: number; westE6: number; eastE6: number} | undefined {
-  const map = window.__iitcIrisMap;
-  if (!map) return undefined;
-  const bounds = map.getBounds();
-  return {
-    northE6: Math.round(bounds.getNorth() * 1_000_000),
-    southE6: Math.round(bounds.getSouth() * 1_000_000),
-    westE6: Math.round(bounds.getWest() * 1_000_000),
-    eastE6: Math.round(bounds.getEast() * 1_000_000),
-  };
-}
-
-function cancelActiveMissionsFetch(): void {
-  currentMissionsAbortController?.abort();
-  currentMissionsAbortController = undefined;
-}
-
-function cancelActiveMissionDetailsFetch(): void {
-  currentMissionDetailsAbortController?.abort();
-  currentMissionDetailsAbortController = undefined;
-}
-
-async function refreshMissions(source: IitcIrisMissionSource = 'view'): Promise<void> {
-  cancelActiveMissionsFetch();
-  cancelActiveMissionDetailsFetch();
-  clearMissionOverlay();
-  const startedAt = performance.now();
-  const portalGuid = source === 'portal' ? selectedPortalGuid : undefined;
-  const portalTitle = source === 'portal' ? selectedPortal?.title : undefined;
-  const cachedPortalMissions = portalGuid ? getFreshPortalMissionsCache(portalGuid) : undefined;
-  if (source === 'portal' && portalGuid && cachedPortalMissions) {
-    const missions = enrichMissionSummariesWithCache(cachedPortalMissions);
-    latestMissionsState = {
-      status: missions.length > 0 ? 'ready' : 'empty',
-      requestState: 'ready',
-      source,
-      caption: `Missions at ${portalTitle || portalGuid}`,
-      portalGuid,
-      portalTitle,
-      missions,
-      selectedMission: undefined,
-      detailsStatus: 'idle',
-      cached: true,
-      detailsCached: false,
-      elapsedMs: 0,
-      error: undefined,
-    };
-    postMissionsState();
-    if (missions.length === 1) void refreshMissionDetails(missions[0].guid);
-    return;
-  }
-
-  const abortController = new AbortController();
-  currentMissionsAbortController = abortController;
-  latestMissionsState = {
-    status: 'loading',
-    requestState: 'loading',
-    source,
-    caption: source === 'portal' ? `Missions at ${portalTitle || portalGuid || 'selected portal'}` : 'Missions in view',
-    portalGuid,
-    portalTitle,
-    missions: [],
-    selectedMission: undefined,
-    detailsStatus: 'idle',
-    cached: false,
-    detailsCached: false,
-    error: undefined,
-  };
-  postMissionsState();
-
-  const payload = source === 'portal'
-    ? portalGuid ? {guid: portalGuid} : undefined
-    : getCurrentMissionBoundsPayload();
-  if (!payload) {
-    latestMissionsState = {
-      ...latestMissionsState,
-      status: 'error',
-      requestState: 'error',
-      elapsedMs: performance.now() - startedAt,
-      error: source === 'portal' ? 'select a portal first' : 'missing map bounds',
-    };
-    postMissionsState();
-    return;
-  }
-
-  try {
-    const response = await postIntelEndpoint(
-      source === 'portal' ? 'getTopMissionsForPortal' : 'getTopMissionsInBounds',
-      payload,
-      abortController.signal,
-    );
-    abortController.signal.throwIfAborted();
-    const missionSummaries = sortMissionSummaries(parseIitcTopMissionsResponse(response).map(toIrisMissionSummary));
-    if (source === 'portal' && portalGuid) setPortalMissionsCache(portalGuid, missionSummaries);
-    const missions = enrichMissionSummariesWithCache(missionSummaries);
-    latestMissionsState = {
-      ...latestMissionsState,
-      status: missions.length > 0 ? 'ready' : 'empty',
-      requestState: 'ready',
-      missions,
-      cached: false,
-      elapsedMs: performance.now() - startedAt,
-    };
-    postMissionsState();
-    if (source === 'portal' && missions.length === 1) void refreshMissionDetails(missions[0].guid);
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return;
-    const status = isIitcAuthError(error) ? 'auth' : 'error';
-    latestMissionsState = {
-      ...latestMissionsState,
-      status,
-      requestState: status,
-      elapsedMs: performance.now() - startedAt,
-      error: error instanceof Error ? error.message : String(error),
-    };
-    postMissionsState();
-  } finally {
-    if (currentMissionsAbortController === abortController) currentMissionsAbortController = undefined;
-  }
-}
-
-async function refreshMissionDetails(guid: unknown): Promise<void> {
-  const missionGuid = typeof guid === 'string' ? guid : '';
-  if (!missionGuid) return;
-  cancelActiveMissionDetailsFetch();
-  const cachedMission = getFreshMissionDetailsCache(missionGuid);
-  if (cachedMission) {
-    latestMissionsState = {
-      ...latestMissionsState,
-      detailsStatus: 'ready',
-      selectedMission: cachedMission,
-      detailsCached: true,
-      detailsElapsedMs: 0,
-      error: undefined,
-    };
-    renderMissionOverlay(cachedMission);
-    panToMissionStart(cachedMission);
-    postMissionsState();
-    return;
-  }
-
-  const abortController = new AbortController();
-  currentMissionDetailsAbortController = abortController;
-  const startedAt = performance.now();
-  latestMissionsState = {
-    ...latestMissionsState,
-    detailsStatus: 'loading',
-    selectedMission: latestMissionsState.selectedMission?.guid === missionGuid ? latestMissionsState.selectedMission : undefined,
-    detailsCached: false,
-    error: undefined,
-  };
-  postMissionsState();
-
-  try {
-    const response = await postIntelEndpoint('getMissionDetails', {guid: missionGuid}, abortController.signal);
-    abortController.signal.throwIfAborted();
-    const details = parseIitcMissionDetailsResponse(response);
-    const selectedMission = details ? toIrisMissionDetails(details) : undefined;
-    if (selectedMission) setMissionDetailsCache(missionGuid, selectedMission);
-    latestMissionsState = {
-      ...latestMissionsState,
-      detailsStatus: selectedMission ? 'ready' : 'empty',
-      selectedMission,
-      detailsCached: false,
-      detailsElapsedMs: performance.now() - startedAt,
-    };
-    renderMissionOverlay(selectedMission);
-    panToMissionStart(selectedMission);
-    postMissionsState();
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return;
-    const status = isIitcAuthError(error) ? 'auth' : 'error';
-    latestMissionsState = {
-      ...latestMissionsState,
-      detailsStatus: status,
-      detailsElapsedMs: performance.now() - startedAt,
-      error: error instanceof Error ? error.message : String(error),
-    };
-    renderMissionOverlay(undefined);
-    postMissionsState();
-  } finally {
-    if (currentMissionDetailsAbortController === abortController) currentMissionDetailsAbortController = undefined;
-  }
-}
-
-function isPlayerTrackerVisible(): boolean {
-  const map = window.__iitcIrisMap;
-  return isIitcPlayerTrackerVisibleForZoom(layerSettings, map?.getZoom(), IITC_PLAYER_TRACKER_MIN_ZOOM);
-}
-
-function updatePlayerTrackerDiagnostics(markers = playerTrackerDiagnostics.markers, traces = playerTrackerDiagnostics.traces): void {
-  playerTrackerDiagnostics = getIitcPlayerTrackerDiagnostics(playerTrackerStored, {
-    enabled: isIitcPlayerTrackerEnabled(layerSettings),
-    visible: isPlayerTrackerVisible(),
-    markers,
-    traces,
-    latestCommTime: playerTrackerLatestCommTime,
-    minZoom: IITC_PLAYER_TRACKER_MIN_ZOOM,
-    maxAgeMs: IITC_PLAYER_TRACKER_MAX_TIME,
-  });
-}
-
-function cancelActivePlayerTrackerFetch(): void {
-  currentPlayerTrackerCommAbortController?.abort();
-  currentPlayerTrackerCommAbortController = undefined;
-}
-
-function clearPlayerTrackerRefreshTimer(): void {
-  if (playerTrackerRefreshTimer !== undefined) {
-    mapLifetime?.cancelScheduled(playerTrackerRefreshTimer);
-    playerTrackerRefreshTimer = undefined;
-  }
-}
-
-function schedulePlayerTrackerRefresh(delayMs = 250): void {
-  clearPlayerTrackerRefreshTimer();
-  if (authRecoveryActive && dataSource.mode === 'live') return;
-  if (!isPlayerTrackerVisible()) {
-    cancelActivePlayerTrackerFetch();
-    renderPlayerTracker();
-    return;
-  }
-  playerTrackerRefreshTimer = mapLifetime?.schedule(() => {
-    playerTrackerRefreshTimer = undefined;
-    void refreshPlayerTrackerComm();
-  }, delayMs);
-}
-
-function processPlayerTrackerCommMessages(messages: IitcCommMessage[]): void {
-  const result = applyIitcPlayerTrackerCommMessages({
-    messages,
-    stored: playerTrackerStored,
-    processedGuids: playerTrackerProcessedCommGuids,
-    latestCommTime: playerTrackerLatestCommTime,
-  });
-  playerTrackerProcessedCommGuids.clear();
-  for (const guid of result.processedGuids) playerTrackerProcessedCommGuids.add(guid);
-  playerTrackerStored = result.stored;
-  playerTrackerLatestCommTime = result.latestCommTime;
 }
 
 function uniqueStrings(values: string[] | undefined): string[] {
@@ -2103,7 +1357,7 @@ function postEntityStatus(
       interactionUpdates: latestInteractionUpdateDiagnostics,
     },
     requestDiagnostics: getIitcRequestDiagnostics(),
-    playerTracker: playerTrackerDiagnostics,
+    playerTracker: playerTracker.getDiagnostics(),
     portalAnalysis,
     highlighterSettings,
     highlighterIds: PORTAL_HIGHLIGHTER_REGISTRY.map((highlighter) => highlighter.id),
@@ -2112,7 +1366,7 @@ function postEntityStatus(
     renderPolicy: getRenderPolicy(),
     selectedPortal,
     portalDetails: latestPortalDetails,
-    comm: latestCommState,
+    comm: comm.getState(),
   } satisfies IitcIrisMessage, '*');
 }
 
@@ -2150,18 +1404,6 @@ async function fetchPortalDetails(guid: string, version: string, signal?: AbortS
   return parsed;
 }
 
-function getCurrentCommBounds(): NonNullable<IitcIrisCommState['bounds']> | undefined {
-  const map = window.__iitcIrisMap;
-  if (!map) return undefined;
-  const bounds = map.getBounds();
-  return {
-    minLatE6: Math.round(bounds.getSouth() * 1_000_000),
-    minLngE6: Math.round(bounds.getWest() * 1_000_000),
-    maxLatE6: Math.round(bounds.getNorth() * 1_000_000),
-    maxLngE6: Math.round(bounds.getEast() * 1_000_000),
-  };
-}
-
 function getMapCenterE6(): {latE6: number; lngE6: number} | undefined {
   const map = window.__iitcIrisMap;
   if (!map) return undefined;
@@ -2170,124 +1412,6 @@ function getMapCenterE6(): {latE6: number; lngE6: number} | undefined {
     latE6: Math.round(center.lat * 1_000_000),
     lngE6: Math.round(center.lng * 1_000_000),
   };
-}
-
-function normalizeCommTab(tab: unknown): IitcCommChannel {
-  return tab === 'faction' || tab === 'alerts' ? tab : 'all';
-}
-
-function toCommMessagePreview(message: IitcCommMessage): NonNullable<IitcIrisCommState['recent']>[number] {
-  const players = [
-    message.player.name,
-    ...message.mentions,
-  ].filter((value): value is string => typeof value === 'string' && value.length > 0);
-
-  return {
-    id: message.guid,
-    time: message.time,
-    text: message.text,
-    team: message.team,
-    type: message.type,
-    public: message.public,
-    secure: message.secure,
-    alert: message.alert,
-    auto: message.auto,
-    narrowcast: message.narrowcast,
-    player: message.player.name,
-    playerTeam: message.player.team,
-    parts: renderIitcCommMarkup(message),
-    portals: message.markup
-      .filter(([type]) => type === 'PORTAL')
-      .map(([, value]) => ({
-        name: value.name,
-        address: value.address,
-        latE6: value.latE6,
-        lngE6: value.lngE6,
-      })),
-    players: [...new Set(players)],
-  };
-}
-
-async function fetchComm(
-  version: string,
-  tab: IitcCommChannel,
-  bounds: NonNullable<IitcIrisCommState['bounds']> | undefined,
-  getOlderMsgs: boolean,
-  signal?: AbortSignal,
-): Promise<unknown> {
-  const csrfToken = getCsrfToken();
-  if (!csrfToken) throw new Error('getPlexts missing csrftoken');
-  if (!bounds) throw new Error('getPlexts missing map bounds');
-  const postData = planIitcCommRequest({
-    channel: tab,
-    bounds,
-    storageHash: commChannelsData[tab],
-    getOlderMsgs,
-    version,
-  });
-
-  const {response, text} = await fetchIitcEndpointText('getPlexts', {
-    method: 'POST',
-    credentials: 'include',
-    signal,
-    headers: {
-      'Accept': 'application/json, text/javascript, */*; q=0.01',
-      'Content-Type': 'application/json; charset=utf-8',
-      'X-CSRFToken': csrfToken,
-      'X-Requested-With': 'XMLHttpRequest',
-    },
-    body: JSON.stringify(postData),
-  }, tab === 'all' ? 'comm-all' : `comm-${tab}`);
-
-  if (looksLikeHtml(text)) {
-    throw createIitcAuthError('getPlexts', response);
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text) as unknown;
-  } catch (error) {
-    if (!response.ok) throw new Error(`getPlexts HTTP ${response.status}`, {cause: error});
-    throw error;
-  }
-  if (!response.ok) throw new Error(`getPlexts HTTP ${response.status}`);
-  const error = parsed && typeof parsed === 'object' ? (parsed as {error?: unknown}).error : undefined;
-  if (typeof error === 'string' && error) throw new Error(error);
-  return parsed;
-}
-
-async function postSendPlext(payload: NonNullable<ReturnType<typeof genIitcCommSendPlextPostData>>, signal?: AbortSignal): Promise<unknown> {
-  const csrfToken = getCsrfToken();
-  if (!csrfToken) throw new Error('sendPlext missing csrftoken');
-
-  const {response, text} = await fetchIitcEndpointText('sendPlext', {
-    method: 'POST',
-    credentials: 'include',
-    signal,
-    headers: {
-      'Accept': 'application/json, text/javascript, */*; q=0.01',
-      'Content-Type': 'application/json; charset=utf-8',
-      'X-CSRFToken': csrfToken,
-      'X-Requested-With': 'XMLHttpRequest',
-    },
-    body: JSON.stringify(payload),
-  }, `comm-send-${payload.tab}`);
-
-  if (looksLikeHtml(text)) {
-    throw createIitcAuthError('sendPlext', response);
-  }
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text) as unknown;
-  } catch (error) {
-    if (!response.ok) throw new Error(`sendPlext HTTP ${response.status}`, {cause: error});
-    throw error;
-  }
-  if (!response.ok) throw new Error(`sendPlext HTTP ${response.status}`);
-  const error = parsed && typeof parsed === 'object' ? (parsed as {error?: unknown}).error : undefined;
-  if (typeof error === 'string' && error) throw new Error(error);
-  return parsed;
 }
 
 async function postIntelEndpoint(endpoint: string, payload: Record<string, unknown>, signal?: AbortSignal): Promise<unknown> {
@@ -2317,541 +1441,6 @@ async function postIntelEndpoint(endpoint: string, payload: Record<string, unkno
   const error = parsed && typeof parsed === 'object' ? (parsed as {error?: unknown}).error : undefined;
   if (typeof error === 'string' && error) throw new Error(error);
   return parsed;
-}
-
-function setSubscriptionState(nextState: IitcIrisSubscriptionState): void {
-  latestSubscriptionState = nextState;
-  postAgentState();
-  postInventoryState();
-}
-
-async function refreshSubscriptionStatus(): Promise<IitcIrisSubscriptionState> {
-  if (currentSubscriptionPromise) return currentSubscriptionPromise;
-
-  const abortController = new AbortController();
-  currentSubscriptionAbortController = abortController;
-  const startedAt = performance.now();
-  setSubscriptionState({...latestSubscriptionState, status: 'loading', error: undefined});
-
-  currentSubscriptionPromise = (async (): Promise<IitcIrisSubscriptionState> => {
-    try {
-      const response = await postIntelEndpoint('getHasActiveSubscription', {}, abortController.signal);
-      abortController.signal.throwIfAborted();
-      const hasActive = parseSubscriptionResponse(response);
-      const nextState: IitcIrisSubscriptionState = {
-        status: hasActive ? 'active' : 'inactive',
-        hasActive,
-        elapsedMs: performance.now() - startedAt,
-        checkedAt: Date.now(),
-      };
-      setSubscriptionState(nextState);
-      return nextState;
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') return latestSubscriptionState;
-      const status = isIitcAuthError(error) ? 'auth' : 'error';
-      const nextState: IitcIrisSubscriptionState = {
-        status,
-        hasActive: false,
-        elapsedMs: performance.now() - startedAt,
-        checkedAt: Date.now(),
-        error: error instanceof Error ? error.message : String(error),
-      };
-      setSubscriptionState(nextState);
-      return nextState;
-    } finally {
-      if (currentSubscriptionAbortController === abortController) {
-        currentSubscriptionAbortController = undefined;
-        currentSubscriptionPromise = undefined;
-      }
-    }
-  })();
-
-  return currentSubscriptionPromise;
-}
-
-function parseSubscriptionResponse(response: unknown): boolean {
-  const result = response && typeof response === 'object' ? (response as {result?: unknown}).result : undefined;
-  return result === true;
-}
-
-function numberFromUnknown(value: unknown): number | undefined {
-  const number = typeof value === 'number' ? value : typeof value === 'string' ? Number.parseInt(value, 10) : Number.NaN;
-  return Number.isFinite(number) ? number : undefined;
-}
-
-function parseGameScoreResponse(response: unknown): NonNullable<IitcIrisScoresState['game']> | undefined {
-  const result = response && typeof response === 'object' ? (response as {result?: unknown}).result : undefined;
-  if (!Array.isArray(result)) return undefined;
-  const enlightened = numberFromUnknown(result[0]);
-  const resistance = numberFromUnknown(result[1]);
-  if (enlightened === undefined || resistance === undefined) return undefined;
-  const total = Math.max(1, enlightened + resistance);
-  return {
-    enlightened,
-    resistance,
-    enlightenedPercent: (enlightened / total) * 100,
-    resistancePercent: (resistance / total) * 100,
-  };
-}
-
-function parseRegionScoreResponse(response: unknown, center: NonNullable<IitcIrisScoresState['region']>['center']): NonNullable<IitcIrisScoresState['region']> {
-  const result = response && typeof response === 'object' ? (response as {result?: unknown}).result : undefined;
-  if (!result || typeof result !== 'object') return {status: 'empty', center};
-  const region = result as {
-    regionName?: unknown;
-    gameScore?: unknown;
-    scoreHistory?: unknown;
-    topAgents?: unknown;
-  };
-  const gameScore = Array.isArray(region.gameScore) ? region.gameScore : [];
-  const scoreHistory = Array.isArray(region.scoreHistory) ? region.scoreHistory : [];
-  const topAgents = Array.isArray(region.topAgents) ? region.topAgents : [];
-  const topAgentList = topAgents
-    .map((agent) => {
-      const candidate = agent && typeof agent === 'object' ? agent as {nick?: unknown; team?: unknown} : {};
-      const team = candidate.team === 'RESISTANCE'
-        ? 'R'
-        : candidate.team === 'ENLIGHTENED'
-          ? 'E'
-          : candidate.team === 'MACHINA'
-            ? 'M'
-            : 'N';
-      return typeof candidate.nick === 'string' ? {nick: candidate.nick, team} : undefined;
-    })
-    .filter((agent): agent is {nick: string; team: 'E' | 'R' | 'N' | 'M'} => agent !== undefined);
-  const checkpointIndexes = scoreHistory
-    .map((entry) => Array.isArray(entry) ? numberFromUnknown(entry[0]) : undefined)
-    .filter((value): value is number => value !== undefined);
-
-  return {
-    status: 'ready',
-    name: typeof region.regionName === 'string' ? region.regionName : undefined,
-    enlightenedAvg: numberFromUnknown(gameScore[0]),
-    resistanceAvg: numberFromUnknown(gameScore[1]),
-    checkpoints: scoreHistory.length,
-    lastCheckpoint: checkpointIndexes.length > 0 ? Math.max(...checkpointIndexes) : undefined,
-    topAgents: topAgents.length,
-    topAgentList,
-    center,
-  };
-}
-
-function sanitizePasscode(value: unknown): string {
-  return typeof value === 'string' ? value.replace(/[^\x20-\x7E]+/g, '').trim() : '';
-}
-
-function parsePasscodeRewards(response: unknown, passcode: string, elapsedMs: number): IitcIrisPasscodeState {
-  const data = response && typeof response === 'object' ? response as {rewards?: unknown} : {};
-  const rewards = data.rewards && typeof data.rewards === 'object' ? data.rewards as {
-    ap?: unknown;
-    xm?: unknown;
-    other?: unknown;
-    inventory?: unknown;
-  } : undefined;
-  if (!rewards) throw new Error('unexpected passcode response');
-
-  const items: IitcIrisPasscodeRewardItem[] = [];
-  const inventory = Array.isArray(rewards.inventory) ? rewards.inventory : [];
-  for (const entry of inventory) {
-    const type = entry && typeof entry === 'object' ? entry as {name?: unknown; awards?: unknown} : {};
-    const label = typeof type.name === 'string' ? type.name : 'Item';
-    const awards = Array.isArray(type.awards) ? type.awards : [];
-    for (const award of awards) {
-      const item = award && typeof award === 'object' ? award as {count?: unknown; level?: unknown} : {};
-      items.push({
-        label,
-        count: numberFromUnknown(item.count) ?? 1,
-        level: numberFromUnknown(item.level),
-      });
-    }
-  }
-
-  const other = Array.isArray(rewards.other)
-    ? rewards.other.filter((item): item is string => typeof item === 'string')
-    : undefined;
-  const ap = numberFromUnknown(rewards.ap);
-  const xm = numberFromUnknown(rewards.xm);
-
-  return {
-    status: other?.length || items.length > 0 || (ap ?? 0) > 0 || (xm ?? 0) > 0 ? 'ready' : 'empty',
-    requestState: 'ready',
-    passcode,
-    ap,
-    xm,
-    other,
-    items,
-    elapsedMs,
-  };
-}
-
-function createInventoryStateFromSummary(
-  summary: IitcInventorySummary,
-  status: IitcIrisInventoryState['status'],
-  requestState: IitcIrisInventoryState['requestState'],
-  elapsedMs?: number,
-): IitcIrisInventoryState {
-  const selectedKeyCount = getIitcInventoryPortalKeyCount(summary, selectedPortalGuid);
-  const capsuleKeyTotal = selectedKeyCount
-    ? Object.values(selectedKeyCount.capsuleCounts).reduce((sum, count) => sum + count, 0)
-    : 0;
-
-  return {
-    status,
-    requestState,
-    subscription: latestSubscriptionState,
-    items: summary.totalItems,
-    rawItems: summary.rawItems,
-    keys: summary.keyCounts.reduce((sum, keyCount) => sum + keyCount.count, 0),
-    portalsWithKeys: summary.keyCounts.length,
-    capsules: summary.capsuleCounts.length,
-    selectedPortalGuid,
-    selectedPortalTitle: selectedPortal?.title,
-    portalKeysForSelectedPortal: selectedKeyCount ? {
-      total: selectedKeyCount.count,
-      capsule: capsuleKeyTotal,
-      loose: selectedKeyCount.count - capsuleKeyTotal,
-      capsules: selectedKeyCount.capsuleCounts,
-    } : null,
-    topItems: summary.itemCounts
-      .slice()
-      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
-      .slice(0, 10)
-      .map((item) => ({
-        label: item.label,
-        type: item.type,
-        count: item.count,
-        level: item.level,
-        rarity: item.rarity,
-      })),
-    topKeys: summary.keyCounts
-      .slice()
-      .sort((a, b) => b.count - a.count || (a.portalTitle ?? '').localeCompare(b.portalTitle ?? ''))
-      .slice(0, 8)
-      .map((keyCount) => ({
-        portalGuid: keyCount.portalGuid,
-        portalTitle: keyCount.portalTitle,
-        count: keyCount.count,
-        capsule: Object.values(keyCount.capsuleCounts).reduce((sum, count) => sum + count, 0),
-      })),
-    elapsedMs,
-  };
-}
-
-function refreshInventorySelectedPortalState(): void {
-  if (!latestInventorySummary) return;
-  latestInventoryState = createInventoryStateFromSummary(
-    latestInventorySummary,
-    latestInventoryState.status,
-    latestInventoryState.requestState,
-    latestInventoryState.elapsedMs,
-  );
-}
-
-async function refreshScores(): Promise<void> {
-  cancelActiveScoresFetch();
-  const center = getMapCenterE6();
-  if (!center) {
-    latestScoresState = {status: 'error', requestState: 'error', region: {status: 'error'}, error: 'missing map center'};
-    postScoresState();
-    return;
-  }
-
-  const abortController = new AbortController();
-  currentScoresAbortController = abortController;
-  const startedAt = performance.now();
-  latestScoresState = {
-    ...latestScoresState,
-    status: 'loading',
-    requestState: 'loading',
-    error: undefined,
-    region: {
-      ...(latestScoresState.region ?? {status: 'idle'}),
-      status: 'loading',
-      center,
-      error: undefined,
-    },
-  };
-  postScoresState();
-
-  try {
-    const [gameResponse, regionResponse] = await Promise.all([
-      postIntelEndpoint('getGameScore', {}, abortController.signal),
-      postIntelEndpoint('getRegionScoreDetails', center, abortController.signal),
-    ]);
-    abortController.signal.throwIfAborted();
-    const game = parseGameScoreResponse(gameResponse);
-    const region = parseRegionScoreResponse(regionResponse, center);
-    latestScoresState = {
-      status: game || region.status === 'ready' ? 'ready' : 'empty',
-      requestState: 'ready',
-      game,
-      region,
-      elapsedMs: performance.now() - startedAt,
-    };
-    postScoresState();
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return;
-    const status = isIitcAuthError(error) ? 'auth' : 'error';
-    latestScoresState = {
-      ...latestScoresState,
-      status,
-      requestState: status,
-      elapsedMs: performance.now() - startedAt,
-      region: {
-        ...(latestScoresState.region ?? {status: 'idle'}),
-        status,
-        center,
-        error: error instanceof Error ? error.message : String(error),
-      },
-      error: error instanceof Error ? error.message : String(error),
-    };
-    postScoresState();
-  } finally {
-    if (currentScoresAbortController === abortController) currentScoresAbortController = undefined;
-  }
-}
-
-async function redeemPasscode(passcodeInput: unknown): Promise<void> {
-  const passcode = sanitizePasscode(passcodeInput);
-  cancelActivePasscodeFetch();
-  if (!passcode) {
-    latestPasscodeState = {status: 'error', requestState: 'error', error: 'missing passcode'};
-    postPasscodeState();
-    return;
-  }
-
-  const abortController = new AbortController();
-  currentPasscodeAbortController = abortController;
-  const startedAt = performance.now();
-  latestPasscodeState = {
-    ...latestPasscodeState,
-    status: 'loading',
-    requestState: 'loading',
-    passcode,
-    error: undefined,
-  };
-  postPasscodeState();
-
-  try {
-    const response = await postIntelEndpoint('redeemReward', {passcode}, abortController.signal);
-    abortController.signal.throwIfAborted();
-    latestPasscodeState = parsePasscodeRewards(response, passcode, performance.now() - startedAt);
-    postPasscodeState();
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return;
-    const status = isIitcAuthError(error) ? 'auth' : 'error';
-    latestPasscodeState = {
-      ...latestPasscodeState,
-      status,
-      requestState: status,
-      passcode,
-      elapsedMs: performance.now() - startedAt,
-      error: error instanceof Error ? error.message : String(error),
-    };
-    postPasscodeState();
-  } finally {
-    if (currentPasscodeAbortController === abortController) currentPasscodeAbortController = undefined;
-  }
-}
-
-async function refreshInventory(): Promise<void> {
-  cancelActiveInventoryFetch();
-  const abortController = new AbortController();
-  currentInventoryAbortController = abortController;
-  const startedAt = performance.now();
-  latestInventoryState = {
-    ...latestInventoryState,
-    status: 'loading',
-    requestState: 'loading',
-    error: undefined,
-  };
-  postInventoryState();
-
-  try {
-    void refreshSubscriptionStatus();
-    const response = await postIntelEndpoint('getInventory', {lastQueryTimestamp: 0}, abortController.signal);
-    abortController.signal.throwIfAborted();
-    const rawItems = parseIitcInventoryResponse(response);
-    latestInventorySummary = summarizeIitcInventory(rawItems);
-    latestInventoryState = createInventoryStateFromSummary(
-      latestInventorySummary,
-      rawItems.length > 0 ? 'ready' : 'empty',
-      'ready',
-      performance.now() - startedAt,
-    );
-    postInventoryState();
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return;
-    const status = isIitcAuthError(error) ? 'auth' : 'error';
-    latestInventoryState = {
-      ...latestInventoryState,
-      status,
-      requestState: status,
-      elapsedMs: performance.now() - startedAt,
-      error: error instanceof Error ? error.message : String(error),
-    };
-    postInventoryState();
-  } finally {
-    if (currentInventoryAbortController === abortController) currentInventoryAbortController = undefined;
-  }
-}
-
-async function sendComm(tab: IitcCommChannel, message: unknown): Promise<void> {
-  const lifetime = mapLifetime;
-  if (!lifetime) return;
-  const text = typeof message === 'string' ? message : '';
-  const center = getMapCenterE6();
-  const payload = center ? genIitcCommSendPlextPostData({
-    channel: tab,
-    message: text,
-    ...center,
-  }) : null;
-  if (!payload) {
-    latestCommState = {
-      ...latestCommState,
-      tab,
-      sendStatus: 'error',
-      sendError: tab === 'alerts' ? "can't send to alerts" : 'empty message or missing map center',
-    };
-    postCommState();
-    return;
-  }
-
-  const abortController = new AbortController();
-  latestCommState = {
-    ...latestCommState,
-    tab,
-    sendStatus: 'sending',
-    sendError: undefined,
-  };
-  postCommState();
-
-  try {
-    await postSendPlext(payload, abortController.signal);
-    lifetime.signal.throwIfAborted();
-    latestCommState = {
-      ...latestCommState,
-      tab,
-      sendStatus: 'sent',
-      sendError: undefined,
-    };
-    postCommState();
-    await refreshComm(tab);
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return;
-    latestCommState = {
-      ...latestCommState,
-      tab,
-      sendStatus: isIitcAuthError(error) ? 'auth' : 'error',
-      sendError: error instanceof Error ? error.message : String(error),
-    };
-    postCommState();
-  }
-}
-
-async function refreshComm(tab: IitcCommChannel = normalizeCommTab(latestCommState.tab), getOlderMsgs = false): Promise<void> {
-  cancelActiveCommFetch();
-  const version = extractVersion();
-  const bounds = getCurrentCommBounds();
-  if (!version) {
-    latestCommState = createIitcCommAuthState({
-      channel: tab,
-      channelData: commChannelsData[tab],
-      getOlderMsgs,
-      bounds,
-      error: 'missing Intel version',
-    });
-    postCommState();
-    return;
-  }
-
-  const abortController = new AbortController();
-  currentCommAbortController = abortController;
-  const startedAt = performance.now();
-  latestCommState = {
-    ...latestCommState,
-    ...createIitcCommLoadingState({
-      channel: tab,
-      channelData: commChannelsData[tab],
-      getOlderMsgs,
-      bounds,
-      toPreview: toCommMessagePreview,
-    }),
-  };
-  postCommState();
-
-  try {
-    const response = await fetchComm(version, tab, bounds, getOlderMsgs, abortController.signal);
-    abortController.signal.throwIfAborted();
-    const elapsedMs = performance.now() - startedAt;
-    const isAscendingOrder = !getOlderMsgs && commChannelsData[tab].newestTimestamp > -1;
-    const writeResult = applyIitcCommResponse(response, commChannelsData[tab], getOlderMsgs, isAscendingOrder, tab);
-    commChannelsData[tab] = writeResult.channelData;
-    const commMessages = getIitcCommChannelMessages(commChannelsData[tab]);
-    if (tab === 'all') {
-      processPlayerTrackerCommMessages(commMessages);
-      renderPlayerTracker();
-    }
-    latestCommState = createIitcCommSuccessState({
-      channel: tab,
-      applyResult: writeResult,
-      getOlderMsgs,
-      elapsedMs,
-      bounds,
-      toPreview: toCommMessagePreview,
-    });
-    postCommState();
-  } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') return;
-    latestCommState = createIitcCommErrorState({
-      channel: tab,
-      channelData: commChannelsData[tab],
-      getOlderMsgs,
-      elapsedMs: performance.now() - startedAt,
-      bounds,
-      error: error instanceof Error ? error.message : String(error),
-      status: isIitcAuthError(error) ? 'auth' : 'error',
-    });
-    postCommState();
-  } finally {
-    if (currentCommAbortController === abortController) currentCommAbortController = undefined;
-  }
-}
-
-async function refreshPlayerTrackerComm(): Promise<void> {
-  if (!isPlayerTrackerVisible()) {
-    renderPlayerTracker();
-    return;
-  }
-  cancelActivePlayerTrackerFetch();
-  const version = extractVersion();
-  const bounds = getCurrentCommBounds();
-  if (!version || !bounds) {
-    renderPlayerTracker();
-    return;
-  }
-
-  const abortController = new AbortController();
-  currentPlayerTrackerCommAbortController = abortController;
-
-  try {
-    const response = await fetchComm(version, 'all', bounds, false, abortController.signal);
-    abortController.signal.throwIfAborted();
-    const writeResult = applyIitcCommResponse(response, commChannelsData.all, false, commChannelsData.all.newestTimestamp > -1, 'all');
-    commChannelsData.all = writeResult.channelData;
-    const messages = getIitcCommChannelMessages(commChannelsData.all);
-    processPlayerTrackerCommMessages(messages);
-    renderPlayerTracker();
-  } catch (error) {
-    if (!(error instanceof DOMException && error.name === 'AbortError')) {
-      renderPlayerTracker();
-    }
-  } finally {
-    if (currentPlayerTrackerCommAbortController === abortController) {
-      currentPlayerTrackerCommAbortController = undefined;
-      if (isPlayerTrackerVisible()) schedulePlayerTrackerRefresh(PLAYER_TRACKER_COMM_REFRESH_MS);
-    }
-  }
 }
 
 async function refreshSelectedPortalDetails(guid: string): Promise<void> {
@@ -3003,19 +1592,14 @@ function boot(): void {
     removeGestures();
     cancelActiveEntityFetch();
     cancelActivePanelRequests();
-    cancelActivePlayerTrackerFetch();
-    currentSubscriptionAbortController?.abort();
-    currentSubscriptionAbortController = undefined;
-    currentSubscriptionPromise = undefined;
-    if (latestSubscriptionState.status === 'loading') latestSubscriptionState = {status: 'unknown'};
+    playerTracker.dispose();
+    inventory.dispose();
     mapRequests.dispose();
     invalidateSearch();
-    playerTrackerRefreshTimer = undefined;
     baseLayerController?.dispose();
     baseLayerController = undefined;
     latestEntities = undefined;
     invalidateRenderContext();
-    playerTrackerMarkers.clear();
     window.__iitcIrisLayers = undefined;
     window.__iitcIrisMap = undefined;
     window.__iitcIrisMapContainer = undefined;

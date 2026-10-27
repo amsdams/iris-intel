@@ -39,6 +39,17 @@ retries recover into real Leaflet layers, request metadata is retained, and a su
 whole-overlay/faction/level/unclaimed filters, in-place highlighter refresh, and fresh entity layers after map replacement.
 It uses controlled fixture data through the page message boundary.
 
+[panel-requests.smoke.mjs](panel-requests.smoke.mjs) runs real Scores, Inventory/Profile, Passcode and COMM panel workflows
+with simulated endpoint responses, checking request metadata, selected-portal key counts and rendered rewards. It also
+checks that closing Inventory cancels its response while the shared subscription still updates Profile.
+
+The COMM case covers channel changes, older-history continuation, disabled Alerts input and simulated sending.
+All network responses are local fixtures; no live messages are sent.
+
+[map-features.smoke.mjs](map-features.smoke.mjs) checks live mission list/detail requests with simulated responses,
+persistent detail-cache reuse after map replacement, and COMM-driven grouped player markers: list/history/back navigation,
+faction filtering and history retention across replacement. It exercises real Leaflet markers and popup DOM.
+
 [map-overlays.smoke.mjs](map-overlays.smoke.mjs) exercises real Draw Tools actions and cached mission route/waypoint
 rendering before and after map replacement, including stored drawing restoration and undo. It uses simulated data.
 

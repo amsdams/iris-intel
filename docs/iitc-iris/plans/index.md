@@ -21,6 +21,57 @@ supported authentication and website-distribution permission evidence before beg
 are deferred; the baseline includes Passcode and Missions. Further runtime decomposition should accompany a concrete
 change or finding, rather than become another general cleanup prerequisite.
 
+**COMM extraction (2026-10-27):** channel state/buffers, fetch/send requests, preview conversion and cancellation
+now live in `comm/comm-runtime.ts`. Player Tracker retains its existing polling seam and shares the public buffer.
+No intentional behavior changes; known Inventory/loading, label-performance and zoom findings remain deferred by
+user choice. The entry point is now 1,671 lines. `npm run check` passes (610 app/core + six release-gate
+tests, lint/types/CSS/workbench), including 12 new COMM regressions. All 29 Chrome cases pass (28 in the suite,
+plus the corrected new test rerun); all 15 focused Firefox cases pass. The initial COMM browser assertion incorrectly
+expected Send enabled after the draft was cleared; only that assertion was corrected. Ten moved functions match their
+originals after explicit dependency substitutions. Extension packaging and signed Android release checks pass
+(31 native + 15 JavaScript tests, lint/build). APK `0.4.1-alpha+18f3b4e`, code 1844, matches the pinned certificate;
+all 19 assets, extension contents and port-6969 downloads match. Latest local XPI/ZIP timestamp: `2026-10-27T20-03-44`.
+The three feature batches remain uncommitted; COMM live user smoke is pending.
+
+| Extraction checkpoint | Entry-point lines |
+| --- | ---: |
+| Original runtime | 6,159 |
+| Search, Draw Tools, mission overlay | 5,506 |
+| Entity renderer | 3,962 |
+| Map requests and Intel transport | 3,087 |
+| Missions and Player Tracker | 2,401 |
+| Scores, Passcode, Inventory/subscription | 1,963 |
+| COMM | 1,671 |
+
+Overall reduction: 4,488 lines (73%) moved out of the coordinator. Remaining ownership: map boot/lifetime/layers,
+portal selection/context/navigation and portal details/cache, shared panel transport and diagnostic aggregation.
+These are possible boundaries to review, not a commitment to extract every helper or reach a line-count target.
+
+**Scores, Passcode and Inventory extraction (2026-10-27):** these request workflows, their response-to-UI adaptation
+and cancellation now have feature owners. Inventory owns the shared subscription check and exposes key counts to the
+renderer; panel cancellation and map disposal retain their different subscription behavior. The entry point is now
+1,963 lines, down from 2,401 (6,159 before extraction work). No intentional behavior changes. `npm run check` passes
+(598 app/core + six release-gate tests, lint/types/CSS/workbench), including 16 new feature regressions. All 28 Chrome
+browser checks and 14 focused Firefox checks pass. Extension packaging and signed Android release checks pass
+(31 native + 15 JavaScript tests, lint/build); APK `0.4.1-alpha+18f3b4e`, code 1844, matches the pinned certificate,
+all 19 bundled assets, extension contents and downloads on port 6969. Both feature batches are uncommitted. The user
+reports behavior remains as before; general extraction smoke is accepted, without claiming exhaustive per-feature coverage.
+Inventory required repeated attempts without useful feedback; level labels slow the map and zoom-dependent feature
+limits need investigation. These are recorded in the [smoke follow-ups](../backlog.md#smoke-feedback-inventory-reliability-level-labels-and-zoom-limits-2026-10-27),
+deferred while the user-authorized extraction continues; Inventory is the first investigation afterward. An existing
+[cancelled-panel loading state](../backlog.md#cancelled-panel-can-remain-loading-on-reopen-2026-10-27) is recorded for a focused fix.
+
+**Missions and Player Tracker extraction (2026-10-27):** mission fetching/status/persistent caches and Player Tracker
+history/grouped markers/traces/polling now have feature runtimes. Shared COMM data was subsequently extracted as described above.
+Map replacement cancels requests/timers and clears markers while retaining caches/history. This pass reduced the entry point to
+2,401 lines, down from 3,087 in the previous batch (6,159 before these extractions). No intentional behavior changes.
+`npm run check` passes (582 app/core + six release-gate tests, lint/types/CSS/workbench), including 13 new feature
+regressions. All 26 Chrome browser checks and 12 focused Firefox checks pass, including live-request mission caching
+and grouped-player popup/history/filtering across map replacement. Extension packaging and signed Android release
+checks pass (31 native + 15 JavaScript tests, lint/build). Local APK `0.4.1-alpha+18f3b4e`, code 1844, matches the pinned
+certificate; all 19 bundled assets, XPI/ZIP contents and port-6969 downloads match the current build. Source changes
+are uncommitted. The subsequent general extraction smoke is accepted as described above.
+
 **Map request extraction (2026-10-27):** map refresh generations, queues/retries, cached/stale tile delivery, wanted-response
 handoff and artifact fetching now live in `map/map-request.ts`. Shared Intel transport/auth helpers live in
 `intel/intel-request.ts`; panel endpoint behavior stays in the entry point. The entry point is 3,087 lines, down from
@@ -29,8 +80,8 @@ release-gate tests, lint/types/CSS/workbench). New regressions cover concurrent 
 retry delays, wanted/unwanted late responses, source changes, auth failures and map disposal. All 24 browser checks and
 ten focused Firefox checks pass. Extension packaging and signed Android release tests/lint/build pass (31 native + 15
 JavaScript tests). Local APK `0.4.1-alpha+b159255`, code 1843, matches the pinned certificate; all 19 bundled assets,
-XPI/ZIP contents and port-6969 downloads match the current build. Source changes are uncommitted; focused live XPI
-smoke of map loading and repeated pan/zoom remains pending.
+XPI/ZIP contents and port-6969 downloads match the current build. The user accepted live XPI smoke; this batch
+is committed as `18f3b4e`.
 
 **Map runtime split (2026-10-27):** extracted Search requests/previews/navigation, Draw Tools storage/actions/rendering,
 and mission overlays into their domain folders. A second combined pass extracted entity rendering, incremental layer
@@ -231,10 +282,11 @@ rejection checks. No further generic CSS/component cleanup is queued.
    HTTP/style failures, missing WebGL, actual context loss/restoration, manual retry, and map replacement.
    **Phone check pending:** select Dark/Light, background/resume, pan/zoom, and switch to OSM and back. Browser tests use
    controlled provider responses; they do not establish live-provider or Android background/resume acceptance.
-3. **Focused map-runtime decomposition — feature extraction implemented (2026-10-27):** Search, Draw Tools and mission
-   overlays now have domain-owned modules; see the checkpoint above. Request coordination/entity rendering remain in
-   `page-map-runtime.ts`; further extraction should follow a concrete ownership need rather than a line-count target.
-   No broader component/CSS refactor is needed. Live XPI/APK smoke for this extraction remains pending.
+3. **Focused map-runtime decomposition — ownership extractions implemented (2026-10-27):** Search, Draw Tools,
+   Missions, Player Tracker, Scores, Passcode, Inventory, entity rendering and map request coordination have dedicated
+   owners; see checkpoints above. The page entry point retains composition, shared COMM data/requests, selection and portal-detail requests.
+   General XPI smoke is accepted; prioritize the reported Inventory/label/zoom follow-ups before more extraction. Further extraction
+   should follow a concrete ownership need. No broader component/CSS refactor is needed.
 
 Additional distribution and message-boundary notes are retained in the [backlog](../backlog.md#release-and-quality-backlog).
 These notes stand alone; the temporary `review-xpi-cicd.md` can be deleted.

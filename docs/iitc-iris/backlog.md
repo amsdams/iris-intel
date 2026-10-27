@@ -3,6 +3,33 @@
 Unprioritized product/parity gaps and dated comparison evidence. The [roadmap](plans/index.md) owns current work;
 [architecture](architecture.md) owns implementation guidance. Completed refactors below are not prerequisites to repeat.
 
+### Smoke feedback: Inventory reliability, level labels and zoom limits (2026-10-27)
+
+The user reports the extraction still behaves as before, with three follow-ups:
+
+- **Inventory first:** roughly ten open/Refresh attempts were needed before inventory appeared, without useful failure
+  feedback. Capture the actual endpoint status/response and cancellation path before assigning a cause. Shared endpoint
+  transport currently does not reject non-OK HTTP responses, and the inventory parser maps missing/non-array `result`
+  to an empty list; these can obscure a failed/unexpected response as `empty`. Verify explicit failures versus genuinely
+  empty inventory, preserve previous data, and improve visible feedback. Investigate alongside the cancellation issue below.
+- **Level-label performance:** enabling level labels noticeably slows the map. Profile real portal counts, DOM label
+  construction/recreation and pan/zoom paint costs; compare against IITC before choosing an optimization.
+- **Zoom-dependent features:** investigate and explain why features such as unclaimed portals become unavailable when
+  zoomed out. Separate data omitted by Intel's zoom-dependent responses from IRIS render/filter/overlay policies;
+  compare with reference IITC. Avoid implying that a filter can retrieve portals absent from the response.
+
+The user chose to continue behavior-preserving runtime extraction before addressing these findings. Inventory is
+the first investigation afterward, then label performance and zoom policy. No fixes or root causes are claimed by
+the smoke report alone.
+
+### Cancelled panel can remain loading on reopen (2026-10-27)
+
+A delayed-response browser probe confirmed that closing Inventory during loading cancels its request, but reopening
+retains `loading` and a disabled Refresh button. Existing abort handlers return without updating status; auto-request
+helpers retry only `idle` panels. Source comparison confirms this predates the request-runtime extraction. Fix the
+cancelled state/reopen policy in a focused change, preserving loaded data and shared subscription work; check Scores,
+Passcode and Missions for the same pattern. The extraction deliberately preserves the current request/status behavior.
+
 ### Map replacement during Canvas redraw (2026-10-27)
 
 A populated Draw Tools/mission browser scenario reproduced Leaflet `clearRect` errors when the map is replaced before

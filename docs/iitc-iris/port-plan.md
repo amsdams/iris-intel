@@ -84,6 +84,43 @@ Naming checklist before creating a new file or exported function:
   IITC naming is not appropriate.
 - Is the divergence only for code cleanliness? Keep the IITC name at the boundary and hide the cleaner structure inside.
 
+## COMM ownership extraction — 2026-10-27
+
+Reference checkpoint: `core/code/comm.js` owns channel buffers, continuation requests and `sendPlext`;
+`plugins/player-activity-tracker.js` consumes public COMM activity. Extracted the existing IRIS browser workflow into
+`comm/comm-runtime.ts`; pure parsing/planning/state algorithms remain in core. Player Tracker keeps its existing
+request/response seam, backed by the same public buffer. Preserve request payloads, preview conversion, messages,
+storage keys, send/fetch cancellation differences and map-lifetime guards. This changes ownership only; existing
+COMM parity gaps and cancelled-panel loading behavior remain separate follow-ups. Twelve focused runtime regressions
+and real-panel Chrome/Firefox checks cover shared tracker data, channel isolation/continuations, sending, errors and
+cancellation. Source comparison confirms the ten moved functions retain their bodies after explicit dependency
+substitutions; extension packaging and signed APK checks pass. Live COMM smoke is pending.
+
+## Scores, Passcode and Inventory ownership extraction — 2026-10-27
+
+Reference seams: `core/code/game_status.js`, `region_scoreboard.js` and `redeeming.js` own score endpoint updates and
+passcode redemption/reward display. Inventory/subscription are existing IRIS additions using Intel's `getInventory`
+and `getHasActiveSubscription` endpoints, with decoding/counting already in core. Extracted existing panel request state,
+response-to-UI conversion and cancellation into `map/scores-runtime.ts`, `agent/passcode-runtime.ts` and
+`agent/inventory-runtime.ts`. Preserved parallel score requests, passcode sanitation,
+shared subscription requests, selected-portal key counts and message order. Panel cancellation still leaves the shared
+subscription request running; map disposal cancels it and resets only a loading subscription. No new behavior or hooks.
+Sixteen focused regressions and real-panel browser flows cover score/reward conversion, key selection, stale-response
+rejection and shared subscription lifetime. An existing cancellation/reopen loading-state issue is recorded in the backlog.
+
+## Missions and Player Tracker ownership extraction — 2026-10-27
+
+Reference seams: `plugins/missions.js` owns mission list/detail requests and age-limited portal/mission caches;
+`plugins/player-activity-tracker.js` owns player history, COMM-derived mutations, marker/trace layers and popups.
+Extracted those existing IRIS workflows into `map/missions/missions-runtime.ts` and `map/player-tracker-runtime.ts`,
+retaining mission endpoint names, cache keys/ages, player history/deduplication and refresh timing. Shared COMM channel data subsequently moved into the COMM owner above; map disposal
+cancels feature requests/timers and clears markers while retaining page-lifetime caches/history. Existing mission
+overlay and grouped-player helpers remain their rendering collaborators. This is an internal extraction, with no
+new plugin hooks or intentional behavior changes; existing grouped-marker and mission-navigation differences remain.
+Thirteen focused regressions cover cache reuse/expiry, request cancellation, grouping/filtering, history retention and
+poll timing. Real Leaflet browser checks cover mission requests/cache reuse and grouped-player list/history/back
+navigation across map replacement in Chrome and Firefox.
+
 ## Map request ownership extraction — 2026-10-27
 
 Reference seams: `core/code/map_request.js`, `map_cache.js`, `send_request.js`, `request_handling.js`, and `artifact.js`.
@@ -113,7 +150,7 @@ This is an extraction of existing IRIS behavior, using reference `core/code/sear
 `plugins/draw-tools.js`, and `plugins/missions.js` for domain naming and ownership. Search owns its query generation and
 preview/selection paths; Draw Tools owns stored item mutations and rendering; mission overlays own route/waypoint layers.
 Request coordination and entity rendering now have the separate owners above. The page entry point retains panel
-requests, mission fetching/caches, shared panes and layer arrays, and map lifetime disposal. Existing message names, persisted formats, render styles/order, geocoder
+COMM/portal-detail requests, shared panes and layer arrays, and map lifetime disposal. Existing message names, persisted formats, render styles/order, geocoder
 fallback, and documented IRIS/IITC behavior differences remain. Map disposal invalidates Search and aborts its fetches
 through the same lifetime. Draw Tools highlight state retains its page lifetime across map replacement. No public hooks
 or plugin API are introduced. Focused regressions cover stale Search completion, stored indexes and current settings,

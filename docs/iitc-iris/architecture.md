@@ -106,15 +106,36 @@ Search invalidation remains in map disposal; its requests use the existing map l
 
 `map/entities/map-renderer.ts` owns portal/link/field layers, visibility filters, incremental synchronization,
 highlighter style refresh, portal overlays and render diagnostics. `map/map-layers.ts` names the shared layer/pane types;
-map creation still owns their allocation. Selection state, panel requests and mission caches stay in the entry point.
+map creation still owns their allocation. Selection state and portal-detail requests stay in the entry point.
 Renderer callbacks read the current state; disposal invalidates its render context and map-keyed resources stay separate.
 `map/map-request.ts` owns map refresh generations, tile/cache/refill/render queues, fixture/live fetching, artifact
 injection and map-request diagnostics. The existing pure planning, decoding and queue/cache algorithms stay in
 `packages/iitc-core`. Movement and map disposal explicitly notify this page-owned controller; tile cache survives map
 replacement while pending work and request identity are invalidated. `intel/intel-request.ts` holds shared page-context
-CSRF/version/auth helpers and lifetime-bound endpoint transport for both map and panel requests. Endpoint-specific
-panel behavior stays with its existing owner. Keep feature behavior in these modules and composition in
-`page-map-runtime.ts`; no generic plugin/controller framework is required.
+CSRF/version/auth helpers and lifetime-bound endpoint transport for both map and panel requests.
+
+`map/missions/missions-runtime.ts` owns mission list/detail requests, status, persistent caches and cancellation,
+using `mission-overlay.ts` for geometry/navigation. `map/player-tracker-runtime.ts` owns player history/deduplication,
+marker/trace rendering, grouped popups and refresh scheduling/cancellation. Shared COMM channel data is owned by `comm/comm-runtime.ts`; authenticated
+transport is supplied by the page coordinator. Both feature instances survive map replacement: mission caches/player history
+remain available while old requests, timers and markers are cleared.
+
+`map/scores-runtime.ts`, `agent/passcode-runtime.ts` and `agent/inventory-runtime.ts` own their request state,
+response-to-UI adaptation and cancellation. Inventory also owns the shared subscription request and summary/key counts;
+Agent Profile reads its subscription state, and map rendering reads key counts through explicit callbacks. Panel
+cancellation leaves subscription work running; map disposal cancels it and resets a loading subscription to unknown.
+Completed inventory/subscription state remains available across map replacement. Keep feature behavior in these modules
+and composition in `page-map-runtime.ts`; no generic plugin/controller framework is required.
+
+`comm/comm-runtime.ts` owns channel buffers, status/preview conversion, fetch/send requests and fetch cancellation.
+Player Tracker polls through its explicit public-channel request/response seam, sharing the same buffer without
+publishing panel status. Public panel refreshes still update Player Tracker. Channel buffers survive map replacement;
+fetch cancellation and map-lifetime send guards retain their existing behavior. UI COMM state/scroll coordination
+in `content.tsx` remains a separate concern.
+
+The entry point has fallen from 6,159 to 1,671 lines (73%). This measures ownership moved out of the coordinator,
+not code deleted from the app. It still owns map boot/lifetime/layer allocation, portal selection/context/navigation,
+portal-detail requests/cache, shared panel transport and diagnostic/message aggregation.
 
 ## Validation And Known Limits
 
