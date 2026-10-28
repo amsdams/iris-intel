@@ -63,9 +63,12 @@ Current status:
     - `LV`: portal level labels.
     - `KEY`: inventory-derived key-count labels.
     - `T`: tile debug rectangles.
-- Optional portal styling and level labels only render when detailed portal data is available at zoom 14+; controls may
-  be enabled in Display but still hidden in low-zoom placeholder mode. `OR` and `AR` follow IITC-CE overlay behavior
-  and can render at any zoom when their data is available.
+- Optional portal styling and level labels use known per-portal data at any zoom. Unknown history is left unstyled,
+  including negative history highlighters. `OR` and `AR` can also render at any zoom when their data is available.
+- Display, Counts, Lists and Scoreboard show an inline availability note below full-portal coverage (currently zoom 15).
+  It explains missing portal/unclaimed/level data; analysis panels also mention omitted shorter links where the request
+  policy limits link length. Display explains that enabled labels/highlights use known data when either is selected.
+  Notes follow current camera zoom and disappear at full portal coverage; settings are retained and no extra tiles are fetched.
 - Copied diagnostics include `renderPolicy`, so comparison snapshots show whether optional detail overlays were eligible
   to render.
 - Visual parity comparisons should use the viewport P/L/F counts and copied `entities.viewport` block; total

@@ -67,9 +67,6 @@ export function IitcIrisPortalCountsPanel({
         <DiagnosticsChip value={formatInteger(portalcounts.ornaments)} label="Ornaments" />
         <DiagnosticsChip value={formatInteger(portalcounts.artifacts)} label="Artifacts" />
       </div>
-      {portalcounts.inaccurateAtLinkLevel && (
-        <EmptyState>Portal counts are approximate at link-level zoom.</EmptyState>
-      )}
       <Table className="iitc-iris-portal-analysis-table iitc-iris-portal-counts-table">
         <thead>
           <tr>

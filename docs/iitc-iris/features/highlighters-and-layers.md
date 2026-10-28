@@ -54,7 +54,7 @@ visual modes.
 
 | Candidate | Current IRIS state | IITC-CE reference | Alignment |
 | --- | --- | --- | --- |
-| Level color | Active highlighter `level-color` colors portal body by level at detailed zoom. | `plugins/highlight-level-color.js` registers `Level Color`. | Aligned in concept and exposed through the single highlighter selector. Legacy `levelFill` is migration-only state. |
+| Level color | Active highlighter `level-color` colors portal body wherever its level is known. | `plugins/highlight-level-color.js` registers `Level Color`. | Aligned in concept and exposed through the single highlighter selector. Legacy `levelFill` is migration-only state. |
 | Needs recharge | Active highlighter `needs-recharge` colors damaged portals by health buckets. | `plugins/highlight-needs-recharge.js` registers `Needs Recharge (Health)`. | Aligned in concept and exposed through the single highlighter selector. Legacy `healthFill` is migration-only state. |
 | History visited/captured/scout-controlled | Active history highlighters restyle portal fill color. | `plugins/highlight-portal-history.js` registers four combined history highlighters, but its inherited styles distinguish visited, captured, visit target, capture target, scout controlled, and scout-control target. | IRIS exposes those as six explicit selector entries: visited, not visited, captured, not captured, scout controlled, and not scout controlled. It keeps IITC's red/yellow `fillColor` vocabulary, but uses a consistent IRIS rule: positive history states are yellow and negative/target states are red. |
 
@@ -67,18 +67,18 @@ levels.
 | Highlighter | Matching rule | Applied marker style | Non-matching portals |
 | --- | --- | --- | --- |
 | No Highlights | Always selected fallback. | No data-overlay style. | Normal portal style. |
-| Level Color | Portal has detailed data and optional overlays are enabled. | Fill color uses the IITC level color for the portal level. | Normal portal style. |
-| Needs Recharge (Health) | Portal has detailed data, belongs to a team, and health is below 100. | Fill color uses the existing health bucket color. | Normal portal style. |
+| Level Color | Portal is not a placeholder and its level is known. | Fill color uses the IITC level color for the portal level. | Normal portal style. |
+| Needs Recharge (Health) | Portal has known health, belongs to a team, and health is below 100. | Fill color uses the existing health bucket color. | Normal portal style. |
 | History: visited | `history.visited === true`. | Yellow fill, `fillOpacity: 1`. | Normal portal style. |
-| History: not visited | History is missing or `history.visited === false`. | Red fill, `fillOpacity: 1`. | Normal portal style. |
+| History: not visited | Known `history.visited === false`. | Red fill, `fillOpacity: 1`. | Normal portal style. |
 | History: captured | `history.captured === true`. | Yellow fill, `fillOpacity: 1`. | Normal portal style. |
-| History: not captured | History is missing or `history.captured === false`. | Red fill, `fillOpacity: 1`. | Normal portal style. |
+| History: not captured | Known `history.captured === false`. | Red fill, `fillOpacity: 1`. | Normal portal style. |
 | History: scout controlled | `history.scoutControlled === true`. | Yellow fill, `fillOpacity: 1`. | Normal portal style. |
-| History: not scout controlled | History is missing or `history.scoutControlled === false`. | Red fill, `fillOpacity: 1`. | Normal portal style. |
+| History: not scout controlled | Known `history.scoutControlled === false`. | Red fill, `fillOpacity: 1`. | Normal portal style. |
 
-Portals without known history do not match positive history highlighters. They do match negative history highlighters as
-targets, mirroring the old inverted history controls. Because only one highlighter can be active, these rules do not
-stack with each other.
+Portals without known history match neither positive nor negative history highlighters, following IITC's unknown-history
+guard. Level, health and history styling use known data at any zoom, without a blanket request-detail gate.
+Because only one highlighter can be active, these rules do not stack with each other.
 
 Deferred IITC highlighters include missing resonators, high-level-only, ornament portal coloring, hide portal ownership,
 portal weakness, my-level filters, forgotten/inactive portals, moved portals, bookmarks, and uniques. Those should not

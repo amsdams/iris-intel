@@ -670,7 +670,9 @@ export type IitcIrisDataSourceSettings =
   | {mode: 'fixture'; id: string; label: string; url: string};
 
 export interface IitcIrisRenderPolicy {
+  /** Zero: no blanket zoom gate; individual portals must supply the required data. */
   optionalOverlayMinZoom: number;
+  /** Whether the current request plan supplies full portal summaries. */
   detailedPortals: boolean;
   activeHighlighter: IitcIrisPortalHighlighterId;
   levelFill: boolean;

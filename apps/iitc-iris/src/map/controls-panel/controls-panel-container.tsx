@@ -32,6 +32,7 @@ import {
 } from '../../messages';
 import {ClearButton} from '../../ui/clear-button';
 import {PanelTitle} from '../../ui/panel';
+import {MapDataNotice} from '../map-data-notice';
 
 export interface IitcIrisMapControlsPanelContainerProps {
   activeSheet: IitcIrisSheetId;
@@ -311,6 +312,9 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
           undoItem={undoDrawToolsItem}
         />
       )}
+      {(activeSheet === 'portalCounts' || activeSheet === 'portalsList' || activeSheet === 'scoreboard') && (
+        <MapDataNotice cameraZoom={cameraZoom} analysis />
+      )}
       {activeSheet === 'portalCounts' && (
         <IitcIrisPortalCountsPanel portalAnalysis={portalAnalysis} />
       )}
@@ -337,6 +341,7 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
       )}
       {activeSheet === 'layers' && (
         <IitcIrisDisplayPanel
+          cameraZoom={cameraZoom}
           highlighterSettings={highlighterSettings}
           layerSettings={layerSettings}
           selectPortalHighlighter={selectPortalHighlighter}

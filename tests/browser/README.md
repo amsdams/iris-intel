@@ -53,7 +53,9 @@ frame callback. Entity/label replacement checks also remove with frames still qu
 [map-overlays.smoke.mjs](map-overlays.smoke.mjs) also covers implicit pane renderers without waiting for paint first.
 
 Level-label cases protect retained layers/shared canvas on unchanged refreshes, level changes, collision winners,
-placeholder exclusion, faction/level toggles, removal and map-replacement cleanup. Pixel checks verify visible text
+placeholder exclusion, faction/level toggles, removal and map-replacement cleanup. Wider-view checks protect
+known-data labels/highlighters, unknown-history fallback, retained enabled settings, and Display/Counts/List/Scoreboard
+availability notes across zoom 12/13/15 transitions. Pixel checks verify visible text
 at portal positions after animated pan/zoom and an empty canvas after labels are disabled. Collision unit tests compare the
 spatial buckets against the previous exhaustive scan, including boundary points and seeded dense/sparse clouds.
 Key-count cases additionally check retained badge layers, inventory changes/removals and failed-refresh cache retention,

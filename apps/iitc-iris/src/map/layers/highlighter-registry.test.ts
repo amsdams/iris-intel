@@ -52,4 +52,10 @@ describe('IITC IRIS portal highlighter registry', () => {
       fillOpacity: 1,
     });
   });
+
+  it('leaves unknown history unstyled, including negative history highlighters', () => {
+    for (const entry of PORTAL_HIGHLIGHTER_REGISTRY.filter(entry => entry.id.startsWith('history-'))) {
+      expect(entry.getStyle?.({portal: {} as never})).toEqual({});
+    }
+  });
 });

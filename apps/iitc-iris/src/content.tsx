@@ -139,7 +139,7 @@ const IITC_PAN_CONTROL_OFFSET_PX = 500;
 const LOGIN_BYPASS_MS = 5 * 60 * 1000;
 const SIDE_PANEL_OPTIONS = SIDE_PANEL_REGISTRY;
 const DEFAULT_RENDER_POLICY: IitcIrisRenderPolicy = {
-  optionalOverlayMinZoom: 14,
+  optionalOverlayMinZoom: 0,
   detailedPortals: false,
   activeHighlighter: 'none',
   levelFill: false,

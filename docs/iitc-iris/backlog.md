@@ -26,13 +26,16 @@ The user reports the extraction still behaves as before, with three follow-ups:
   probe shows much smaller frame gaps. Differential collision and pixel/lifecycle regressions protect the change.
   Reference comparison, measurements and the saved probe are in the port plan/browser README. The user tested
   the new APK and reports it is a lot smoother. This performance item is closed; revisit on a concrete regression.
-- **Zoom-dependent features:** investigate and explain why features such as unclaimed portals become unavailable when
-  zoomed out. Separate data omitted by Intel's zoom-dependent responses from IRIS render/filter/overlay policies;
-  compare with reference IITC. Avoid implying that a filter can retrieve portals absent from the response.
+- **Zoom-dependent features (implemented, user smoke accepted 2026-10-28):** Display, Counts, Lists and Scoreboard now
+  explain missing portal data at wider views; analysis also explains shorter-link omissions where applicable. Labels
+  and highlighters use known per-portal metadata without the old zoom/request-detail gate; unknown history is unstyled.
+  Request coverage is unchanged. The user reports the changes look good; platform was not specified. A saved override of the player-tracker
+  zoom-9 limit and clearer COMM coverage feedback are deferred at the user's request; COMM has no minimum zoom today.
+  Do not imply that a filter retrieves missing portals or that wider COMM coverage includes every agent.
 
 The behavior-preserving extraction is complete. Inventory feedback and mobile retrieval have live confirmation;
 desktop availability and the final subscription-order correction remain watch items. The level-label optimization
-has live APK acceptance after the canvas follow-up; zoom policy remains deferred. The original smoke report alone does not establish a root cause.
+has live APK acceptance after the canvas follow-up; zoom availability improvements have user smoke acceptance. The original smoke report alone does not establish a root cause.
 
 ### Dense key-count overlay performance (implemented, APK smoke pending, 2026-10-28)
 

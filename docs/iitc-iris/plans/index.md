@@ -21,6 +21,16 @@ supported authentication and website-distribution permission evidence before beg
 are deferred; the baseline includes Passcode and Missions. The current map-runtime extraction preserves behavior;
 further decomposition should follow clear responsibility boundaries rather than a line-count target.
 
+**Zoom-dependent availability (2026-10-28):** Display, Counts, Lists and Scoreboard now show inline coverage notes
+at wider views, including shorter-link omissions where applicable. Labels/highlighters use known per-portal data at
+any zoom, and unknown history stays unstyled. Enabled settings, tile requests/cache policy and core are unchanged;
+player-tracker overrides and COMM coverage changes are deferred. Reference comparison is in the port plan.
+`npm run check` passes (659 app/core tests + six release gates); all 48 Chrome cases and six focused Firefox checks
+pass. Packaging and signed Android checks pass; certificate, 19 bundled assets, extension assets and served downloads
+match. XPI/ZIP: `2026-10-28T20-41-44`; APK `0.4.1-alpha+48aea63` (1852), available on port 6969.
+User smoke accepted: reports the changes look good; platform and individual paths were not separately specified.
+Missing Intel data is not fetched by enabling a filter.
+
 **Diagnostics cleanup (2026-10-28):** removed manual scenarios/snapshot history, fixed Amsterdam/Damrak presets,
 unused data-source UI wiring, duplicate debug actions and their supporting code/tests/CSS. Jump parsing and its
 existing regression now live with map navigation. Technical details use a native disclosure, collapsed by default
@@ -85,12 +95,15 @@ and limits. Extension packaging and signed Android release checks pass (31 nativ
 pinned signature, all 19 bundled assets and port-6969 downloads match. Latest XPI/ZIP: `2026-10-28T15-49-12`;
 APK `0.4.1-alpha+7357dfe` (1848), rebuilt with the canvas renderer.
 The user tested the new APK and reports it is a lot smoother; the live performance smoke is accepted.
-Inventory availability and zoom-dependent feature policy remain deferred.
+Inventory availability remains a watch item; zoom-dependent availability progress is recorded above.
 
-**Session wrap-up:** automated checks and signed artifacts are ready; combined key-count/ornament/artifact APK smoke
-is pending above.
+**Session wrap-up (2026-10-28):** zoom availability smoke is accepted; checks and signed artifacts are ready for
+commit/push. Verify release CI after pushing. No additional implementation is required before wrapping up.
+Main lesson: distinguish missing Intel data from disabled display settings, and unknown metadata from a negative result.
+Next candidates are the existing search-during-zoom race and panel cancellation/reopening checks; player-tracker zoom
+overrides and COMM coverage feedback remain optional/deferred. Earlier combined overlay smoke limits remain above.
 Earlier summary-card and level-label smoke passed. After pushing, verify release CI and install its published build.
-Keep inventory availability under observation and investigate zoom-dependent data/features afterward. Further
+Keep inventory availability under observation; zoom-dependent availability smoke is accepted above. Further
 architecture/UI cleanup follows concrete findings. Play Store authentication/distribution requirements remain a
 separate pre-submission task.
 

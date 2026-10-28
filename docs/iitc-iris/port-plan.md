@@ -84,6 +84,29 @@ Naming checklist before creating a new file or exported function:
   IITC naming is not appropriate.
 - Is the divergence only for code cleanliness? Keep the IITC name at the boundary and hide the cleaner structure inside.
 
+## Zoom-dependent feature availability — 2026-10-28
+
+References: `core/code/map_tiles.js`, `core/code/map_renderer.js`, `plugins/portal-level-numbers.js`,
+`plugins/highlight-level-color.js`, `plugins/highlight-needs-recharge.js` and `plugins/highlight-portal-history.js`
+under the local IITC checkout. Tile planning owns the zoom-dependent request coverage; the renderer infers placeholder
+positions from links/fields. Plugin labels/highlighters use loaded portal metadata, and history callbacks return without
+styling when history is unknown. These are passive decorations of map-owned entities, not additional portal requests.
+
+IRIS now uses known per-portal data for labels and highlighters at any zoom, removing its blanket zoom-14/request-detail
+gate. Unknown history no longer matches negative highlighters. Existing positive-yellow/target-red styling and six
+history options remain intentional IRIS differences. Label collision selection, canvases, filters and request/cache
+lifecycles are unchanged. No missing level/health/history is inferred and no new full-portal cache is introduced.
+`renderPolicy.optionalOverlayMinZoom` remains in diagnostics as zero (no blanket minimum); `detailedPortals` still
+reports the request plan's summary availability rather than a per-portal completeness guarantee.
+
+Display, Counts, Lists and Scoreboard explain reduced coverage inline while the current camera's request policy lacks
+full portals; analysis panels mention shorter-link omissions where applicable. Display adds a known-data explanation
+when labels/highlights are enabled. Notes disappear at full coverage (currently zoom 15), without clearing settings.
+Scoreboard remains derived from loaded viewport entities, not regional scoring. Request expansion and player-tracker/
+COMM policy changes are deferred. Wider-view fixture tests protect known/unknown styling, retained enabled settings,
+zoom transitions and notices. The user reports the changes look good (smoke accepted, platform not specified);
+automated fixtures do not establish live Intel coverage completeness.
+
 ## Canvas replacement cleanup — 2026-10-28
 
 Reference IITC's `core/code/map.js` prefers Canvas, while `plugins/draw-tools.js` clears drawing contents on its

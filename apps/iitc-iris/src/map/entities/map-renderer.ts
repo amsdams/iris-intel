@@ -10,12 +10,11 @@ import {createPortalKeyCountCanvas, createPortalKeyCountLabel, createPortalLevel
 import {createPortalImage, createPortalImageCanvas, type PortalImage} from './portal-image-canvas';
 import {IitcIrisCanvas} from '../map-canvas';
 import {getVisibleLevelLabelGuids} from './portal-level-numbers';
-import {DEFAULT_HIGHLIGHTER_ID, getPortalHighlighter} from '../layers/highlighter-registry';
+import {getPortalHighlighter} from '../layers/highlighter-registry';
 import {createIitcGeodesicPolygon, createIitcGeodesicPolyline} from '../leaflet-geodesic';
 import {getLayerPane, type IitcIrisCoreLayerKey, type IitcIrisEntityLayerIndex, type IitcIrisMapLayers} from '../map-layers';
 
 const TEAM_COLORS = IITC_TEAM_COLORS;
-const OPTIONAL_OVERLAY_MIN_ZOOM = 14;
 
 interface OrnamentDiagnostics {
   drawnMarkers: number;
@@ -502,20 +501,20 @@ export function createMapRenderer({
   function getRenderPolicy(): IitcIrisRenderPolicy {
     const layerSettings = getLayerSettings();
     const highlighterSettings = getHighlighterSettings();
-    const mapZoom = getMap()?.getZoom() ?? defaultZoom;
     const detailedPortals = hasDetailedPortals();
-    const optionalOverlaysVisible = detailedPortals && mapZoom >= OPTIONAL_OVERLAY_MIN_ZOOM;
-    const activeHighlighter = optionalOverlaysVisible ? highlighterSettings.active : DEFAULT_HIGHLIGHTER_ID;
+    // Like IITC's plugins, use each portal's known data rather than the request's
+    // detail mode. Link anchors have no level/health; history may be known separately.
+    const activeHighlighter = highlighterSettings.active;
     const highlighter = getPortalHighlighter(activeHighlighter);
     return {
-      optionalOverlayMinZoom: OPTIONAL_OVERLAY_MIN_ZOOM,
+      optionalOverlayMinZoom: 0,
       detailedPortals,
       activeHighlighter,
       levelFill: highlighter.levelFill === true,
       healthFill: highlighter.healthFill === true,
       ornaments: layerSettings.ornaments,
       artifacts: layerSettings.artifacts,
-      labels: layerSettings.labels && optionalOverlaysVisible,
+      labels: layerSettings.labels,
     };
   }
 

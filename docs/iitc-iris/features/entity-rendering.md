@@ -71,9 +71,9 @@ Current status:
   render through IITC's stock marker image URL.
 - Copied diagnostics include drawn/hidden ornament marker counts and ornament type counts, making IITC ornament
   exclusion and visual parity checks easier.
-- Optional detail styling now has an explicit render policy: level fill, health fill, and level labels only draw when
-  detailed portal data is available at zoom 14+ and the matching layer toggle is enabled. Ornament and artifact overlays
-  follow IITC-CE more closely and can draw at any zoom when their data is available and their layer toggle is enabled.
+- Optional detail styling uses each portal's known data at any zoom: level fill/labels need a known level, recharge
+  needs known health, and history highlighters skip unknown history. The former zoom-14/request-summary gate is removed.
+  Ornament and artifact overlays can also draw at any zoom when their data is available and their layer is enabled.
   Base fields, links, and portals remain independent of that policy.
 - Base renderer styling is closer to IITC-CE: team-coloured portal fills, IITC portal radius/weight scaling, 0.25 field
   fill opacity, full-opacity links, orange neutral portals, and text-only portal level labels with simple overlap

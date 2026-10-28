@@ -32,7 +32,7 @@ export const PORTAL_HIGHLIGHTER_REGISTRY: IitcIrisPortalHighlighterRegistryEntry
     id: 'history-not-visited',
     label: 'Not visited',
     title: 'Highlight unvisited portals',
-    getStyle: ({history}): Partial<CircleMarkerOptions> => !history?.visited ? IITC_HISTORY_MARKED_STYLE : {},
+    getStyle: ({history}): Partial<CircleMarkerOptions> => history?.visited === false ? IITC_HISTORY_MARKED_STYLE : {},
   },
   {
     id: 'history-captured',
@@ -44,7 +44,7 @@ export const PORTAL_HIGHLIGHTER_REGISTRY: IitcIrisPortalHighlighterRegistryEntry
     id: 'history-not-captured',
     label: 'Not captured',
     title: 'Highlight uncaptured portals',
-    getStyle: ({history}): Partial<CircleMarkerOptions> => !history?.captured ? IITC_HISTORY_MARKED_STYLE : {},
+    getStyle: ({history}): Partial<CircleMarkerOptions> => history?.captured === false ? IITC_HISTORY_MARKED_STYLE : {},
   },
   {
     id: 'history-scout-controlled',
@@ -56,7 +56,7 @@ export const PORTAL_HIGHLIGHTER_REGISTRY: IitcIrisPortalHighlighterRegistryEntry
     id: 'history-not-scout-controlled',
     label: 'Not scout controlled',
     title: 'Highlight portals not scout controlled',
-    getStyle: ({history}): Partial<CircleMarkerOptions> => !history?.scoutControlled ? IITC_HISTORY_MARKED_STYLE : {},
+    getStyle: ({history}): Partial<CircleMarkerOptions> => history?.scoutControlled === false ? IITC_HISTORY_MARKED_STYLE : {},
   },
 ];
 

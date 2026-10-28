@@ -13,6 +13,7 @@ import type {
 } from '../../../messages';
 import { LayerChoice } from '../../../ui/layer-choice';
 import {Section} from '../../../ui/section';
+import {MapDataNotice} from '../../map-data-notice';
 
 interface BooleanLayerToggleEntry {
   id: IitcIrisBooleanLayerSettingKey;
@@ -30,6 +31,7 @@ const PORTAL_HIGHLIGHTER_OPTIONS = PORTAL_HIGHLIGHTER_REGISTRY.map((entry) => ({
 }));
 
 export interface IitcIrisDisplayPanelProps {
+  cameraZoom: number;
   highlighterSettings: IitcIrisHighlighterSettings;
   layerSettings: IitcIrisLayerSettings;
   selectPortalHighlighter: (active: IitcIrisPortalHighlighterId) => void;
@@ -37,6 +39,7 @@ export interface IitcIrisDisplayPanelProps {
 }
 
 export function IitcIrisDisplayPanel({
+  cameraZoom,
   highlighterSettings,
   layerSettings,
   selectPortalHighlighter,
@@ -69,6 +72,7 @@ export function IitcIrisDisplayPanel({
 
   return (
     <>
+      <MapDataNotice cameraZoom={cameraZoom} enabledPortalDetails={layerSettings.portals && (layerSettings.labels || highlighterSettings.active !== 'none')} />
       <Section titleHeading="Core overlays">
         <div className="iitc-iris-layer-choice-grid" role="group" aria-label="Core overlay layers">
           {CORE_OVERLAY_LAYER_TOGGLE_LABELS.map(renderBooleanLayerCheckbox)}

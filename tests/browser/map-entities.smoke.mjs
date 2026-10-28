@@ -237,7 +237,7 @@ test('canvas level text follows animated pan and zoom and clears when disabled',
   })).toBe(false);
 });
 
-test('level and key-count labels coexist and recover after zoom gating and a full clear', async ({page}) => {
+test('level and key-count labels coexist across zoom changes and recover after a full clear', async ({page}) => {
   await loadKeys(page);
   await settings(page, {labels: true, keyCount: true});
   await expect.poll(async () => (await levelLabels(page)).length).toBe(3);
@@ -250,7 +250,8 @@ test('level and key-count labels coexist and recover after zoom gating and a ful
   await expect.poll(() => keyLabels(page)).toEqual([]);
 
   await page.evaluate(() => window.__iitcIrisMap.setZoom(13, {animate: false}));
-  await expect.poll(() => page.evaluate(() => window.entityFixture.status?.renderPolicy?.labels)).toBe(false);
+  await expect.poll(() => page.evaluate(() => window.entityFixture.status?.renderPolicy?.detailedPortals)).toBe(false);
+  await expect.poll(() => page.evaluate(() => window.entityFixture.status?.renderPolicy?.labels)).toBe(true);
   await expect.poll(async () => (await levelLabels(page)).length).toBe(0);
   await page.evaluate(() => window.__iitcIrisMap.setZoom(16, {animate: false}));
   await expect.poll(() => page.evaluate(() => window.entityFixture.status?.renderPolicy?.labels)).toBe(true);
@@ -269,6 +270,62 @@ test('level and key-count labels coexist and recover after zoom gating and a ful
   await render(page, {...entities, generation: 906});
   await expect.poll(async () => (await levelLabels(page)).length).toBe(3);
   await expect.poll(() => keyLabels(page)).toEqual([1]);
+});
+
+test('wide views explain missing map data and style only known portal details without changing enabled settings', async ({page}) => {
+  const open = async name => {
+    const primary = page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: 'Map', exact: true});
+    if (await primary.getAttribute('aria-pressed') !== 'true') await primary.click();
+    await page.locator('.iitc-iris-sheet-tabbar-secondary').getByRole('button', {name, exact: true}).click();
+  };
+  const notice = page.getByLabel('Map data availability', {exact: true});
+  await open('Display');
+  await expect(notice).toHaveCount(0);
+  await page.getByRole('checkbox', {name: 'Level labels', exact: true}).check();
+  await page.getByRole('radio', {name: 'Level color', exact: true}).check();
+  await page.evaluate(() => window.__iitcIrisMap.setZoom(13, {animate: false}));
+  await expect.poll(() => page.evaluate(() => window.entityFixture.status?.renderPolicy?.detailedPortals)).toBe(false);
+  await expect(notice).toContainText('including unclaimed portals and portal levels');
+  await expect(notice).toContainText('Enabled level labels and highlights use only known portal data');
+  await expect(page.getByRole('checkbox', {name: 'Level labels', exact: true})).toBeChecked();
+  await expect(page.getByRole('radio', {name: 'Level color', exact: true})).toBeChecked();
+
+  const known = {...portal('res', 'R', 8), health: 50,
+    history: {visited: false, captured: false, scoutControlled: false}};
+  const unknown = {...portal('unknown', 'R', undefined, 10000), health: undefined, history: undefined};
+  const anchor = {...unknown, guid: 'anchor', isPlaceholder: true, latE6: 52020000};
+  await render(page, {...entities, generation: 950, portals: [known, unknown, anchor]});
+  await expect.poll(() => levelLabels(page)).toEqual(['8']);
+  const fills = () => page.evaluate(() => Object.fromEntries(['res', 'unknown', 'anchor'].map(guid =>
+    [guid, window.__iitcIrisLayers.entityLayerIndex.portals.get(guid)?.[0].options.fillColor])));
+  const baseColor = (await fills()).unknown;
+  expect((await fills()).res).not.toBe(baseColor);
+  expect((await fills()).anchor).toBe(baseColor);
+  await page.getByRole('radio', {name: 'Needs recharge', exact: true}).check();
+  await expect.poll(async () => (await fills()).res).not.toBe(baseColor);
+  expect((await fills()).unknown).toBe(baseColor);
+  for (const name of ['Not visited', 'Not captured', 'Not scout controlled']) {
+    await page.getByRole('radio', {name, exact: true}).check();
+    await expect.poll(fills).toEqual({res: 'red', unknown: baseColor, anchor: baseColor});
+  }
+  await page.getByRole('radio', {name: 'None', exact: true}).check();
+  await page.getByRole('checkbox', {name: 'Level labels', exact: true}).uncheck();
+  await expect(notice).not.toContainText('Enabled level labels');
+  await expect.poll(() => levelLabels(page)).toEqual([]);
+  for (const name of ['Counts', 'List', 'Scoreboard']) {
+    await open(name);
+    await expect(notice).toContainText('Results use loaded map data');
+    await expect(notice).not.toContainText('Shorter links'); // zoom 13 includes all link lengths
+  }
+  await page.evaluate(() => window.__iitcIrisMap.setZoom(12, {animate: false}));
+  await expect(notice).toContainText('Shorter links are also omitted at this zoom');
+  await page.evaluate(() => window.__iitcIrisMap.setZoom(15, {animate: false}));
+  await expect.poll(() => page.evaluate(() => window.entityFixture.status?.renderPolicy?.detailedPortals)).toBe(true);
+  await expect(notice).toHaveCount(0);
+  for (const name of ['Counts', 'List', 'Display']) {
+    await open(name);
+    await expect(notice).toHaveCount(0);
+  }
 });
 
 test('key-count canvas retains unchanged badges, updates inventory and filters, and preserves cached counts on failure', async ({page}) => {
@@ -684,7 +741,7 @@ test('image overlays follow animated gestures, preserve stacking and recover aft
   }));
   await expect.poll(() => imagePixel(page, 'artifacts')).toEqual([255, 0, 0, 255]);
   await page.evaluate(() => window.__iitcIrisMap.setZoom(13, {animate: false}));
-  // Unlike level labels, image overlays remain enabled at low zoom; only ornament size changes.
+  // Image overlays remain enabled at low zoom; only ornament size changes.
   await expect.poll(() => decorationCounts(page)).toEqual([1, 2]);
   await expect.poll(() => page.evaluate(() => window.__iitcIrisLayers.ornaments[0].options.portalImage.size)).toBe(48);
   await page.evaluate(() => window.__iitcIrisMap.setZoom(16, {animate: false}));
