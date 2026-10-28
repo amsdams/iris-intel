@@ -439,21 +439,3 @@ export function logoutIntelCommand(
 ): void {
   performIntelLogoutRedirect(loginBypassStorageKey, rootElement, location);
 }
-
-export function setDataSourceCommand(
-  id: string,
-  options: readonly {
-    id: string;
-    mode: 'live' | 'fixture';
-    lat?: number;
-    lng?: number;
-    zoom?: number;
-  }[],
-  setDataSourceId: (id: string) => void,
-  setMapView: (lat: number, lng: number, zoom: number) => void,
-): void {
-  setDataSourceId(id);
-  const option = options.find((candidate) => candidate.id === id);
-  if (!option || option.mode === 'live' || option.lat === undefined || option.lng === undefined || option.zoom === undefined) return;
-  setMapView(option.lat, option.lng, option.zoom);
-}

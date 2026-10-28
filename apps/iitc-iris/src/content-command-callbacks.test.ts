@@ -32,7 +32,6 @@ import {
   toggleMissionsSheetCommand,
   togglePrimaryMenuCommand,
   toggleSheetCommand,
-  setDataSourceCommand,
   type SheetNavigationSetters,
 } from './content-command-callbacks';
 import {IITC_IRIS_MESSAGES} from './messages';
@@ -779,26 +778,6 @@ describe('togglePrimaryMenuCommand', () => {
     togglePrimaryMenuCommand('system', context, vi.fn(), vi.fn(), vi.fn(), toggleSheet);
     expect(toggleSheet).toHaveBeenNthCalledWith(1, 'agent');
     expect(toggleSheet).toHaveBeenNthCalledWith(2, 'appearance');
-  });
-});
-
-describe('setDataSourceCommand', () => {
-  it('sets data source id and updates map view if fixture', () => {
-    const setDataSourceId = vi.fn();
-    const setMapView = vi.fn();
-    const options = [{id: 'fixture-1', mode: 'fixture' as const, name: 'f1', lat: 10, lng: 20, zoom: 15}];
-    setDataSourceCommand('fixture-1', options, setDataSourceId, setMapView);
-    expect(setDataSourceId).toHaveBeenCalledWith('fixture-1');
-    expect(setMapView).toHaveBeenCalledWith(10, 20, 15);
-  });
-
-  it('only sets data source id if live', () => {
-    const setDataSourceId = vi.fn();
-    const setMapView = vi.fn();
-    const options = [{id: 'live', mode: 'live' as const, name: 'live'}];
-    setDataSourceCommand('live', options, setDataSourceId, setMapView);
-    expect(setDataSourceId).toHaveBeenCalledWith('live');
-    expect(setMapView).not.toHaveBeenCalled();
   });
 });
 

@@ -141,23 +141,24 @@ Adherence summary after 2026-05-31 audit:
   panning. Keep retry volume as a watch item only; treat it as a defect if IITC-CE side-by-side shows materially lower
   retry churn on the same viewport or if retries stop recovering.
 
-Map lifecycle validation runbook - 2026-06-05:
+Map lifecycle validation runbook (updated 2026-10-28):
 
-- Use the System -> Scenarios controls for repeatable live captures. Start with `Start Fast`, capture `Snap Before Pan S`,
-  run the built-in south pan, then capture `Snap Reload`, `Snap Prog` if requests are still active, and `Snap Done`.
-  Repeat with `Start Delay` to compare against IITC-style movement and download timing.
+- The manual Scenarios controls have been retired. Use Diagnostics → Go to location to restore an exact Intel URL
+  or `lat,lng,z` view, Controls to pan, and Diagnostics → JSON to capture before/after states. Use IITC Delay off/on
+  to compare the two existing timing policies; retain the original setting afterward. Automated request/queue tests
+  and browser fixtures cover repeatable synthetic cases.
 - Capture at least three live view types before changing lifecycle behavior:
   - same-bounds pan/reload after an already successful render, to confirm `cacheFreshTiles` and `renderQueue.ok/cache-fresh`
     dominate without unexpected retries;
   - a large low-zoom view, such as Amsterdam z10, to inspect request waves, low-zoom partial placeholders, and retry
     volume;
   - a dense high-zoom view, such as Damrak z15, to inspect timeout/retry behavior and first visible render timing.
-- Copy each scenario run with `Copy Runs` and compare these fields first:
+- Copy diagnostics with `JSON` at each comparison point and compare these fields first:
   `entities.cacheFreshTiles`, `entities.cacheFreshTileKeys`, `entities.cacheStaleTiles`,
   `entities.cacheStaleTileKeys`, `entities.partialTileKeys`, `entities.retryRequests`,
   `entities.retriedTileKeys`, `entities.queue`, `entities.renderQueue`, and `entities.timing`.
-  Copied scenario snapshots include a derived `summary` block with these counts and warning strings for fresh-cached
-  retries, stale-cached partials, and render-queue counter mismatches.
+  The retired scenario tool’s derived summary/warnings are no longer generated; compare the raw counters and
+  tile-key arrays directly.
 - Treat the run as healthy when same-bounds renders mostly report `cache-fresh`, retry tiles either recover or are
   explainable by low-zoom placeholder coverage, and render-queue statuses match the visible source (`cache-fresh`, `ok`,
   or `cache-stale`).

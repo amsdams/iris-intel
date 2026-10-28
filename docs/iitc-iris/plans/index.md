@@ -21,6 +21,17 @@ supported authentication and website-distribution permission evidence before beg
 are deferred; the baseline includes Passcode and Missions. The current map-runtime extraction preserves behavior;
 further decomposition should follow clear responsibility boundaries rather than a line-count target.
 
+**Diagnostics cleanup (2026-10-28):** removed manual scenarios/snapshot history, fixed Amsterdam/Damrak presets,
+unused data-source UI wiring, duplicate debug actions and their supporting code/tests/CSS. Jump parsing and its
+existing regression now live with map navigation. Technical details use a native disclosure, collapsed by default
+while honoring saved debug visibility; full JSON export and IITC Delay timing/preferences remain available.
+`npm run check` passes (658 app/core tests + six release gates); all 47 Chrome cases and focused Firefox diagnostics/
+layout checks pass. The typography test now compares the actual Search input font rather than its surrounding form.
+Packaging and signed Android checks pass (31 native + 15 JavaScript tests, lint/build); certificate, 19 bundled assets,
+extension contents and port-6969 downloads match. XPI/ZIP: `2026-10-28T20-18-10`; APK `0.4.1-alpha+ab86a15` (1851).
+User reviewed the smaller panel and reports it is much cleaner. Individual Technical details/Jump/JSON paths and
+the platform were not separately reported; automated coverage above passes.
+
 **Canvas cleanup and close-button audit (2026-10-28):** the queued redraw/map-replacement race is fixed through
 `map/map-canvas.ts`; reference comparison and regression coverage are in the port plan. All 20 sheets now have one
 close button, adding the missing Appearance/Diagnostics actions; nested sections share the parent header.

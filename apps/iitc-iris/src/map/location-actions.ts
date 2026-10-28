@@ -3,19 +3,6 @@ import type {IitcIrisMessage} from '../messages';
 
 export const GEOLOCATION_MAX_ZOOM = 13;
 
-export interface ViewPreset {
-  lat: number;
-  lng: number;
-  zoom: number;
-}
-
-export function jumpToPresetAction(
-  preset: ViewPreset,
-  setMapView: (lat: number, lng: number, zoom?: number) => void
-): void {
-  setMapView(preset.lat, preset.lng, preset.zoom);
-}
-
 export function jumpToViewInputAction(
   viewInput: string,
   currentZoom: number,

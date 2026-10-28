@@ -1,10 +1,8 @@
 import {useState, type Dispatch, type StateUpdater} from 'preact/hooks';
 import type {IitcIrisMessage} from '../messages';
 import {
-  jumpToPresetAction,
   jumpToViewInputAction,
   locateBrowserPositionAction,
-  type ViewPreset,
 } from './location-actions';
 
 interface LocationWorkflowParams {
@@ -18,7 +16,6 @@ interface LocationWorkflow {
   setViewInput: Dispatch<StateUpdater<string>>;
   viewInputStatus: string;
   geolocationStatus: string;
-  jumpToPreset: (preset: ViewPreset) => void;
   jumpToViewInput: () => void;
   locateBrowserPosition: () => void;
 }
@@ -27,10 +24,6 @@ export function useLocationWorkflow({cameraZoom, setMapView, postMessage}: Locat
   const [viewInput, setViewInput] = useState('');
   const [viewInputStatus, setViewInputStatus] = useState('');
   const [geolocationStatus, setGeolocationStatus] = useState('');
-
-  const jumpToPreset = (preset: ViewPreset): void => {
-    jumpToPresetAction(preset, setMapView);
-  };
 
   const jumpToViewInput = (): void => {
     jumpToViewInputAction(viewInput, cameraZoom, setMapView, setViewInputStatus);
@@ -47,5 +40,5 @@ export function useLocationWorkflow({cameraZoom, setMapView, postMessage}: Locat
   };
 
   return {viewInput, setViewInput, viewInputStatus, geolocationStatus,
-    jumpToPreset, jumpToViewInput, locateBrowserPosition};
+    jumpToViewInput, locateBrowserPosition};
 }

@@ -52,8 +52,6 @@ describe('Location workflow lifecycle', () => {
     expect(setMapView).not.toHaveBeenCalled();
     await act(() => { vi.advanceTimersByTime(1600); });
     expect(location.viewInputStatus).toBe('');
-    location.jumpToPreset({lat: 51, lng: 5, zoom: 10});
-    expect(setMapView).toHaveBeenLastCalledWith(51, 5, 10);
   });
 
   it('keeps a browser location request alive across renders and posts its accuracy before centering', async () => {

@@ -1,4 +1,4 @@
-import {parseViewInput} from '../system/scenarios';
+import {clampView, type ParsedViewInput} from './map-view-settings';
 import type {IitcIrisMessage} from '../messages';
 import {IITC_IRIS_MESSAGES} from '../messages';
 
@@ -38,4 +38,42 @@ export function buildUserLocationMessage(
     userLng: lng,
     userAccuracy: accuracy,
   };
+}
+
+export function parseViewInput(value: string): ParsedViewInput | null {
+  const text = value.trim();
+  if (!text) return null;
+
+  try {
+    const url = new URL(text);
+    const ll = url.searchParams.get('ll') ?? url.searchParams.get('pll');
+    const z = url.searchParams.get('z');
+    if (ll) {
+      const [latText, lngText] = ll.split(',');
+      const parsed = {
+        lat: Number(latText),
+        lng: Number(lngText),
+        zoom: z ? Number(z) : undefined,
+      };
+      if (
+        Number.isFinite(parsed.lat) &&
+        Number.isFinite(parsed.lng) &&
+        (parsed.zoom === undefined || Number.isFinite(parsed.zoom))
+      ) {
+        return clampView(parsed);
+      }
+    }
+  } catch {
+    // Fall through to coordinate parsing.
+  }
+
+  const [latText, lngText, zoomText] = text.split(/[,\s]+/).filter(Boolean);
+  const parsed = {
+    lat: Number(latText),
+    lng: Number(lngText),
+    zoom: zoomText ? Number(zoomText) : undefined,
+  };
+  if (!Number.isFinite(parsed.lat) || !Number.isFinite(parsed.lng)) return null;
+  if (parsed.zoom !== undefined && !Number.isFinite(parsed.zoom)) return null;
+  return clampView(parsed);
 }

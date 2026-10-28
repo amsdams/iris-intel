@@ -45,14 +45,6 @@ function getLocalStorage(): Storage | null {
   return null;
 }
 
-export interface ViewPresetOption {
-  id: string;
-  label: string;
-  lat: number;
-  lng: number;
-  zoom: number;
-}
-
 export interface DataSourceOption {
   id: string;
   label: string;
@@ -63,12 +55,6 @@ export interface DataSourceOption {
   lng?: number;
   zoom?: number;
 }
-
-export const VIEW_PRESETS: readonly ViewPresetOption[] = [
-  { id: 'amsterdam-z10', label: 'AMS 10', lat: 52.3730796, lng: 4.8924534, zoom: 10 },
-  { id: 'amsterdam-z15', label: 'AMS 15', lat: 52.3730796, lng: 4.8924534, zoom: 15 },
-  { id: 'damrak-z15', label: 'DAM 15', lat: 52.3761096, lng: 4.8980545, zoom: 15 },
-];
 
 export const DATA_SOURCE_OPTIONS: readonly DataSourceOption[] = [
   { id: 'live', label: 'Live', title: 'Fetch live Intel getEntities responses', mode: 'live' },
@@ -280,9 +266,9 @@ export function storeLifecycleSettings(value: IitcIrisLifecycleSettings): void {
 
 export function loadStoredDebugDockVisible(): boolean {
   try {
-    return getLocalStorage()?.getItem(DEBUG_DOCK_STORAGE_KEY) !== 'false';
+    return getLocalStorage()?.getItem(DEBUG_DOCK_STORAGE_KEY) === 'true';
   } catch {
-    return true;
+    return false;
   }
 }
 

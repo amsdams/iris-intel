@@ -1,7 +1,6 @@
 import {describe, expect, it, vi} from 'vitest';
 import {
   GEOLOCATION_MAX_ZOOM,
-  jumpToPresetAction,
   jumpToViewInputAction,
   locateBrowserPositionAction,
   type GeolocationPositionCoords,
@@ -9,12 +8,6 @@ import {
 } from './location-actions';
 
 describe('content-location-actions', () => {
-  it('jumps to preset coordinates and zoom', () => {
-    const setMapView = vi.fn();
-    jumpToPresetAction({lat: 52.3676, lng: 4.9041, zoom: 15}, setMapView);
-    expect(setMapView).toHaveBeenCalledWith(52.3676, 4.9041, 15);
-  });
-
   it('handles valid view input jumps', () => {
     const setMapView = vi.fn();
     const setViewInputStatus = vi.fn();

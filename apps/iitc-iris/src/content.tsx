@@ -57,7 +57,6 @@ import {
   togglePrimaryMenuCommand,
   openIntelLoginCommand,
   logoutIntelCommand,
-  setDataSourceCommand,
 } from './content-command-callbacks';
 import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './shell/keyboard-shortcuts';
 import {copyIitcIrisText} from './shell/feedback';
@@ -79,11 +78,9 @@ import {
   retryActiveAuthPanelRequest,
   type AppAuthStates,
 } from './auth/navigation';
-import {useScenarioWorkflow} from './system/scenario-workflow';
 import {useLocationWorkflow} from './map/location-workflow';
 import {
   createDataSourceSettings,
-  DATA_SOURCE_OPTIONS,
   loadInitialMapView,
   loadStoredActiveSheet,
   loadStoredBaseLayerId,
@@ -224,7 +221,7 @@ function App(): h.JSX.Element {
   const layers = useLayerSettingsWorkflow(postIitcMessage);
   const {baseLayerId, baseLayerNotice, dismissBaseLayerNotice, handleBaseLayerStatus,
     layerSettings, highlighterSettings, setBaseLayerId, toggleLayerSetting, selectPortalHighlighter} = layers;
-  const [dataSourceId, setDataSourceId] = useState<typeof DATA_SOURCE_OPTIONS[number]['id']>(() => loadStoredDataSourceId());
+  const [dataSourceId] = useState(() => loadStoredDataSourceId());
   const [lifecycleSettings, setLifecycleSettings] = useState<IitcIrisLifecycleSettings>(() => loadStoredLifecycleSettings());
   const [camera, setCamera] = useState<CameraState>(() => ({
     ...loadInitialMapView(),
@@ -550,7 +547,7 @@ function App(): h.JSX.Element {
   }, [camera.zoom, postIitcMessage]);
 
   const {viewInput, setViewInput, viewInputStatus, geolocationStatus,
-    jumpToPreset, jumpToViewInput, locateBrowserPosition} = useLocationWorkflow({
+    jumpToViewInput, locateBrowserPosition} = useLocationWorkflow({
     cameraZoom: camera.zoom, setMapView, postMessage: postIitcMessage,
   });
 
@@ -641,28 +638,6 @@ function App(): h.JSX.Element {
   };
 
   const canPan = camera.bounds !== null;
-  const {
-    scenarioRuns,
-    activeScenarioRun,
-    latestScenarioRun,
-    scenarioSnapCount,
-    scenarioStatus,
-    scenarioProgressRun,
-    scenarioProgressLabels,
-    scenarioExpectedSteps,
-    startScenarioRun,
-    captureScenarioSnapshot,
-    panScenarioSouth,
-    finishScenarioRun,
-    clearScenarioRuns,
-    copyScenarioRun,
-  } = useScenarioWorkflow({
-    lifecycleSettings,
-    dockDiagnostics,
-    canPan,
-    panMap,
-    setLifecycleSettings,
-  });
   const activeSidePanelOption = SIDE_PANEL_OPTIONS.find((option) => option.id === activeSidePanel) ?? null;
   const activePrimaryMenu = activeSheet === 'missions' && missionsState.source === 'portal'
     ? 'selected'
@@ -873,10 +848,6 @@ function App(): h.JSX.Element {
     },
   }), [activeSheet, closeSheets, hasSelectedObject, portalImageOpen, postIitcMessage]);
 
-  const setDataSource = (id: string): void => {
-    setDataSourceCommand(id, DATA_SOURCE_OPTIONS, setDataSourceId, setMapView);
-  };
-
   return (
     <div className={`iitc-iris-shell iitc-iris-sheet-${activeSheet} ${entityFetch.selectedPortal ? 'iitc-iris-has-selected-portal' : ''}`}>
       <div id="iitc-iris-map" className="iitc-iris-map" />
@@ -991,35 +962,17 @@ function App(): h.JSX.Element {
           openIntelLogin={openIntelLogin}
           logoutIntel={logoutIntel}
           toggleDebugDock={toggleDebugDock}
-          activeScenarioRun={activeScenarioRun}
-          canPan={canPan}
-          captureScenarioSnapshot={captureScenarioSnapshot}
-          clearScenarioRuns={clearScenarioRuns}
           copyDockText={copyDockText}
           copyIntelUrl={copyIntelUrl}
-          copyScenarioRun={copyScenarioRun}
           copyStatus={systemCopyStatus}
-          dataSourceId={dataSourceId}
-          finishScenarioRun={finishScenarioRun}
-          jumpToPreset={jumpToPreset}
           jumpToViewInput={jumpToViewInput}
-          latestScenarioRun={latestScenarioRun}
           lifecycleSettings={lifecycleSettings}
           mapFocusMode={mapFocusMode}
-          panScenarioSouth={panScenarioSouth}
-          scenarioExpectedSteps={scenarioExpectedSteps}
-          scenarioProgressLabels={scenarioProgressLabels}
-          scenarioProgressRun={scenarioProgressRun}
-          scenarioRuns={scenarioRuns}
-          scenarioSnapCount={scenarioSnapCount}
-          scenarioStatus={scenarioStatus}
-          setDataSource={setDataSource}
           setLifecycleSettings={setLifecycleSettings}
           setMapFocusMode={setMapFocusMode}
           setShortcutsEnabled={setShortcutsEnabled}
           setViewInput={setViewInput}
           shortcutsEnabled={shortcutsEnabled}
-          startScenarioRun={startScenarioRun}
           viewInput={viewInput}
           viewInputStatus={viewInputStatus}
         />

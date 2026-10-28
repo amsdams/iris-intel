@@ -15,7 +15,6 @@ import {
   storeBoolean,
   storeDataSourceId,
   storeLayerSettings,
-  VIEW_PRESETS,
 } from './storage-settings';
 import {defaultMapView} from '../map/map-view-settings';
 import { DEFAULT_LAYER_SETTINGS } from '../map/layers/layer-registry';
@@ -47,12 +46,11 @@ describe('content-storage-settings', () => {
     };
   });
 
-  it('provides default map view coordinates and preset choices', () => {
+  it('provides default map view coordinates and live data source', () => {
     const view = defaultMapView();
     expect(view.lat).toBeCloseTo(52.373);
     expect(view.lng).toBeCloseTo(4.892);
     expect(view.zoom).toBe(11);
-    expect(VIEW_PRESETS.length).toBeGreaterThan(0);
     expect(DATA_SOURCE_OPTIONS.length).toBeGreaterThan(0);
   });
 

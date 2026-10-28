@@ -58,7 +58,11 @@ test('Search, COMM, Passcode, and Diagnostics share input surfaces and aligned a
     await test.step(`${appearance}: matching fields, submit heights, and button corners`, async () => {
       await theme(page, appearance);
       await openPanel(page, 'Map', 'Search');
-      const search = await surface(page.locator('.iitc-iris-search-box'));
+      const searchBox = page.locator('.iitc-iris-search-box');
+      const search = await surface(searchBox);
+      // Compare typography on the actual field: Firefox resolves an input's line height
+      // differently from its surrounding form, which supplies the visible surface.
+      search.font = await searchBox.locator('input').evaluate(input => getComputedStyle(input).font);
       backgrounds.push(search.backgroundColor);
       expect(search.backgroundColor).not.toBe('rgb(0, 0, 0)');
       for (const [menu, panel, selector] of [
@@ -76,15 +80,54 @@ test('Search, COMM, Passcode, and Diagnostics share input surfaces and aligned a
         await expect(action).toHaveCSS('border-radius', '4px');
         expect((await action.boundingBox()).y).toBe((await form.locator('input').boundingBox()).y);
       }
-      for (const name of ['Logout', 'Debug', 'Jump']) await expect(button(page, name)).toHaveCSS('border-radius', '4px');
+      for (const name of ['Logout', 'Jump']) await expect(button(page, name)).toHaveCSS('border-radius', '4px');
       await testInfo.attach(`diagnostics-${appearance.toLowerCase()}`, {body: await page.screenshot(), contentType: 'image/png'});
-      const debug = button(page, 'Debug');
-      const pressed = await debug.getAttribute('aria-pressed');
-      await debug.click();
-      await expect(debug).toHaveAttribute('aria-pressed', pressed === 'true' ? 'false' : 'true');
+      const details = page.locator('details.iitc-iris-system-debug');
+      await expect(details).not.toHaveAttribute('open');
+      await details.locator('summary').click();
+      await expect(details).toHaveAttribute('open');
+      await details.locator('summary').click();
+      await expect(details).not.toHaveAttribute('open');
     });
   }
   expect(backgrounds[0]).not.toBe(backgrounds[1]);
+});
+
+test('Diagnostics keeps disclosure preferences, timing settings and JSON export after cleanup', async ({page}) => {
+  await openPanel(page, 'System', 'Diagnostics');
+  const panel = page.getByRole('complementary', {name: 'System controls'});
+  const details = panel.locator('details');
+  await expect(details).not.toHaveAttribute('open');
+  await expect(details.locator('.iitc-iris-debug-row').first()).not.toBeVisible();
+  for (const name of ['Start Fast', 'Start Delay', 'Copy Runs', 'AMS 10', 'AMS 15', 'DAM 15', 'Debug']) {
+    await expect(panel.getByRole('button', {name, exact: true})).toHaveCount(0);
+  }
+  await details.locator('summary').focus();
+  await page.keyboard.press('Enter');
+  await expect(details.locator('.iitc-iris-debug-row').first()).toBeVisible();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('iitc-iris:debug-dock'))).toBe('true');
+  const delay = panel.getByRole('button', {name: 'IITC Delay', exact: true});
+  await expect(delay).toHaveAttribute('aria-pressed', 'false');
+  await delay.click();
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('iitc-iris:lifecycle-settings'))))
+    .toEqual({iitcMovementDelay: true});
+  await page.reload();
+  await expect(details).toHaveAttribute('open');
+  await expect(delay).toHaveAttribute('aria-pressed', 'true');
+  await details.locator('summary').click();
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('iitc-iris:debug-dock'))).toBe('false');
+  // Exercise export while counters are hidden, without requiring OS clipboard access.
+  await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', {configurable: true, value: {
+    writeText: async text => {window.copiedDiagnostics = JSON.parse(text);},
+  }}));
+  await panel.getByRole('button', {name: 'JSON', exact: true}).click();
+  await expect(panel).toContainText('json copied');
+  expect(await page.evaluate(() => ({app: window.copiedDiagnostics.app,
+    lifecycle: window.copiedDiagnostics.lifecycleSettings, entities: Boolean(window.copiedDiagnostics.entities),
+    requests: Boolean(window.copiedDiagnostics.requests)})))
+    .toEqual({app: 'IITC IRIS', lifecycle: {iitcMovementDelay: true}, entities: true, requests: true});
+  await page.reload();
+  await expect(details).not.toHaveAttribute('open');
 });
 
 test('Jump rejects empty submissions, accepts Enter, and reports malformed input', async ({page}) => {

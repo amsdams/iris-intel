@@ -8,8 +8,7 @@
     text-transform: uppercase;
 }
 
-.iitc-iris-base-toggle,
-:where(.iitc-iris-source-toggle) {
+.iitc-iris-base-toggle {
     min-width: 42px;
     padding: 0 6px;
     text-transform: none;

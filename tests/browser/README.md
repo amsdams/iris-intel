@@ -16,12 +16,14 @@ The command builds the current app, starts a loopback-only fixture server on por
 the server/browser. Keep that port free. Reports and failure traces live in ignored `playwright-report/` and
 `test-results/` directories. The styling test also attaches light/dark screenshots on successful runs.
 
-The original three checks are kept in [iris.smoke.mjs](iris.smoke.mjs):
+The appearance/action checks are kept in [iris.smoke.mjs](iris.smoke.mjs):
 
 1. Appearance selection survives reload; System follows device appearance while explicit Dark/Light stays fixed.
 2. Search, COMM, Passcode, and Diagnostics have matching input surfaces; submit buttons match input heights;
-   actions and toggles have matching corners and Debug still toggles. Runs in light and dark themes.
-3. Jump disables empty/whitespace input, guards direct submission, accepts Enter for coordinates, and shows
+   actions and toggles have matching corners, and Technical details opens/closes. Runs in light and dark themes.
+3. Diagnostics starts with technical details collapsed, remembers disclosure/timing preferences across reloads, and
+   exports full JSON while counters are hidden. Retired scenario/preset buttons remain absent.
+4. Jump disables empty/whitespace input, guards direct submission, accepts Enter for coordinates, and shows
    feedback for malformed input. Runs in light and dark themes.
 
 [base-map.smoke.mjs](base-map.smoke.mjs) adds malformed-style/HTTP failure, unavailable WebGL, stale failure after

@@ -61,9 +61,9 @@ Current status:
 - Selected-object details are intentionally scoped by entity kind: selected portals expose `Details` and portal
   `Missions`, while selected links and fields expose only their own `Details` sheets. Portal-only submenu items are not
   shown for link/field selections.
-- Display owns visual map choices: base map, core overlays, portal filters, portal highlighter, and detail overlays.
-  Controls owns operational actions: camera/context tools, copy/export, presets, lifecycle/scenarios, data source, and
-  debug display. Keep future menu additions in that split unless they need a deliberate product-shell exception.
+- Display owns overlays, portal filters and the portal highlighter; Appearance owns the base map and interface theme.
+  Controls owns camera/context actions. Diagnostics owns JSON/URL copy, coordinate/URL navigation, request timing and
+  technical details. Keep future menu additions in that split unless they need a deliberate product-shell exception.
 - Passcodes are now wired as a core Intel panel using IITC's `redeemReward` request shape. The panel sanitizes printable
   passcodes, posts `/r/redeemReward`, and displays AP/XM/other/item rewards with endpoint diagnostics in the footer.
   Passcode redemption is now its own Agent-domain menu item and opens in the same bottom sheet style as the other side
@@ -79,7 +79,7 @@ Current status:
   `plugins/highlight-portal-history.js`, `plugins/keys.js`, and `plugins/keys-on-map.js`. Negative history highlighters
   cover the old inverted modes such as not visited, not captured, and not scout controlled. This pass does not add bulk
   history fetching or hide/filter behavior; broader plugin/highlighter parity remains later work.
-- The System sheet now owns app-level comparison/debug controls: copied diagnostics, Intel URL copy, view presets, jump input, and debug rows. This is an intentional product-shell divergence from IITC-CE’s
+- The System sheet now owns app-level comparison/debug controls: copied diagnostics, Intel URL copy, jump input, and collapsible technical details. This is an intentional product-shell divergence from IITC-CE’s
   sidebar/dropdown placement, kept separate from core map workflows so visual map comparisons remain meaningful.
 - Map data request lifecycle now follows IITC-CE's active refill model: initial requests keep up to five active
   `getEntities` calls, each completed response immediately opens a slot for the next queued batch, and tile

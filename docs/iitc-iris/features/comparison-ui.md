@@ -1,9 +1,9 @@
 # Comparison UI
 
-The System diagnostics and Controls surfaces provide copied request/entity diagnostics, repeatable view presets,
-scenario snapshots, and navigation for live IITC comparisons. The app uses live Intel data; retired diagnostics
-fixture choices and generated empty fallbacks were removed on 2026-10-20. Amsterdam and Damrak remain view presets,
-not bundled map captures. See [payload samples](../fixtures/README.md).
+The Diagnostics and Controls surfaces provide copied request/entity diagnostics and navigation for live IITC
+comparisons. The app uses live Intel data; retired fixture choices and generated empty fallbacks were removed on
+2026-10-20. Manual scenario tools and fixed Amsterdam/Damrak presets were removed on 2026-10-28. Automated browser
+fixtures remain available for regression checks. See [payload samples](../fixtures/README.md).
 
 Current status:
 
@@ -28,7 +28,10 @@ Current status:
   tests can distinguish network fetches from cached same-bounds renders.
 - The diagnostics view replaces entity diagnostic snapshots on each status message instead of partially merging them, preventing
   stale retry/source/queue fields from leaking across live/cache transitions.
-- The System sheet has fixed Amsterdam and Damrak view presets for repeatable IITC/IITC IRIS comparisons.
+- Technical counters sit in a native **Technical details** disclosure, collapsed by default unless a previous debug
+  preference explicitly enabled them. That choice persists under the existing storage key; JSON export includes the
+  full diagnostics regardless of disclosure state. Status/login/selection actions remain visible without duplicates.
+- The IITC Delay setting remains available, with existing request timing and stored preferences unchanged.
 - The System sheet can jump to arbitrary comparison views from `lat,lng,z` text, Intel map URLs with `ll` and `z`, or IITC-CE
   portal links with `pll`.
 - The floating map-controls panel has pan buttons aligned with IITC's Pan Control plugin:
