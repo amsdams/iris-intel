@@ -31,9 +31,11 @@ test('drawing actions and cached mission overlays still work after map replaceme
   await expect.poll(() => layerCounts(page)).toEqual({drawings: 2, missions: 5});
   await expect(page.locator('.iitc-iris-mission-waypoint-label')).toHaveCount(2);
   await expect(page.locator('.leaflet-zoom-anim, .leaflet-pan-anim')).toHaveCount(0);
-  // Exercise replacement after the completed render; replacing during Canvas redraw is a separate existing edge case.
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.evaluate(() => {
+    // Exercise the implicit pane renderers with redraw frames still pending.
+    const map = window.__iitcIrisMap;
+    map.eachLayer(layer => layer.redraw?.());
+    map.panBy([5, 5], {animate: false});
     const old = document.getElementById('iitc-iris-map');
     const replacement = document.createElement('div');
     replacement.id = old.id;

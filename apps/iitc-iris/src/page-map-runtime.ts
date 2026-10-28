@@ -23,6 +23,7 @@ import {createMissionOverlay} from './map/missions/mission-overlay';
 import {createBaseLayerController} from './map/layers/base-layer-controller';
 import {DEFAULT_BASE_LAYER_ID, normalizeBaseLayerId} from './map/layers/base-layer-settings';
 import {createIitcIrisMapLifetime, type IitcIrisMapLifetime} from './map/map-runtime-lifetime';
+import {IitcIrisCanvasMap} from './map/map-canvas';
 import L, {type Layer as LeafletLayer, type Map as LeafletMap} from 'leaflet';
 import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisLifecycleSettings, type IitcIrisMessage, type IitcIrisRenderEntities, type IitcIrisRenderPortal} from './messages';
 import {type IitcGetEntitiesResponse, type IitcMapDataPlan} from '@iris/iitc-core';
@@ -540,7 +541,7 @@ function boot(): void {
   else window.__iitcIrisMap?.remove();
 
   const storedView = loadUrlMapView() ?? loadStoredMapView();
-  const map = L.map(container, {
+  const map = new IitcIrisCanvasMap(container, {
     zoomControl: false,
     preferCanvas: true,
     tapHold: true,

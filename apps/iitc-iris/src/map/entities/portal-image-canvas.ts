@@ -1,4 +1,5 @@
 import L from 'leaflet';
+import {IitcIrisCanvas} from '../map-canvas';
 
 export interface PortalImage {
   url: string;
@@ -26,7 +27,7 @@ interface CachedImage {
 }
 
 /** Passive image overlays; Leaflet 1.9 projection/clipping/drawing internals stay isolated here. */
-class PortalImageCanvas extends L.Canvas {
+class PortalImageCanvas extends IitcIrisCanvas {
   declare _ctx: CanvasRenderingContext2D | undefined;
   declare _container: HTMLCanvasElement;
   declare _drawing: boolean;

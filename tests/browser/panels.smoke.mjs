@@ -85,6 +85,12 @@ for (const viewport of [{width: 780, height: 360}, {width: 780, height: 280}, {w
         const menuBounds = await page.locator('.iitc-iris-sheet-tabbar').boundingBox();
         expect(bounds.y + bounds.height).toBeLessThanOrEqual(menuBounds.y);
         if (name === 'Profile') await testInfo.attach('profile', {body: await page.screenshot(), contentType: 'image/png'});
+        const close = panel.getByRole('button', {name: /^Close /});
+        await expect(close).toHaveCount(1);
+        await reachable(close);
+        await close.click();
+        await expect(page.locator('.iitc-iris-shell')).toHaveClass(/iitc-iris-sheet-map(?:\s|$)/);
+        await expect(page.locator('aside:visible')).toHaveCount(0);
       });
     }
     expect(errors).toEqual([]);

@@ -966,6 +966,7 @@ function App(): h.JSX.Element {
         toggleLayerSetting={toggleLayerSetting}
       />
       {activeSheet === 'appearance' && <AppearancePanel
+        closeAppearance={closeSheetToMap}
         uiTheme={uiTheme}
         setUiTheme={setUiTheme}
         baseLayerId={baseLayerId}
@@ -973,6 +974,7 @@ function App(): h.JSX.Element {
       />}
       {activeSheet === 'system' && (
         <IitcIrisDiagnosticsPanelContainer
+          closeDiagnostics={closeSheetToMap}
           camera={camera}
           debugDockVisible={debugDockVisible}
           detailOverlaysActive={detailOverlaysActive}

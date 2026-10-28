@@ -8,6 +8,7 @@ import type {
 import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from '../../iitc-colors';
 import {createPortalKeyCountCanvas, createPortalKeyCountLabel, createPortalLevelCanvas, createPortalLevelLabel} from './portal-label-canvas';
 import {createPortalImage, createPortalImageCanvas, type PortalImage} from './portal-image-canvas';
+import {IitcIrisCanvas} from '../map-canvas';
 import {getVisibleLevelLabelGuids} from './portal-level-numbers';
 import {DEFAULT_HIGHLIGHTER_ID, getPortalHighlighter} from '../layers/highlighter-registry';
 import {createIitcGeodesicPolygon, createIitcGeodesicPolyline} from '../leaflet-geodesic';
@@ -339,7 +340,7 @@ export function createMapRenderer({
     if (!map) return undefined;
     const rendererKey = `__iitcIris${layerKey[0].toUpperCase()}${layerKey.slice(1)}Renderer`;
     const runtimeMap = map as LeafletMap & Record<string, L.Renderer | undefined>;
-    runtimeMap[rendererKey] ??= L.canvas({pane: getLayerPane(layerKey)});
+    runtimeMap[rendererKey] ??= new IitcIrisCanvas({pane: getLayerPane(layerKey)});
     return runtimeMap[rendererKey];
   }
 

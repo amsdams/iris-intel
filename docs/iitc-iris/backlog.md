@@ -77,12 +77,17 @@ now restores `idle` when unloaded or its cached ready/empty state on cancellatio
 late results. Browser coverage verifies close/reopen recovery and independent subscription completion. Check Scores,
 Passcode and Missions for the same pattern during a concrete change to those workflows; they remain deferred.
 
-### Map replacement during Canvas redraw (2026-10-27)
+### Map replacement during Canvas redraw (fixed 2026-10-28)
 
 A populated Draw Tools/mission browser scenario reproduced Leaflet `clearRect` errors when the map is replaced before
 pending Canvas redraw callbacks finish. The original runtime failed 2 of 5 repetitions, so this predates the module
-extraction. Clearing paths before map disposal did not consistently fix it and was not retained. Investigate renderer
-callback ownership separately; the overlay replacement regression awaits completed animation/paint before replacement.
+extraction. Clearing paths before map disposal did not consistently fix it and was not retained. A deterministic
+regression now isolates Leaflet 1.9.4 losing a queued frame handle during synchronous redraw. The app-owned
+`map/map-canvas.ts` adapter cancels that frame before drawing and ignores drawing after context destruction. Entity,
+label/image and implicit pane renderers share the fix. Replacement tests now queue redraws and move synchronously
+before replacement instead of waiting for paint; drawing/mission actions and replacement-map rendering remain covered.
+User smoke accepted (2026-10-28): behavior appears unchanged and the two new close buttons are usable; platform and
+individual feature paths were not separately reported. This item is closed unless a concrete regression appears.
 
 ### Search navigation during zoom animation (2026-10-25)
 

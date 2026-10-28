@@ -212,8 +212,8 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
           <span className="iitc-iris-panel-header-actions">
             <ClearButton
               onClick={closeSheets}
-              title={`Close ${activeSheet}`}
-              aria-label={`Close ${activeSheet}`}
+              title={`Close ${getMapControlsPanelTitle(activeSheet)}`}
+              aria-label={`Close ${getMapControlsPanelTitle(activeSheet)}`}
             />
           </span>
         </div>

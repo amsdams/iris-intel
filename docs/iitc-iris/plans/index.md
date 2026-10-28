@@ -21,6 +21,16 @@ supported authentication and website-distribution permission evidence before beg
 are deferred; the baseline includes Passcode and Missions. The current map-runtime extraction preserves behavior;
 further decomposition should follow clear responsibility boundaries rather than a line-count target.
 
+**Canvas cleanup and close-button audit (2026-10-28):** the queued redraw/map-replacement race is fixed through
+`map/map-canvas.ts`; reference comparison and regression coverage are in the port plan. All 20 sheets now have one
+close button, adding the missing Appearance/Diagnostics actions; nested sections share the parent header.
+`npm run check` passes (670 app/core tests + six release gates). Chrome regressions pass after adjusting one fixture
+and repeating it three times; nine focused Firefox checks pass, including panel closure at four viewport sizes.
+Packaging and signed Android checks pass (31 native + 15 JavaScript tests, lint/build); certificate, all 19 bundled
+assets and port-6969 downloads match. XPI/ZIP timestamp: `2026-10-28T20-08-18`; APK `0.4.1-alpha+d141d6b` (1850).
+User smoke accepted: behavior appears unchanged and both Appearance/Diagnostics close buttons are usable.
+The platform and individual map/drawing/mission paths were not separately reported.
+
 **Key-count performance (2026-10-28):** the same approach now covers inventory badges: app-owned GUID lookup,
 retained unchanged layers and cached glyphs on one independent key canvas above the level canvas. Accepted inventory
 refreshes update map counts immediately; failed refreshes preserve previous counts. Both overlays share the isolated

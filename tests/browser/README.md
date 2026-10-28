@@ -30,7 +30,9 @@ deliberate faults, not live providers. A recovered map uses OSM and updates Appe
 
 [panels.smoke.mjs](panels.smoke.mjs) checks 17 sheets at three landscape sizes and one portrait size. Populated
 mission, inventory, and drawing lists exercise scrolling to the last row, import controls, and panel footers;
-panels must fit above navigation without clipping their top. The data is simulated through the UI message boundary.
+panels must fit above navigation without clipping their top. Each sheet must expose exactly one reachable close
+button that returns to the map. Nested sections share their parent sheet's header. The data is simulated through
+the UI message boundary; the three selected-object sheets are exercised by the map-context cases below.
 
 [map-view.smoke.mjs](map-view.smoke.mjs) checks URL-over-storage precedence on boot, move-end storage/Intel
 cookie/history synchronization, and restored position after reload without URL position parameters.
@@ -44,6 +46,9 @@ It uses controlled fixture data through the page message boundary. Portal cases 
 cached-state display while refreshing, cancelled late responses, pending portal arrival, cache/selection retention
 across map replacement, and native context gestures for portals, links, fields and empty map points. A combined
 layer/highlighter/base-map message verifies update ordering, retained marker identity and both deferred frame timings.
+Canvas teardown cases queue redraws and move synchronously before removal/replacement, covering the formerly lost
+frame callback. Entity/label replacement checks also remove with frames still queued; image and drawing/mission replacement in
+[map-overlays.smoke.mjs](map-overlays.smoke.mjs) also covers implicit pane renderers without waiting for paint first.
 
 Level-label cases protect retained layers/shared canvas on unchanged refreshes, level changes, collision winners,
 placeholder exclusion, faction/level toggles, removal and map-replacement cleanup. Pixel checks verify visible text

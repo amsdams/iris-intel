@@ -330,6 +330,21 @@ test('key badges follow animated pan/zoom and stay above level text when enabled
   await expect(page.locator('.iitc-iris-key-counts-canvas')).toHaveCount(1);
 });
 
+test('map removal cancels canvas redraws queued before synchronous movement', async ({page}) => {
+  const state = await page.evaluate(() => {
+    const map = window.__iitcIrisMap;
+    const portal = window.__iitcIrisLayers.entityLayerIndex.portals.get('res')[0];
+    const renderer = portal._renderer;
+    portal.redraw();
+    const queued = renderer._redrawRequest;
+    map.panBy([5, 5], {animate: false});
+    const afterMove = renderer._redrawRequest;
+    map.remove();
+    return {queued: Boolean(queued), afterMove: Boolean(afterMove), destroyed: !renderer._ctx};
+  });
+  expect(state).toEqual({queued: true, afterMove: false, destroyed: true});
+});
+
 test('replacement maps receive fresh entity layers without retaining old renderer resources', async ({page}) => {
   await loadKeys(page);
   await settings(page, {labels: true, keyCount: true});
@@ -337,9 +352,10 @@ test('replacement maps receive fresh entity layers without retaining old rendere
   await page.evaluate(() => {window.entityFixture.oldKeyLabel = window.__iitcIrisLayers.labels.find(l => l.options.keyCountLabel);});
   await expect.poll(async () => (await levelLabels(page)).length).toBe(3);
   await page.evaluate(() => { window.entityFixture.oldLevelLabel = window.__iitcIrisLayers.labels.find(l => l.options.levelLabel === 8); });
-  // Let Canvas finish painting before replacement; the immediate-redraw edge case is tracked separately.
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.evaluate(() => {
+    // Replace with entity/label redraws still queued; removal must cancel their frames.
+    const map = window.__iitcIrisMap;
+    map.eachLayer(layer => layer.redraw?.());
     window.entityFixture.status = null;
     window.entityFixture.dataSource = null;
     const old = document.getElementById('iitc-iris-map');
@@ -427,7 +443,10 @@ test('real map context gestures select portals, links, fields and empty map poin
     await page.mouse.click(position.x, position.y, {button: 'right'});
     await expect.poll(() => page.evaluate(() => window.entityFixture.contexts.at(-1)?.contextTarget)).toBe(target);
     // Close the context sheet so the next native gesture reaches the map.
-    await page.locator('aside:visible').getByRole('button', {name: /^Close /}).click();
+    const close = page.locator('aside:visible').getByRole('button', {name: /^Close /});
+    await expect(close).toHaveCount(1);
+    await close.click();
+    await expect(page.locator('.iitc-iris-shell')).toHaveClass(/iitc-iris-sheet-map(?:\s|$)/);
   };
   await expect.poll(() => page.evaluate(() => window.__iitcIrisLayers.entityLayerIndex.portals.has('context-portal'))).toBe(true);
   await contextAt(52, 4, 'portal');
@@ -460,8 +479,10 @@ test('pending portal selection resolves on arrival and detail cache survives map
   await page.route('**/entity-fixture.json', route => route.fulfill({json: {result: {map: {fixture: {
     gameEntities: [['pending', 1000, ['p', 'R', 52000000, 4000000, 8, 100, 8, '', 'Arrived portal', [], false, false, null, 1000]]],
   }}}}}));
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.evaluate(() => {
+    const map = window.__iitcIrisMap;
+    map.eachLayer(layer => layer.redraw?.());
+    map.panBy([5, 5], {animate: false});
     window.entityFixture.dataSource = null;
     const old = document.getElementById('iitc-iris-map');
     const replacement = document.createElement('div');
@@ -681,6 +702,9 @@ test('image overlays follow animated gestures, preserve stacking and recover aft
   await page.evaluate(() => {
     window.entityFixture.oldImages = [...window.__iitcIrisLayers.ornaments, ...window.__iitcIrisLayers.artifacts];
     window.entityFixture.oldImageCanvases = [...document.querySelectorAll('.iitc-iris-ornaments-canvas,.iitc-iris-artifacts-canvas')];
+    const map = window.__iitcIrisMap;
+    map.eachLayer(layer => layer.redraw?.());
+    map.panBy([5, 5], {animate: false});
     window.entityFixture.dataSource = null;
     const old = document.getElementById('iitc-iris-map');
     const replacement = document.createElement('div');

@@ -102,6 +102,10 @@ ownership guards stop old responses or completions from mutating replacement sta
 listeners intentionally survive map replacement. This is a focused lifetime boundary, not a claim that every effect
 or browser lifecycle has been audited.
 
+`map/map-canvas.ts` owns the Leaflet 1.9 private redraw/factory seam: synchronous redraw cancels any queued frame
+before Leaflet clears its handle. Explicit entity/label/image renderers and implicit pane renderers use this adapter,
+so removal can reliably cancel pending painting. Recheck this seam when upgrading Leaflet; it does not patch its global prototypes.
+
 The page runtime composes `map/search/search-runtime.ts` (query sequencing, geocoder requests, previews and navigation),
 `map/draw-tools/draw-tools-runtime.ts` (stored items, actions, highlighting and drawing), and
 `map/missions/mission-overlay.ts` (route/waypoint geometry and navigation). These page-owned controllers read the

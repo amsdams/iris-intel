@@ -9,6 +9,7 @@ vi.mock('leaflet', () => ({default: {
 }}));
 
 vi.mock('./map/layers/base-layers', () => ({createBaseLayer: leaflet.tileLayer}));
+vi.mock('./map/map-canvas', () => ({IitcIrisCanvas: vi.fn(), IitcIrisCanvasMap: leaflet.map}));
 vi.mock('./map/entities/portal-image-canvas', () => ({createPortalImageCanvas: vi.fn(), createPortalImage: vi.fn()}));
 vi.mock('./map/entities/portal-label-canvas', () => ({createPortalLevelCanvas: vi.fn(), createPortalLevelLabel: vi.fn(),
   createPortalKeyCountCanvas: vi.fn(), createPortalKeyCountLabel: vi.fn()}));
@@ -90,7 +91,7 @@ describe('page runtime map replacement', () => {
       querySelectorAll: () => [],
     });
     vi.stubGlobal('HTMLScriptElement', class extends EventTarget {});
-    leaflet.map.mockImplementation((element: Container) => {
+    leaflet.map.mockImplementation(function(element: Container) {
       const map = createMap(element);
       maps.push(map);
       return map;

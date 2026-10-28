@@ -22,8 +22,10 @@ import {
 } from '@iris/iitc-core';
 import {StatusText} from '../../ui/status-text';
 import {PanelTitle} from '../../ui/panel';
+import {ClearButton} from '../../ui/clear-button';
 
 export interface IitcIrisDiagnosticsPanelContainerProps {
+  closeDiagnostics: () => void;
   requestDiagnostics: IitcIrisRequestDiagnostics;
   camera: CameraState;
   debugDockVisible: boolean;
@@ -76,6 +78,7 @@ export interface IitcIrisDiagnosticsPanelContainerProps {
 
 export function IitcIrisDiagnosticsPanelContainer(props: IitcIrisDiagnosticsPanelContainerProps): h.JSX.Element {
   const {
+    closeDiagnostics,
     requestDiagnostics,
     camera,
     debugDockVisible,
@@ -131,6 +134,7 @@ export function IitcIrisDiagnosticsPanelContainer(props: IitcIrisDiagnosticsPane
         <PanelTitle>System</PanelTitle>
         <span className="iitc-iris-panel-header-actions">
           <StatusText>UI and diagnostics</StatusText>
+          <ClearButton onClick={closeDiagnostics} title="Close diagnostics" aria-label="Close diagnostics" />
         </span>
       </div>
       <IitcIrisSystemDiagnosticsPanel

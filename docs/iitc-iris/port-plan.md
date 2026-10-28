@@ -84,6 +84,19 @@ Naming checklist before creating a new file or exported function:
   IITC naming is not appropriate.
 - Is the divergence only for code cleanliness? Keep the IITC name at the boundary and hide the cleaner structure inside.
 
+## Canvas replacement cleanup — 2026-10-28
+
+Reference IITC's `core/code/map.js` prefers Canvas, while `plugins/draw-tools.js` clears drawing contents on its
+persistent map. IRIS additionally replaces its embedded map. In Leaflet 1.9.4, `Canvas._updatePaths` can call `_redraw`
+synchronously while a frame remains queued; `_redraw` loses that handle, so `_destroyContainer` cannot cancel it.
+A deterministic browser test reproduced the resulting `clearRect` exception before the fix.
+
+The app-owned `map/map-canvas.ts` subclasses cancel the outstanding frame before redraw and skip drawing without a
+context. The map's renderer factory covers implicit panes, and explicit entity/label/image renderers inherit the same
+fix. No global Leaflet prototypes, core behavior, request policy, pane order or storage contracts change. Recheck the
+private `_redraw`/`_createRenderer` seams on a Leaflet upgrade. Browser regressions queue redraws and move synchronously
+before direct removal/replacement, then verify fresh entity/image layers and usable Draw Tools/mission overlays.
+
 ## Portal Level Numbers performance checkpoint — 2026-10-28
 
 Reference: `reference/ingress-intel-total-conversion/plugins/portal-level-numbers.js`, especially

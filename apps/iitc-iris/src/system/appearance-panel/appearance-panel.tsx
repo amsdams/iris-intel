@@ -1,5 +1,6 @@
 import {h} from 'preact';
 import {Button} from '../../ui/button';
+import {ClearButton} from '../../ui/clear-button';
 import {Panel, PanelHeader, PanelTitle, PanelBody} from '../../ui/panel';
 import {ControlRow} from '../../ui/control-row';
 import {Section} from '../../ui/section';
@@ -13,15 +14,21 @@ const BASE_LAYER_OPTIONS: {id: IitcIrisBaseLayerId; label: string; title: string
   {id: 'osm', label: 'OpenStreetMap', title: 'OpenStreetMap'},
 ];
 
-export function AppearancePanel({uiTheme, setUiTheme, baseLayerId, selectBaseLayer}: {
+export function AppearancePanel({uiTheme, setUiTheme, baseLayerId, selectBaseLayer, closeAppearance}: {
   uiTheme: UiThemePreference;
   setUiTheme: (theme: UiThemePreference) => void;
   baseLayerId: IitcIrisBaseLayerId;
   selectBaseLayer: (id: IitcIrisBaseLayerId) => void;
+  closeAppearance: () => void;
 }): h.JSX.Element {
   return (
     <Panel aria-label="Appearance">
-      <PanelHeader><PanelTitle>Appearance</PanelTitle></PanelHeader>
+      <PanelHeader>
+        <PanelTitle>Appearance</PanelTitle>
+        <span className="iitc-iris-panel-header-actions">
+          <ClearButton onClick={closeAppearance} title="Close appearance" aria-label="Close appearance" />
+        </span>
+      </PanelHeader>
       <PanelBody>
         <Section titleHeading="Interface theme">
           <ControlRow>
