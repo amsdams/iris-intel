@@ -119,11 +119,130 @@ IRIS now draws the selected level labels using passive CircleMarker layers on on
 The font, colour, fixed settled size and collision winners remain; cached per-level glyphs approximate the previous
 CSS shadows. Native renderer bounds skip offscreen painting, its transform follows gestures, and label indices still
 retain unchanged layers. During zoom animation, raster text scales with the map and redraws at its fixed size at the
-end. Key counts remain independent DOM badges above the label canvas. Renderer disposal follows the map lifecycle.
-`portal-level-canvas.ts` isolates Leaflet 1.9's private `_updateCircle`/`_point`/`_empty` drawing seam; recheck it when
+end. Key counts were initially kept as independent DOM badges; the key-count follow-up below replaces them. Renderer disposal follows the map lifecycle.
+`portal-label-canvas.ts` isolates Leaflet 1.9's private `_updateCircle`/`_point`/`_empty` drawing seam; recheck it when
 upgrading Leaflet. Browser regressions check actual text pixels at portal positions after animated pan/zoom, an empty
 canvas after disabling labels, retained layers/canvas and full-clear/map-replacement behavior. The browser README
 records the repeatable `--gestures` probe. Request/data/collision policy and core remain unchanged.
+
+## Key-count overlay performance investigation — 2026-10-28
+
+References: `reference/ingress-intel-total-conversion/plugins/keys-on-map.js` (`portalAdded`, `keyUpdate`, `renderKey`)
+uses GUID-indexed key data/layers and portal add/remove hooks, replacing the affected marker on a count update.
+`reference/Community-plugins/dist/DanielOnDiordna/liveInventory.user.js` (`addKeyToLayer`, `removeKeyFromLayer`)
+uses `keyMap`, retains a portal's `_keyMarker` until removal and gates on detailed map data. Both use passive HTML
+markers, not a shared canvas. IRIS uses live inventory totals and its existing badge styling/offset/filter policies;
+these are not claims of identical upstream behavior.
+
+Before optimization, IRIS recreated key badges whenever portal overlays updated, unlike its retained level labels.
+`getPortalKeyCount` called the core helper's array `find` for each rendered portal, even when
+key counts were disabled. With P rendered portals and K key records, those repeated lookups could cost O(P × K).
+The follow-up addresses this in the app without changing core or inventory request behavior.
+
+The saved profiler now accepts `--key-counts`: it loads synthetic inventory through the real subscription/inventory
+request path, with one key per portal and all external responses stubbed. At 100/1,000/4,000 portals, median unchanged
+refresh/frame samples were about 33/42/312 ms, retaining zero badge layers. At 4,000 portals the initial toggle/frame
+sample was about 155 ms. These samples include dispatch and two animation frames, not just rendering work.
+
+The phone-size (412×780, 2× pixel density), 4×-CPU Chrome gesture probe compares the same camera path off/on:
+
+| Loaded portals/key badges | Pan p95 frame gap, off/on | Zoom p95 frame gap, off/on |
+| --- | --- | --- |
+| 100 | 17 / 17 ms | 17 / 17 ms |
+| 1,000 | 17 / 33 ms | 17 / 67 ms |
+| 4,000 | 17 / 67 ms | 33 / 417 ms |
+
+Two pan and two zoom animations are sampled per mode. Assertions verify the loaded dataset survives camera refreshes
+and some enabled badges remain in the viewport; not all loaded badges are onscreen. These are synthetic observations,
+not Android frame-rate claims or a measurement of the user's inventory distribution. They demonstrate combined
+render/update overhead, without isolating the exact share attributable to DOM painting versus lookup/refresh work.
+
+Implemented follow-up: an app-owned GUID/count lookup is rebuilt only with accepted inventory summaries; overlay
+lookups are skipped while disabled. Key badges are synchronized by GUID/count/coordinates/radius, retaining unchanged
+layers. Accepted inventory updates refresh only the key overlay immediately; failed/empty refreshes preserve cached
+counts. This also fixes badges previously waiting for the next map refresh to reflect changed inventory.
+
+`portal-label-canvas.ts` now isolates both label renderers' Leaflet drawing seam. Each overlay owns one map-lifetime
+canvas so their redraws stay independent, with key badges above levels regardless of enable order. Key glyphs use the
+existing font tokens, dark rounded badge and portal-relative offset; the cache is capped at 128 counts. Long counts
+can overflow the badge as before. Key badges retain existing filters/zoom policy and passive click-through, without
+level-label collision suppression. As with levels, text scales during zoom animation and redraws at settled size.
+The obsolete HTML badge CSS is removed. Core, request timing, persisted settings and message contracts are unchanged.
+The repeated 4,000-badge probe retained all 4,000 layers, with median unchanged refresh/frame samples about 33 ms
+(previously 312 ms) and initial toggle/frame sampling about 44 ms (previously 155 ms). In the same synthetic gesture
+probe, key-count-on pan/zoom p95 gaps stayed near 17 ms at all three sizes, using one canvas and zero badge DOM nodes.
+These observations have the same synthetic/device limits as the baseline; live APK smoke remains pending.
+Browser regressions cover count changes/removals, cached inventory after failure, layer retention, filters, both
+canvases' ordering, actual text pixels after animated pan/zoom, full clear and map replacement.
+
+## Other passive overlays: investigation and combined implementation — 2026-10-28
+
+References: `core/code/ornaments.js` (`setup`, `addPortal`, `removePortal`) keeps per-portal decoration ownership and
+chooses `L.canvasIconLayer` when canvas is preferred and available. `core/external/leaflet.canvas-markers.js` supplies
+URL/image caching, async image-load drawing and viewport bounds queries. In contrast, `core/code/artifact.js`
+(`updateLayer`) clears/rebuilds ordinary image markers on artifact-data updates. Canvas support for ornaments does
+not imply that upstream artifacts also use canvas, nor that the external adapter preserves every IRIS image option.
+
+IRIS currently clears/recreates both image overlays whenever portal overlays update; `preferCanvas` alone does not
+convert `L.marker` icons. The first recommended change is retaining unchanged markers, with equality covering all
+appearance inputs. A shared image canvas is a reasonable next step for dense ornaments, using the reference's
+image-loading/viewport concepts while preserving IRIS opacity, offsets, sizes, stacking and exclusions. Keep existing
+overlay visibility policy: ornaments/artifacts currently iterate entity portals rather than the filtered label list.
+Test async load success/failure, late loads after removal/replacement, disposal and redraw before adopting it. Remote
+image loading and possible cross-origin canvas restrictions need their own verification; the label glyph cache does
+not establish those behaviors. The initial investigation left rendering unchanged; the authorized implementation is recorded below.
+
+The saved Chrome probe supports `--ornaments` and `--artifacts` at 100/1,000/4,000 markers. It replaces their URLs with
+one shared local PNG and waits for decoding, excluding remote availability/cold-network behavior. At zoom 16 and
+1280×800, three measured runs after warm-up gave unchanged refresh/frame medians of about 35/59/472 ms for ornaments
+and 35/64/473 ms for artifacts, retaining zero marker identities. The sample includes dispatch, a queued task, two
+animation-frame opportunities and decoding; it is not pure render time or GPU completion. The high count is a stress
+case; actual player decoration density has not been measured. These observations establish avoidable rebuilding,
+without proving a particular canvas speedup or a live Android bottleneck.
+
+The phone-size/4×-CPU gesture mode retained the populated dataset with decoded images throughout. At 100 images,
+off/on pan and zoom p95 frame gaps stayed near 17 ms. At 1,000, enabled zoom gaps reached about 50 ms for both
+overlays. At 4,000, enabled pan/zoom gaps were about 100/250 ms for ornaments and 67/267 ms for artifacts, versus
+about 17/17 ms disabled. These are combined update/animation observations with warm local assets; they do not isolate
+DOM costs or predict real-device performance. Run these probes sequentially and alone as described in the browser README.
+
+Implemented follow-up: ornaments and artifacts now synchronize independent decoration indices, keeping unchanged
+layers and replacing changed URL/size/anchor/opacity/coordinates/stacking inputs. Artifact ID changes that do not
+change the image preserve the layer. A common `portal-image-canvas.ts` adapter gives each overlay a map-owned canvas,
+with URL-shared decoded images per renderer and at most 128 unused cached URLs. All currently active URLs remain
+available. No core, entity-data, persisted-setting or request-lifecycle changes are made. Obsolete HTML image-marker CSS and its
+central import are removed; the dedicated canvases remain passive. Draw Tools/player trails remain untouched.
+
+The adapter follows upstream's image caching/viewport-drawing concepts rather than porting its entire layer plugin.
+Native Leaflet CircleMarker bounds/projection/redraws handle clipping and gestures; a private drawing seam preserves
+screen-y plus z-index stacking, with entity-order ties even when changed layers are reattached. Images keep their
+previous settled dimensions, anchors and opacity. Ornaments still shrink at lower zooms; neither image overlay gains
+level-label zoom/faction gating. During animated zoom the bitmap canvas scales, then redraws at settled dimensions.
+
+Load completion redraws only attached users through Leaflet's coalesced redraw queue. Unused in-flight/failed entries
+lose their callbacks; failed URLs retry after removal/re-enable. Map disposal clears the image cache and late loads
+cannot revive removed decorations. As with the previous image markers, remote images load without requiring CORS;
+a cross-origin asset can taint this dedicated image canvas, so it is not used for pixel readback/export. Same-origin
+fixture assets make automated pixel checks possible without asserting real server CORS behavior. The current image
+URLs are PNGs; animated image formats are not part of this adapter's verified contract.
+
+Browser regressions check appearance pixels, target/fragment sizes and opacity, retained identity, changes/removals,
+placeholder treatment, stacking after reattachment, exclusion/filter policy, low-zoom resizing, animated pan/zoom,
+clearing/re-enabling, failed and late image loads, bounded unused caches and map replacement. Live appearance and
+performance acceptance remain pending.
+
+The repeated warm-image refresh probe retains all layers. At 100/1,000/4,000 markers, unchanged refresh/frame medians
+are about 35/45/72 ms for ornaments and 36/45/71 ms for artifacts (baseline 35/59/472 and 35/64/473 ms respectively).
+These include dispatch, frame opportunities and explicit diagnostic image decoding, with the same synthetic limits
+as the baseline. They do not isolate renderer CPU time or establish phone performance.
+In the repeated phone-size/4×-CPU gesture probes, enabled pan/zoom p95 frame gaps stayed near 17 ms for both overlays
+at all three sizes, with one canvas and zero image DOM markers. The original 4,000-image enabled gaps were about
+100/250 ms for ornaments and 67/267 ms for artifacts. This remains fixture evidence, not live APK acceptance.
+
+Other source-audited candidates: Draw Tools clears/rebuilds markers and paths, and player-tracker trace polylines are
+rebuilt, so retention could help. Their costs are unmeasured. Player pins already retain identity and have interactive
+popups, so converting them blindly would sacrifice useful behavior. Main portals/links/fields already use retained
+canvas paths; low-volume selection/location/search and selected-mission overlays are lower priority.
 
 ## Inventory reliability reference checkpoint — 2026-10-27
 

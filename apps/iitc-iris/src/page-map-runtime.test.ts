@@ -9,7 +9,9 @@ vi.mock('leaflet', () => ({default: {
 }}));
 
 vi.mock('./map/layers/base-layers', () => ({createBaseLayer: leaflet.tileLayer}));
-vi.mock('./map/entities/portal-level-canvas', () => ({createPortalLevelCanvas: vi.fn(), createPortalLevelLabel: vi.fn()}));
+vi.mock('./map/entities/portal-image-canvas', () => ({createPortalImageCanvas: vi.fn(), createPortalImage: vi.fn()}));
+vi.mock('./map/entities/portal-label-canvas', () => ({createPortalLevelCanvas: vi.fn(), createPortalLevelLabel: vi.fn(),
+  createPortalKeyCountCanvas: vi.fn(), createPortalKeyCountLabel: vi.fn()}));
 
 class Container extends EventTarget {
   getBoundingClientRect(): {left: number; top: number} { return {left: 0, top: 0}; }

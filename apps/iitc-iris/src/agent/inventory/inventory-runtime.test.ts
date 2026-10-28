@@ -24,7 +24,7 @@ describe('Inventory and shared subscription ownership', () => {
     portal = {guid: 'portal', title: 'Selected portal'};
     post = vi.fn<Options['postIntelEndpoint']>().mockImplementation(async endpoint => endpoint === 'getInventory' ? inventory : {result: true});
     options = {getSelectedPortal: (): ReturnType<Options['getSelectedPortal']> => portal, postIntelEndpoint: post,
-      getIitcRequestDiagnostics: (): IitcIrisRequestDiagnostics => ({}) as IitcIrisRequestDiagnostics, postAgentState: vi.fn()};
+      getIitcRequestDiagnostics: (): IitcIrisRequestDiagnostics => ({}) as IitcIrisRequestDiagnostics, postAgentState: vi.fn(), onInventoryChanged: vi.fn()};
     runtime = createInventoryRuntime(options);
   });
   afterEach(() => {vi.unstubAllGlobals(); vi.useRealTimers();});
@@ -46,6 +46,22 @@ describe('Inventory and shared subscription ownership', () => {
     portal = {guid: 'portal', title: 'Replacement selection'};
     runtime.selectedPortalChanged();
     expect(runtime.getState()).toMatchObject({selectedPortalTitle: 'Replacement selection', portalKeysForSelectedPortal: {total: 3}});
+  });
+
+  it('updates GUID key lookups after accepted inventory and retains them after a failed refresh', async () => {
+    await runtime.refreshInventory();
+    expect(runtime.getPortalKeyCount('portal')).toBe(3);
+    post.mockImplementation(async endpoint => endpoint === 'getInventory'
+      ? {result: [['other', 1, {...key, portalCoupler: {portalGuid: 'other', portalTitle: 'Other'}}]]} : {result: true});
+    await runtime.refreshInventory();
+    expect(runtime.getPortalKeyCount('portal')).toBe(0);
+    expect(runtime.getPortalKeyCount('other')).toBe(1);
+    post.mockImplementation(async endpoint => endpoint === 'getInventory' ? {result: []} : {result: true});
+    await runtime.refreshInventory();
+    expect(runtime.getState().status).toBe('error');
+    expect(runtime.getPortalKeyCount('portal')).toBe(0);
+    expect(runtime.getPortalKeyCount('other')).toBe(1);
+    expect(options.onInventoryChanged).toHaveBeenCalledTimes(2);
   });
 
   it('shares concurrent subscription checks and notifies Agent before Inventory', async () => {

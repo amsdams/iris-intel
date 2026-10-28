@@ -49,12 +49,15 @@ Level-label cases protect retained layers/shared canvas on unchanged refreshes, 
 placeholder exclusion, faction/level toggles, removal and map-replacement cleanup. Pixel checks verify visible text
 at portal positions after animated pan/zoom and an empty canvas after labels are disabled. Collision unit tests compare the
 spatial buckets against the previous exhaustive scan, including boundary points and seeded dense/sparse clouds.
+Key-count cases additionally check retained badge layers, inventory changes/removals and failed-refresh cache retention,
+canvas clearing, faction filters, portal radius/position changes, text pixels after animated gestures, canvas ordering
+and map replacement. Both label overlays draw passive canvas text without per-badge HTML nodes.
 
 To repeat the optional performance probe, build with `npm run build -w apps/iitc-iris`, then run
 `node tests/browser/server.mjs` in one terminal and `node tests/browser/profile-level-labels.mjs` in another.
 Stop the server afterward; keep it stopped when running the regular browser suite. The probe prints JSON for
 1,000/4,000 synthetic portals: three samples after a warm-up, toggle phase timings, refresh latency and retained labels.
-Frame durations include message dispatch and two animation frames after DOM detection (refreshes use a queued task
+Frame durations include message dispatch and two animation frames after layer detection (refreshes use a queued task
 and two frames). They are paint opportunities, not measured GPU completion or real-device frame rates; no timing
 threshold gates the tests. All external requests are stubbed.
 
@@ -63,6 +66,28 @@ This keeps a simulated 4,000-portal dataset through camera-triggered refreshes, 
 and 2× pixel density, and applies 4× Chrome CPU throttling. JSON includes animation-frame gaps and CDP style/layout/
 task durations. It approximates CPU pressure, not Android hardware, GPU/compositor completion or live map/network
 work. Run it alone, without concurrent builds/browser probes; durations are observations, not test thresholds.
+
+Add `--key-counts` to either command to profile inventory key badges instead of level labels, at
+100/1,000/4,000 loaded portals with one synthetic key per portal. Inventory/subscription responses are stubbed through
+the real request path; this does not test Intel availability or represent a measured real inventory distribution.
+For example: `node tests/browser/profile-level-labels.mjs --key-counts --gestures`.
+JSON identifies the overlay and dataset size. Gesture modes start from the same camera position and record both
+attached badges and those whose portal coordinates fall inside the viewport; some loaded badges remain offscreen.
+Assertions guard against profiling an emptied map or an entirely offscreen overlay. The refresh mode reports label
+identity retention independently of timing. Runtime rendering is not changed by this diagnostic script.
+
+Use `--ornaments` or `--artifacts` instead of `--key-counts` to investigate passive image overlays at
+100/1,000/4,000 markers; each also supports `--gestures`. Choose one overlay flag per run. These modes substitute
+one shared local PNG for marker image URLs and wait for decoding, isolating warm-image marker/render overhead from
+remote availability. They do not test real asset loading, failures, CORS or a measured live decoration density.
+Gesture JSON also reports decoded image counts; the legacy `labels` field counts the selected overlay's layers.
+Image readiness inspects the isolated adapter cache for diagnostics; it is not a public renderer API.
+
+Image-overlay browser cases cover retained ornaments/artifacts, actual fixture pixels and opacity, image sizes,
+stacking after reattachment, changes/removals, placeholders/exclusions, unchanged faction/zoom policy, animated
+pan/zoom, clearing/re-enable, shared URLs, failed-load retry, late loads and cache/map cleanup. Fixtures rewrite
+image URLs to the local origin for readable pixel assertions; real cross-origin image display does not require CORS,
+and its dedicated canvas can be tainted. The current PNG assets are the supported/verified image format.
 
 [panel-requests.smoke.mjs](panel-requests.smoke.mjs) runs real Scores, Inventory/Profile, Passcode and COMM panel workflows
 with simulated endpoint responses, checking request metadata, selected-portal key counts and rendered rewards. It also

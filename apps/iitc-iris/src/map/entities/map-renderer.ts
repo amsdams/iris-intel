@@ -2,11 +2,12 @@ import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as Leafl
 import {getIitcOrnamentDefinition, isIitcExcludedOrnament, parseIitcOrnamentVisibilitySettings, type IitcOrnamentVisibilitySettings} from '@iris/iitc-core';
 import type {
   IitcIrisHighlighterSettings, IitcIrisLayerSettings, IitcIrisLayerUpdateTimingDiagnostics,
-  IitcIrisRenderArtifact, IitcIrisRenderEntities, IitcIrisRenderField, IitcIrisRenderLink,
+  IitcIrisRenderEntities, IitcIrisRenderField, IitcIrisRenderLink,
   IitcIrisRenderMutationDiagnostics, IitcIrisRenderMutationLayerDiagnostics, IitcIrisRenderPolicy, IitcIrisRenderPortal,
 } from '../../messages';
 import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from '../../iitc-colors';
-import {createPortalLevelCanvas, createPortalLevelLabel} from './portal-level-canvas';
+import {createPortalKeyCountCanvas, createPortalKeyCountLabel, createPortalLevelCanvas, createPortalLevelLabel} from './portal-label-canvas';
+import {createPortalImage, createPortalImageCanvas, type PortalImage} from './portal-image-canvas';
 import {getVisibleLevelLabelGuids} from './portal-level-numbers';
 import {DEFAULT_HIGHLIGHTER_ID, getPortalHighlighter} from '../layers/highlighter-registry';
 import {createIitcGeodesicPolygon, createIitcGeodesicPolyline} from '../leaflet-geodesic';
@@ -66,6 +67,7 @@ interface MapRenderer {
   isFieldVisible: (field: IitcIrisRenderField) => boolean;
   getSecondaryEntityRenderUpdate: (changedKeys?: (keyof IitcIrisLayerSettings)[]) => IitcIrisSecondaryEntityRenderUpdate;
   refreshPortalMarkerStylesForHighlighter: () => boolean;
+  refreshKeyCountLabels: () => void;
   clearCoreEntityLayerGroup: (layers: IitcIrisMapLayers, key: IitcIrisCoreLayerKey) => void;
   clearEntityLayerIndexes: (layers: IitcIrisMapLayers) => void;
   invalidateRenderContext: () => void;
@@ -99,10 +101,25 @@ export function createMapRenderer({
   const LEVEL_COLORS = IITC_LEVEL_COLORS;
   const LEVEL_TO_WEIGHT = [2, 2, 2, 2, 2, 3, 3, 4, 4] as const;
   const LEVEL_TO_RADIUS = [7, 7, 7, 7, 8, 8, 9, 10, 11] as const;
+  interface KeyBadge {guid: string; latE6: number; lngE6: number; count: number; radius: number}
+  const keyLabelIndex: IitcIrisEntityLayerIndex = new Map();
+  let previousKeyBadges: KeyBadge[] = [];
   const levelLabelIndex: IitcIrisEntityLayerIndex = new Map();
   let previousLevelLabelPortals: IitcIrisRenderPortal[] = [];
 
-  function resetLevelLabels(): void {
+  interface Decoration extends PortalImage {guid: string; latE6: number; lngE6: number}
+  const decorationIndexes: Record<'ornaments' | 'artifacts', IitcIrisEntityLayerIndex> = {
+    ornaments: new Map(), artifacts: new Map(),
+  };
+  const previousDecorations: Record<'ornaments' | 'artifacts', Decoration[]> = {ornaments: [], artifacts: []};
+
+  function resetPortalOverlays(): void {
+    decorationIndexes.ornaments.clear();
+    decorationIndexes.artifacts.clear();
+    previousDecorations.ornaments = [];
+    previousDecorations.artifacts = [];
+    keyLabelIndex.clear();
+    previousKeyBadges = [];
     levelLabelIndex.clear();
     previousLevelLabelPortals = [];
   }
@@ -173,18 +190,10 @@ export function createMapRenderer({
   }
 
   function createKeyCountMarker(latLng: [number, number], count: number, portalRadius: number): LeafletLayer {
-    return L.marker(latLng, {
-      icon: L.divIcon({
-        className: 'iitc-iris-key-count-label',
-        html: String(count),
-        iconSize: [20, 14],
-        iconAnchor: [10, portalRadius + 12],
-      }),
-      interactive: false,
-      keyboard: false,
-      pane: getLayerPane('labels'),
-      zIndexOffset: 1001,
-    });
+    const map = getMap() as (LeafletMap & {__iitcIrisKeyCountRenderer?: L.Canvas}) | undefined;
+    if (!map) throw new Error('Cannot create key-count labels without a map');
+    map.__iitcIrisKeyCountRenderer ??= createPortalKeyCountCanvas(getLayerPane('labels'));
+    return createPortalKeyCountLabel(latLng, count, portalRadius, map.__iitcIrisKeyCountRenderer);
   }
 
   function clearRenderedLayersFromGroup(layers: LeafletLayer[], group: L.LayerGroup): void {
@@ -344,7 +353,7 @@ export function createMapRenderer({
     clearRenderedLayers(layers.ornaments);
     clearRenderedLayers(layers.artifacts);
     clearRenderedLayers(layers.labels);
-    resetLevelLabels();
+    resetPortalOverlays();
     clearEntityLayerIndexes(layers);
   }
 
@@ -355,39 +364,43 @@ export function createMapRenderer({
     if (update.selectedPortal) clearRenderedLayers(layers.selectedPortal);
     if (update.selectedMapObject) clearRenderedLayers(layers.selectedMapObject);
     if (update.portalOverlays) {
-      clearRenderedLayers(layers.ornaments);
-      clearRenderedLayers(layers.artifacts);
-      // Key-count markers are separate decorations; keep unchanged level markers attached.
-      const levelLayers = new Set([...levelLabelIndex.values()].flat());
-      const removedLabels = new Set(layers.labels.filter((layer) => !levelLayers.has(layer)));
+      // Drop unindexed leftovers after a render-context reset; normal sync retains unchanged images.
+      for (const key of ['ornaments', 'artifacts'] as const) {
+        const retained = new Set([...decorationIndexes[key].values()].flat());
+        const removed = new Set(layers[key].filter(layer => !retained.has(layer)));
+        clearRenderedLayers([...removed]);
+        compactRenderedLayers(layers[key], removed);
+      }
+      // Keep both indexed label overlays attached; their sync removes changed/hidden badges.
+      const retainedLabels = new Set([...levelLabelIndex.values(), ...keyLabelIndex.values()].flat());
+      const removedLabels = new Set(layers.labels.filter((layer) => !retainedLabels.has(layer)));
       clearRenderedLayers([...removedLabels]);
       compactRenderedLayers(layers.labels, removedLabels);
     }
   }
 
-  function createOrnamentMarker(latLng: [number, number], ornament: string, portalRadius: number): LeafletLayer {
-    const definition = getIitcOrnamentDefinition(ornament);
-    const size = Math.round(60 * getPortalMarkerScale(getMap()?.getZoom() ?? defaultZoom));
-    const iconUrl = definition?.url ?? `https://commondatastorage.googleapis.com/ingress.com/img/map_icons/marker_images/${ornament}.png`;
-    const offset = definition?.url && definition.offset ? definition.offset : [0, 0];
-    const anchor: [number, number] = [
-      size * offset[0] + size / 2,
-      size * offset[1] + size / 2,
-    ];
-
-    return L.marker(latLng, {
-      icon: L.icon({
-        iconUrl,
-        iconSize: [size, size],
-        iconAnchor: anchor,
-        className: 'iitc-iris-ornament-icon',
-      }),
-      interactive: false,
-      keyboard: false,
-      opacity: definition?.opacity ?? 0.6,
-      pane: getLayerPane('ornaments'),
-      zIndexOffset: Math.round(portalRadius),
-    });
+  function syncDecorations(layers: IitcIrisMapLayers, key: 'ornaments' | 'artifacts', decorations: Decoration[]): void {
+    syncEntityLayers(
+      layers[key], decorationIndexes[key], previousDecorations[key], decorations,
+      (a, b) => a.latE6 === b.latE6 && a.lngE6 === b.lngE6 && a.url === b.url && a.size === b.size &&
+        a.anchorX === b.anchorX && a.anchorY === b.anchorY && a.opacity === b.opacity && a.zIndexOffset === b.zIndexOffset,
+      (decoration) => {
+        const map = getMap() as (LeafletMap & {__iitcIrisImageRenderers?: Partial<Record<typeof key, L.Canvas>>}) | undefined;
+        if (!map) throw new Error('Cannot create portal decorations without a map');
+        const renderers = map.__iitcIrisImageRenderers ??= {};
+        const renderer = renderers[key] ??= createPortalImageCanvas(getLayerPane(key), `iitc-iris-${key}-canvas`);
+        return createPortalImage(toLatLng(decoration.latE6, decoration.lngE6), decoration, renderer);
+      },
+    );
+    for (const decoration of decorations) {
+      for (const layer of decorationIndexes[key].get(decoration.guid) ?? []) {
+        const imageLayer = layer as L.CircleMarker & {options: L.CircleMarkerOptions & {portalImage: PortalImage}};
+        if (imageLayer.options.portalImage.order === decoration.order) continue;
+        imageLayer.options.portalImage.order = decoration.order;
+        imageLayer.redraw();
+      }
+    }
+    previousDecorations[key] = decorations;
   }
 
   function loadOrnamentVisibilitySettings(): IitcOrnamentVisibilitySettings {
@@ -427,27 +440,6 @@ export function createMapRenderer({
     };
   }
 
-  function createArtifactMarker(latLng: [number, number], artifact: IitcIrisRenderArtifact): LeafletLayer {
-    const isTarget = artifact.role === 'target';
-    const size = isTarget ? 50 : 30;
-    const suffix = isTarget ? 'shard_target' : 'shard';
-    const iconUrl = `https://commondatastorage.googleapis.com/ingress.com/img/map_icons/marker_images/${artifact.type}_${suffix}.png`;
-
-    return L.marker(latLng, {
-      icon: L.icon({
-        iconUrl,
-        iconSize: [size, size],
-        iconAnchor: [size / 2, size / 2],
-        className: 'iitc-iris-artifact-icon',
-      }),
-      interactive: false,
-      keyboard: false,
-      opacity: isTarget ? 1 : 0.6,
-      pane: getLayerPane('artifacts'),
-      zIndexOffset: isTarget ? 1200 : 1100,
-    });
-  }
-
   function createLevelLabelMarker(latLng: [number, number], level: number, team: keyof typeof TEAM_COLORS): LeafletLayer {
     const map = getMap() as (LeafletMap & {__iitcIrisLevelLabelRenderer?: L.Canvas}) | undefined;
     if (!map) throw new Error('Cannot create portal level labels without a map');
@@ -475,6 +467,35 @@ export function createMapRenderer({
       (portal) => createLevelLabelMarker(toLatLng(portal.latE6, portal.lngE6), portal.level ?? 0, portal.team),
     );
     previousLevelLabelPortals = portals;
+  }
+
+  function syncKeyLabels(layers: IitcIrisMapLayers, badges: KeyBadge[]): void {
+    syncEntityLayers(
+      layers.labels, keyLabelIndex, previousKeyBadges, badges,
+      (previous, next) => previous.count === next.count && previous.radius === next.radius &&
+        previous.latE6 === next.latE6 && previous.lngE6 === next.lngE6,
+      (badge) => createKeyCountMarker(toLatLng(badge.latE6, badge.lngE6), badge.count, badge.radius),
+    );
+    previousKeyBadges = badges;
+  }
+
+  function getKeyBadges(portals: IitcIrisRenderPortal[]): KeyBadge[] {
+    if (!getLayerSettings().keyCount) return [];
+    const badges: KeyBadge[] = [];
+    for (const portal of portals) {
+      const count = getPortalKeyCount(portal.guid);
+      if (count !== undefined && count > 0) {
+        badges.push({guid: portal.guid, latE6: portal.latE6, lngE6: portal.lngE6, count,
+          radius: getPortalRadius(portal.level, portal.isPlaceholder)});
+      }
+    }
+    return badges;
+  }
+
+  function refreshKeyCountLabels(): void {
+    const entities = getEntities();
+    if (!getMap() || !entities || !getLayerSettings().keyCount) return;
+    syncKeyLabels(ensureLayers(), getKeyBadges(entities.portals.filter(isPortalVisible)));
   }
 
   function getRenderPolicy(): IitcIrisRenderPolicy {
@@ -1437,7 +1458,6 @@ export function createMapRenderer({
     entities: IitcIrisRenderEntities,
     options: RenderEntitiesOptions = {},
   ): IitcIrisLayerUpdateTimingDiagnostics | undefined {
-    const layerSettings = getLayerSettings();
     const latestEntities = getEntities();
     if (!getMap()) return undefined;
     const renderStartedAt = performance.now();
@@ -1554,45 +1574,54 @@ export function createMapRenderer({
     if (secondaryUpdate.portalOverlays) {
       const levelLabelPortals: IitcIrisRenderPortal[] = [];
       for (const portal of getVisiblePortalsForRender()) {
-        const latLng = toLatLng(portal.latE6, portal.lngE6);
-        const radius = getPortalRadius(portal.level, portal.isPlaceholder);
         if (renderPolicy.labels && visibleLevelLabelGuids.has(portal.guid) && portal.level !== undefined) {
           levelLabelPortals.push(portal);
-        }
-        const keyCount = getPortalKeyCount(portal.guid);
-        if (layerSettings.keyCount && keyCount !== undefined && keyCount > 0) {
-          addRenderedLayer(layers.labels, createKeyCountMarker(latLng, keyCount, radius));
         }
       }
 
       syncLevelLabels(layers, levelLabelPortals);
+      syncKeyLabels(layers, getKeyBadges(getVisiblePortalsForRender()));
 
+      const artifacts: Decoration[] = [];
       if (renderPolicy.artifacts) {
         for (const portal of entities.portals) {
-          if (portal.isPlaceholder || !portal.artifacts || portal.artifacts.length === 0) continue;
-          const latLng = toLatLng(portal.latE6, portal.lngE6);
-          for (const artifact of portal.artifacts) {
-            addRenderedLayer(layers.artifacts, createArtifactMarker(latLng, artifact));
+          if (portal.isPlaceholder || !portal.artifacts?.length) continue;
+          for (const [index, artifact] of portal.artifacts.entries()) {
+            const isTarget = artifact.role === 'target';
+            const size = isTarget ? 50 : 30;
+            const suffix = isTarget ? 'shard_target' : 'shard';
+            artifacts.push({guid: JSON.stringify([portal.guid, index]), latE6: portal.latE6, lngE6: portal.lngE6,
+              url: `https://commondatastorage.googleapis.com/ingress.com/img/map_icons/marker_images/${artifact.type}_${suffix}.png`,
+              size, anchorX: size / 2, anchorY: size / 2, opacity: isTarget ? 1 : 0.6,
+              zIndexOffset: isTarget ? 1200 : 1100, order: artifacts.length});
           }
         }
       }
+      syncDecorations(layers, 'artifacts', artifacts);
 
+      const ornaments: Decoration[] = [];
       if (renderPolicy.ornaments) {
+        const size = Math.round(60 * getPortalMarkerScale(getMap()?.getZoom() ?? defaultZoom));
         for (const portal of entities.portals) {
-          if (!portal.ornaments || portal.ornaments.length === 0) continue;
-          const latLng = toLatLng(portal.latE6, portal.lngE6);
+          if (!portal.ornaments?.length) continue;
           const radius = getPortalRadius(portal.level, portal.isPlaceholder);
-          for (const ornament of portal.ornaments) {
+          for (const [index, ornament] of portal.ornaments.entries()) {
             ornamentDiagnostics.types[ornament] = (ornamentDiagnostics.types[ornament] ?? 0) + 1;
             if (isIitcExcludedOrnament(ornament, ornamentVisibility)) {
               ornamentDiagnostics.hiddenMarkers += 1;
               continue;
             }
             ornamentDiagnostics.drawnMarkers += 1;
-            addRenderedLayer(layers.ornaments, createOrnamentMarker(latLng, ornament, radius));
+            const definition = getIitcOrnamentDefinition(ornament);
+            const offset = definition?.url && definition.offset ? definition.offset : [0, 0];
+            ornaments.push({guid: JSON.stringify([portal.guid, index]), latE6: portal.latE6, lngE6: portal.lngE6,
+              url: definition?.url ?? `https://commondatastorage.googleapis.com/ingress.com/img/map_icons/marker_images/${ornament}.png`,
+              size, anchorX: size * offset[0] + size / 2, anchorY: size * offset[1] + size / 2,
+              opacity: definition?.opacity ?? 0.6, zIndexOffset: Math.round(radius), order: ornaments.length});
           }
         }
       }
+      syncDecorations(layers, 'ornaments', ornaments);
     }
     if (secondaryUpdate.selectedPortal) renderSelectedPortal();
     if (secondaryUpdate.selectedMapObject) renderSelectedMapObject();
@@ -1607,9 +1636,9 @@ export function createMapRenderer({
 
   return {
     renderEntities, getPortalRadius, getRenderPolicy, isPortalVisible, isLinkVisible, isFieldVisible,
-    getSecondaryEntityRenderUpdate, refreshPortalMarkerStylesForHighlighter, clearCoreEntityLayerGroup, clearEntityLayerIndexes,
-    invalidateRenderContext: (): void => { latestEntityRenderContextKey = ''; resetLevelLabels(); },
-    resetRenderDiagnostics: (): void => { latestEntityRenderContextKey = ''; latestRenderMutationDiagnostics = null; resetLevelLabels(); },
+    getSecondaryEntityRenderUpdate, refreshPortalMarkerStylesForHighlighter, refreshKeyCountLabels, clearCoreEntityLayerGroup, clearEntityLayerIndexes,
+    invalidateRenderContext: (): void => { latestEntityRenderContextKey = ''; resetPortalOverlays(); },
+    resetRenderDiagnostics: (): void => { latestEntityRenderContextKey = ''; latestRenderMutationDiagnostics = null; resetPortalOverlays(); },
     getRenderDiagnostics: () => ({mutation: latestRenderMutationDiagnostics, ornaments: latestOrnamentDiagnostics}),
   };
 }

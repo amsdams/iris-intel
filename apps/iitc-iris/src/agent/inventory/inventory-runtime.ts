@@ -8,6 +8,7 @@ interface InventoryRuntimeOptions {
   postIntelEndpoint: (endpoint: string, payload: Record<string, unknown>, signal?: AbortSignal) => Promise<unknown>;
   getIitcRequestDiagnostics: () => IitcIrisRequestDiagnostics;
   postAgentState: () => void;
+  onInventoryChanged: () => void;
 }
 
 interface InventoryRuntime {
@@ -28,6 +29,7 @@ export function createInventoryRuntime(options: InventoryRuntimeOptions): Invent
   let currentSubscriptionPromise: Promise<IitcIrisSubscriptionState> | undefined;
   let latestSubscriptionState: IitcIrisSubscriptionState = {status: 'unknown'};
   let latestInventorySummary: IitcInventorySummary | undefined;
+  let keyCountsByGuid = new Map<string, number>();
   let latestInventoryState: IitcIrisInventoryState = {
     status: 'idle',
     requestState: 'idle',
@@ -50,7 +52,7 @@ export function createInventoryRuntime(options: InventoryRuntimeOptions): Invent
 
   function getPortalKeyCount(portalGuid: string): number | undefined {
     if (!latestInventorySummary) return undefined;
-    return getIitcInventoryPortalKeyCount(latestInventorySummary, portalGuid)?.count ?? 0;
+    return keyCountsByGuid.get(portalGuid) ?? 0;
   }
 
   function postInventoryState(): void {
@@ -249,6 +251,7 @@ export function createInventoryRuntime(options: InventoryRuntimeOptions): Invent
       const rawItems = await fetchInventory(abortController.signal);
       abortController.signal.throwIfAborted();
       latestInventorySummary = summarizeIitcInventory(rawItems);
+      keyCountsByGuid = new Map(latestInventorySummary.keyCounts.map(key => [key.portalGuid, key.count]));
       latestInventoryState = createInventoryStateFromSummary(
         latestInventorySummary,
         rawItems.length > 0 ? 'ready' : 'empty',
@@ -256,6 +259,7 @@ export function createInventoryRuntime(options: InventoryRuntimeOptions): Invent
         performance.now() - startedAt,
       );
       postInventoryState();
+      options.onInventoryChanged();
     } catch (error) {
       if (abortController.signal.aborted || (error instanceof DOMException && error.name === 'AbortError')) return;
       const status = isIitcAuthError(error) ? 'auth' : 'error';

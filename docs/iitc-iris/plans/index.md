@@ -21,12 +21,39 @@ supported authentication and website-distribution permission evidence before beg
 are deferred; the baseline includes Passcode and Missions. The current map-runtime extraction preserves behavior;
 further decomposition should follow clear responsibility boundaries rather than a line-count target.
 
+**Key-count performance (2026-10-28):** the same approach now covers inventory badges: app-owned GUID lookup,
+retained unchanged layers and cached glyphs on one independent key canvas above the level canvas. Accepted inventory
+refreshes update map counts immediately; failed refreshes preserve previous counts. Both overlays share the isolated
+`portal-label-canvas.ts` adapter. Existing badge appearance/offsets/filtering and core are preserved by intent.
+At 4,000 synthetic badges, unchanged refresh/frame samples fell from about 312 to 33 ms; the phone-size/4×-CPU gesture
+probe stayed near 17 ms p95 with keys on. These are local fixture observations, not Android frame-rate claims.
+`npm run check` passes (670 app/core tests + six release gates), all 41 Chrome cases and seven focused Firefox cases
+pass, and final lint is clean. Count changes/removals, failed-refresh cache retention, animated pixel positioning,
+canvas ordering, clearing and replacement are covered. The saved probe and reference comparison are documented.
+Extension packaging and signed Android release checks pass (31 native + 15 JavaScript tests, lint/build).
+Pinned signature, all 19 bundled assets and port-6969 downloads match. XPI/ZIP checkpoint: `2026-10-28T18-27-45`;
+APK `0.4.1-alpha+285c891` (1849), rebuilt with canvas key badges.
+Live APK appearance/performance smoke remains pending: key counts alone and with levels, pan/zoom, toggle and refresh.
+
+**Ornament/artifact performance (2026-10-28):** both overlays now retain unchanged decorations and use separate
+map-owned canvases through the shared `portal-image-canvas.ts` adapter. Image loading/failure, late-load cleanup,
+unused-cache limits, stacking, appearance, exclusions and existing visibility policy have browser coverage. Core,
+Draw Tools and player trails remain unchanged. Reference comparison and synthetic limits are in the port plan.
+At 4,000 local images, unchanged refresh/frame samples fell from about 472 to 71 ms for each overlay, retaining all
+4,000 layers. Enabled phone-size/4×-CPU pan/zoom probes stayed near 17 ms p95 at 100/1,000/4,000 images, using one
+canvas and zero image DOM markers per overlay. These are synthetic observations, not real-device frame-rate claims.
+`npm run check` passes (670 app/core tests + six release gates); all 45 Chrome cases, four final focused Chrome cases
+and ten focused Firefox cases pass. Packaging and signed Android checks pass (31 native + 15 JavaScript tests,
+lint/build); signature, all 19 APK assets and downloaded artifacts are verified against the final web build.
+Latest XPI/ZIP: `2026-10-28T18-47-27`; APK `0.4.1-alpha+285c891` (1850). Live XPI/APK acceptance remains pending:
+visible ornaments/artifacts, pan/zoom, toggles and refresh; key-count smoke also remains pending above.
+
 **Level-label performance (2026-10-28):** the first pass replaces pairwise collisions with spatial buckets and
 retains unchanged labels through incremental refreshes. It improved synthetic refresh timings, but the user still
 reported APK pan/zoom lag in dense Amsterdam and confirmed labels off was noticeably smoother. The follow-up now
 draws labels on one map-owned Leaflet Canvas with cached glyphs, avoiding thousands of animated DOM elements.
 Settled font/colour/size, collision selection, filters, request policy, key-count badges, persisted settings and core
-remain unchanged by intent. The private Leaflet renderer seam is isolated in `portal-level-canvas.ts`.
+remain unchanged by intent. The private Leaflet renderer seam is isolated in `portal-label-canvas.ts`.
 A 4,000-portal/phone-size/4×-CPU Chrome gesture probe reduced label-on p95 frame gaps from about 67 ms (pan)/200 ms
 (zoom) to about 17 ms for both. These are local fixture observations, not Android frame-rate claims.
 `npm run check` passes (669 app/core tests + six release-gate tests, lint/types/CSS/workbench), with no lint warnings.
@@ -39,10 +66,12 @@ APK `0.4.1-alpha+7357dfe` (1848), rebuilt with the canvas renderer.
 The user tested the new APK and reports it is a lot smoother; the live performance smoke is accepted.
 Inventory availability and zoom-dependent feature policy remain deferred.
 
-**Session wrap-up:** checks, packaging and desktop XPI/mobile APK smoke pass; no known blocker to committing/pushing
-this session. After pushing, verify release CI and install its published build. The level-label performance follow-up is accepted;
-keep inventory availability under observation and investigate zoom-dependent data/features afterward. Further architecture/UI cleanup is driven by concrete findings. Play Store authentication/distribution
-requirements remain a separate pre-submission task.
+**Session wrap-up:** automated checks and signed artifacts are ready; combined key-count/ornament/artifact APK smoke
+is pending above.
+Earlier summary-card and level-label smoke passed. After pushing, verify release CI and install its published build.
+Keep inventory availability under observation and investigate zoom-dependent data/features afterward. Further
+architecture/UI cleanup follows concrete findings. Play Store authentication/distribution requirements remain a
+separate pre-submission task.
 
 **Summary cards (2026-10-27):** all nine panels use the shared value-first `SummaryCell`/`SummaryGrid`:
 bold values above small muted uppercase labels, with consistent spacing and smaller mobile values. Portal Details

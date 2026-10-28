@@ -6,8 +6,6 @@
 @import url('./styles/team-colors.css');
 @import url('./styles/team-text-colors.css');
 @import url('./shell/shell.css');
-@import url('./portals/portal-map-icons.css');
 @import url('./map/player-tracker/player-tracker.css');
 @import url('./map/missions/mission-waypoints.css');
 @import url('./map/search/search-marker.css');
-@import url('./map/entities/key-count-label.css');

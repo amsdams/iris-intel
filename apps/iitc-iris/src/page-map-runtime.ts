@@ -120,13 +120,14 @@ const {redeemPasscode, cancelActivePasscodeFetch} = createPasscodeRuntime({
 const inventory = createInventoryRuntime({
   getSelectedPortal: () => ({guid: selection.getSelectedPortalGuid(), title: selection.getSelectedPortal()?.title}),
   postIntelEndpoint, getIitcRequestDiagnostics, postAgentState,
+  onInventoryChanged: () => refreshKeyCountLabels(),
 });
 const {getPortalKeyCount, refreshInventory, refreshSubscriptionStatus, cancelActiveInventoryFetch} = inventory;
 
 const {
   renderEntities, getPortalRadius, getRenderPolicy, isPortalVisible, isLinkVisible, isFieldVisible,
   getSecondaryEntityRenderUpdate, refreshPortalMarkerStylesForHighlighter, clearCoreEntityLayerGroup, clearEntityLayerIndexes,
-  invalidateRenderContext, resetRenderDiagnostics, getRenderDiagnostics,
+  invalidateRenderContext, resetRenderDiagnostics, getRenderDiagnostics, refreshKeyCountLabels,
 } = createMapRenderer({
   getMap: () => window.__iitcIrisMap,
   defaultZoom: DEFAULT_ZOOM,

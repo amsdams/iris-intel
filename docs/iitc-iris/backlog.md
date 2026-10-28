@@ -34,6 +34,40 @@ The behavior-preserving extraction is complete. Inventory feedback and mobile re
 desktop availability and the final subscription-order correction remain watch items. The level-label optimization
 has live APK acceptance after the canvas follow-up; zoom policy remains deferred. The original smoke report alone does not establish a root cause.
 
+### Dense key-count overlay performance (implemented, APK smoke pending, 2026-10-28)
+
+The requested synthetic investigation confirmed high-density overhead despite smooth normal use: key badges were
+recreated on unchanged refreshes, and inventory key arrays were scanned for each rendered portal even while disabled.
+The app now indexes accepted inventory by GUID, skips disabled overlay lookups, retains unchanged badge layers and
+renders keys on one shared canvas above the independent level-label canvas. Accepted inventory updates refresh map
+counts immediately; failed refreshes retain cached counts. Existing appearance, offsets, filtering and request policy
+are preserved by intent, with no new collision hiding or core changes. The bounded glyph cache and private Leaflet
+adapter live in `portal-label-canvas.ts`.
+
+Reference comparison, measurements and limits are in the port plan. The saved profiler accepts `--key-counts` with
+optional `--gestures`. Live APK appearance/performance acceptance remains pending; actual user key density is unmeasured.
+
+### Other map-overlay performance candidates (ornaments/artifacts implemented, smoke pending, 2026-10-28)
+
+- **Ornaments/artifacts implemented together:** both retain unchanged decorations and use independent canvases
+  through `portal-image-canvas.ts`. Reference IITC already selects `L.canvasIconLayer` for ornaments; its artifacts
+  still use ordinary image markers. IRIS preserves URL overrides, exclusions, offsets, opacity, zoom size, stacking
+  and existing visibility policy. Image loading/failure, retries after toggle, cache cleanup and late loads are covered.
+  Live XPI/APK smoke remains pending.
+- **Draw Tools / player traces:** retain unchanged drawings/traces before considering more canvas work. Draw Tools
+  rebuilds its SVG marker elements and paths; crossing detection is a separate, unmeasured CPU candidate. Player
+  pins already retain identity and own interactive popups; keep that interaction intact.
+- **Leave low-volume overlays alone:** selected-portal/location/search previews and a selected mission do not show
+  the same obvious high-density use. Main portal/link/field paths already use canvas and incremental synchronization.
+
+The saved probe now supports `--ornaments` / `--artifacts`, with optional `--gestures`. Warm local-image stress tests
+retain zero markers on unchanged refreshes; at 100/1,000/4,000 images the median refresh/frame samples are about
+35/59/472 ms for ornaments and 35/64/473 ms for artifacts. These include dispatch, frame opportunities and image
+decoding, not just renderer execution. Live decoration density and remote image behavior are unmeasured; 4,000 is
+a stress case, not a typical map estimate. See the port plan for reference details and measurement limits.
+The investigation led to the combined implementation above. Draw Tools/player trails remain deferred; this does not
+change core or request policy. Compare the implementation measurements in the port plan with these baseline samples.
+
 ### Cancelled panel can remain loading on reopen (2026-10-27)
 
 A delayed-response browser probe confirmed that closing Inventory during loading cancels its request, but reopening
