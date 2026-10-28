@@ -1,4 +1,7 @@
 import {AppearancePanel} from './system/appearance-panel/appearance-panel';
+import {PanelsPanel} from './system/panels-panel/panels-panel';
+import {AboutPanel} from './system/about-panel/about-panel';
+import {usePanelVisibility} from './shell/panel-visibility';
 import {BaseLayerNotice} from './map/layers/base-layer-notice';
 import {useUiTheme} from './shell/ui-theme';
 import {getExtensionUrl} from './platform/assets';
@@ -172,6 +175,7 @@ function injectScript(src: string): void {
 
 function App(): h.JSX.Element {
   const {uiTheme, setUiTheme} = useUiTheme();
+  const {isPanelVisible, togglePanel, restoreDefaults: restorePanelDefaults} = usePanelVisibility();
   const postIitcMessage = useCallback((message: IitcIrisMessage): void => {
     window.postMessage(message, '*');
   }, []);
@@ -419,8 +423,9 @@ function App(): h.JSX.Element {
   }, [closeSheetToMap]);
 
   const openSheet = useCallback((sheet: SheetId): void => {
+    if (!isPanelVisible(sheet)) return;
     openSheetCommand(sheet, activeSheet, activeSidePanel, postIitcMessage, {setActiveSheet, setActiveSidePanel, storeActiveSheet, storeSidePanelId});
-  }, [activeSheet, activeSidePanel, postIitcMessage]);
+  }, [activeSheet, activeSidePanel, postIitcMessage, isPanelVisible]);
 
   const openSearch = useCallback((): void => {
     openSheet('search');
@@ -431,8 +436,13 @@ function App(): h.JSX.Element {
   }, [openSheet]);
 
   const toggleSheet = useCallback((sheet: SheetId): void => {
+    if (!isPanelVisible(sheet)) return;
     toggleSheetCommand(sheet, activeSheet, activeSidePanel, postIitcMessage, {setActiveSheet, setActiveSidePanel, storeActiveSheet, storeSidePanelId});
-  }, [activeSheet, activeSidePanel, postIitcMessage]);
+  }, [activeSheet, activeSidePanel, postIitcMessage, isPanelVisible]);
+
+  useEffect(() => {
+    if (!isPanelVisible(activeSheet)) closeSheetToMap();
+  }, [activeSheet, isPanelVisible, closeSheetToMap]);
 
   const refreshComm = useCallback((tab: IitcIrisCommTab = commState.tab, older = false): void => {
     requestCommAction(tab, older);
@@ -936,6 +946,13 @@ function App(): h.JSX.Element {
         selectPortalHighlighter={selectPortalHighlighter}
         toggleLayerSetting={toggleLayerSetting}
       />
+      {activeSheet === 'about' && <AboutPanel closeAbout={closeSheetToMap} />}
+      {activeSheet === 'panelSettings' && <PanelsPanel
+        isPanelVisible={isPanelVisible}
+        togglePanel={togglePanel}
+        restoreDefaults={restorePanelDefaults}
+        closePanels={closeSheets}
+      />}
       {activeSheet === 'appearance' && <AppearancePanel
         closeAppearance={closeSheetToMap}
         uiTheme={uiTheme}
@@ -978,6 +995,7 @@ function App(): h.JSX.Element {
         />
       )}
       <IitcIrisSheetTabBar
+        isPanelVisible={isPanelVisible}
         activePrimaryMenu={activePrimaryMenu}
         togglePrimaryMenu={togglePrimaryMenu}
         selectedPrimaryLabel={selectedPrimaryLabel}

@@ -42,7 +42,7 @@ for (const viewport of [{width: 780, height: 360}, {width: 780, height: 280}, {w
       ['Map', 'Missions'], ['Map', 'Links'], ['Map', 'Markers'], ['Agent', 'Profile'], ['Agent', 'Inventory'],
       ['Map', 'Display'], ['Map', 'Controls'], ['Map', 'Scores'], ['Map', 'Counts'], ['Map', 'List'],
       ['Map', 'Scoreboard'], ['Map', 'Search'], ['Agent', 'Passcode'], ['COMM', null],
-      ['System', 'Appearance'], ['System', 'Diagnostics'], ['System', 'Shortcuts'],
+      ['System', 'Appearance'], ['System', 'Panels'], ['System', 'Diagnostics'], ['System', 'Shortcuts'], ['System', 'About'],
     ]) {
       await test.step(name ?? menu, async () => {
         const panel = await openPanel(page, menu, name);
@@ -70,6 +70,23 @@ for (const viewport of [{width: 780, height: 360}, {width: 780, height: 280}, {w
         }, name);
         if (name === 'Missions') await reachable(panel.getByText('Mission 23', {exact: true}));
         if (name === 'Inventory') await reachable(panel.getByText('Key 23', {exact: true}));
+        if (name === 'About') {
+          await expect(panel).toContainText('Stefan Breunig');
+          await expect(panel).toContainText('DanielOnDiordna');
+          await expect(panel.getByRole('link', {name: 'Full credits and original sources'}))
+            .toHaveAttribute('href', 'https://github.com/amsdams/iris-intel/blob/main/CREDITS.md');
+          for (const label of ['IRIS — GPL-3.0', 'IITC / IITC-CE — ISC', 'Leaflet — BSD-2-Clause',
+            'Preact — MIT', 'MapLibre GL JS — license and bundled notices', 'MapLibre GL Leaflet — ISC']) {
+            const disclosure = panel.locator('details').filter({has: page.locator('summary', {hasText: label})});
+            await disclosure.locator('summary').click();
+            await expect(disclosure.locator('pre')).toContainText(/Copyright|copyright/);
+            await expect(disclosure.locator('pre')).toBeVisible();
+            expect(await disclosure.locator('pre').evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+            expect(await panel.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+            await disclosure.locator('summary').click();
+          }
+          if (viewport.width === 412) await testInfo.attach('about', {body: await page.screenshot(), contentType: 'image/png'});
+        }
         if (name === 'Links' || name === 'Markers') {
           await expect(panel.locator('.iitc-iris-draw-tools-list-item')).toHaveCount(24);
           await reachable(panel.locator('.iitc-iris-draw-tools-list-item').last());

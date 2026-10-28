@@ -30,6 +30,15 @@ map-generated CSS and its panel inside one feature folder: `map/search/search-pa
 `map/player-tracker/`. Simple panels such as Agent Profile or Help remain directly under their domain; shared
 Inventory/Passcode item-list styles remain at `agent/item-list.css`. Do not create a directory solely for uniform depth.
 
+Optional menu panels are marked in `shell/menu-registry.ts`. `shell/panel-visibility.ts` owns their local visibility
+preferences (`iitc-iris:hidden-panels`), defaulting to all shown and accepting only optional ids. The System Panels
+sheet changes menu access independently of drawings/map layers; navigation and restored-sheet validation share the
+same visibility rule. Baseline panels always remain available.
+
+System → About owns visible project/plugin acknowledgements and offline license disclosures. Root `CREDITS.md`
+records upstream feature sources; packaging copies it and the project license with IITC, Leaflet, Preact and MapLibre
+notices into the shared `licenses/` assets used by extensions and Android.
+
 `content.tsx` assembles the app, bridges page messages, and coordinates shared camera/entity/auth/navigation state.
 Search, Layers, Missions, and location controls own their feature workflows. Their effect calls retain deliberate
 registration order. COMM state and scroll/request coordination remain in app composition; revisit them for a concrete

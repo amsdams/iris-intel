@@ -15,6 +15,8 @@ export type IitcIrisSheetId =
   | 'selectedLink'
   | 'selectedField'
   | 'appearance'
+  | 'panelSettings'
+  | 'about'
   | 'system'
   | 'help'
   | IitcIrisSidePanelId;
@@ -32,6 +34,7 @@ export interface IitcIrisSheetRegistryEntry {
   primaryMenu: IitcIrisPrimaryMenuId;
   selectedKind?: IitcIrisSelectedKind;
   sidePanel?: boolean;
+  optional?: boolean;
 }
 
 export const PRIMARY_MENU_REGISTRY: IitcIrisPrimaryMenuRegistryEntry[] = [
@@ -49,11 +52,11 @@ export const SHEET_REGISTRY: IitcIrisSheetRegistryEntry[] = [
   {id: 'view', label: 'Controls', title: 'Controls', primaryMenu: 'map'},
   {id: 'missions', label: 'Missions', title: 'Missions', primaryMenu: 'map', sidePanel: true},
   {id: 'scores', label: 'Scores', title: 'Scores', primaryMenu: 'map', sidePanel: true},
-  {id: 'portalCounts', label: 'Counts', title: 'Portal counts', primaryMenu: 'map'},
-  {id: 'portalsList', label: 'List', title: 'Portals list', primaryMenu: 'map'},
-  {id: 'scoreboard', label: 'Scoreboard', title: 'Scoreboard', primaryMenu: 'map'},
-  {id: 'drawLinks', label: 'Links', title: 'Drawn links', primaryMenu: 'map'},
-  {id: 'drawMarkers', label: 'Markers', title: 'Drawn markers', primaryMenu: 'map'},
+  {id: 'portalCounts', label: 'Counts', title: 'Portal counts', primaryMenu: 'map', optional: true},
+  {id: 'portalsList', label: 'List', title: 'Portals list', primaryMenu: 'map', optional: true},
+  {id: 'scoreboard', label: 'Scoreboard', title: 'Scoreboard', primaryMenu: 'map', optional: true},
+  {id: 'drawLinks', label: 'Links', title: 'Drawn links', primaryMenu: 'map', optional: true},
+  {id: 'drawMarkers', label: 'Markers', title: 'Drawn markers', primaryMenu: 'map', optional: true},
   {id: 'portal', label: 'Details', title: 'Portal details', primaryMenu: 'selected', selectedKind: 'portal'},
   {id: 'selectedLink', label: 'Details', title: 'Link details', primaryMenu: 'selected', selectedKind: 'link'},
   {id: 'selectedField', label: 'Details', title: 'Field details', primaryMenu: 'selected', selectedKind: 'field'},
@@ -62,8 +65,10 @@ export const SHEET_REGISTRY: IitcIrisSheetRegistryEntry[] = [
   {id: 'passcode', label: 'Passcode', title: 'Passcode redemption', primaryMenu: 'agent', sidePanel: true},
   {id: 'comm', label: 'COMM', title: 'COMM messages', primaryMenu: 'comm', sidePanel: true},
   {id: 'appearance', label: 'Appearance', title: 'Appearance', primaryMenu: 'system'},
+  {id: 'panelSettings', label: 'Panels', title: 'Panels', primaryMenu: 'system'},
   {id: 'system', label: 'Diagnostics', title: 'Diagnostics', primaryMenu: 'system'},
   {id: 'help', label: 'Shortcuts', title: 'Shortcuts', primaryMenu: 'system'},
+  {id: 'about', label: 'About', title: 'About IRIS', primaryMenu: 'system'},
 ];
 
 const SIDE_PANEL_IDS_IN_UI_ORDER: IitcIrisSidePanelId[] = ['agent', 'comm', 'scores', 'missions', 'inventory', 'passcode'];
@@ -75,6 +80,7 @@ export const MAP_MENU_SHEET_REGISTRY = SHEET_REGISTRY.filter((entry) => entry.pr
 export const SELECTED_MENU_SHEET_REGISTRY = SHEET_REGISTRY.filter((entry) => entry.primaryMenu === 'selected');
 export const AGENT_MENU_SHEET_REGISTRY = SHEET_REGISTRY.filter((entry) => entry.primaryMenu === 'agent' && entry.id !== 'scores');
 export const SYSTEM_MENU_SHEET_REGISTRY = SHEET_REGISTRY.filter((entry) => entry.primaryMenu === 'system');
+export const OPTIONAL_PANEL_REGISTRY = SHEET_REGISTRY.filter((entry) => entry.optional);
 
 export function isPrimaryMenuId(value: unknown): value is IitcIrisPrimaryMenuId {
   return PRIMARY_MENU_REGISTRY.some((entry) => entry.id === value);

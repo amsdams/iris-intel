@@ -10,3 +10,7 @@ Missing required images fail the build rather than silently changing their appea
   The Leaflet BSD notice is in `licenses/Leaflet.txt`.
 
 The vendored IITC checkout and its attribution file remain development references, not build inputs.
+
+Packaging also copies the root `CREDITS.md` and `LICENSE` (as `licenses/GPL-3.0.txt`), plus Preact and MapLibre
+notices from the installed dependencies. The APK copies the same `licenses/` directory. System → About imports
+these license texts directly so users can read them offline without an external browser.

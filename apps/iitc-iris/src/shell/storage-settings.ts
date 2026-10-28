@@ -1,6 +1,7 @@
 import {BASE_LAYER_STORAGE_KEY, DEFAULT_BASE_LAYER_ID, normalizeBaseLayerId} from '../map/layers/base-layer-settings';
 export {isBaseLayerId} from '../map/layers/base-layer-settings';
 import {getExtensionUrl} from '../platform/assets';
+import {isPanelVisible, loadHiddenPanels} from './panel-visibility';
 import { DEFAULT_LAYER_SETTINGS } from '../map/layers/layer-registry';
 import { normalizePortalHighlighterId } from '../map/layers/highlighter-registry';
 import {
@@ -313,7 +314,7 @@ export function loadStoredSidePanelId(): SidePanelId | null {
 export function loadStoredActiveSheet(): SheetId {
   try {
     const value = getLocalStorage()?.getItem(ACTIVE_SHEET_STORAGE_KEY);
-    if (isSheetId(value)) return value;
+    if (isSheetId(value)) return isPanelVisible(value, loadHiddenPanels()) ? value : 'map';
     return loadStoredSidePanelId() ?? 'map';
   } catch {
     return loadStoredSidePanelId() ?? 'map';

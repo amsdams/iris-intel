@@ -48,8 +48,10 @@ describe('IITC IRIS menu registry', () => {
       'passcode',
       'comm',
       'appearance',
+      'panelSettings',
       'system',
       'help',
+      'about',
     ];
 
     expect(SHEET_REGISTRY.map((entry) => entry.id)).toEqual(expectedSheetIds);
@@ -76,7 +78,7 @@ describe('IITC IRIS menu registry', () => {
     ]);
     expect(SELECTED_MENU_SHEET_REGISTRY.map((entry) => entry.id)).toEqual(['portal', 'selectedLink', 'selectedField']);
     expect(AGENT_MENU_SHEET_REGISTRY.map((entry) => entry.id)).toEqual(['agent', 'inventory', 'passcode']);
-    expect(SYSTEM_MENU_SHEET_REGISTRY.map((entry) => entry.id)).toEqual(['appearance', 'system', 'help']);
+    expect(SYSTEM_MENU_SHEET_REGISTRY.map((entry) => entry.id)).toEqual(['appearance', 'panelSettings', 'system', 'help', 'about']);
 
     expect(getPrimaryMenuId('portal')).toBe('selected');
     expect(getPrimaryMenuId('comm')).toBe('comm');

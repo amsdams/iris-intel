@@ -30,11 +30,18 @@ The appearance/action checks are kept in [iris.smoke.mjs](iris.smoke.mjs):
 switching styles, context loss/restoration, and map replacement checks. These use empty valid vector styles and
 deliberate faults, not live providers. A recovered map uses OSM and updates Appearance, with a dismissible notice.
 
-[panels.smoke.mjs](panels.smoke.mjs) checks 17 sheets at three landscape sizes and one portrait size. Populated
+[panels.smoke.mjs](panels.smoke.mjs) checks 19 sheets at three landscape sizes and one portrait size. Populated
 mission, inventory, and drawing lists exercise scrolling to the last row, import controls, and panel footers;
 panels must fit above navigation without clipping their top. Each sheet must expose exactly one reachable close
 button that returns to the map. Nested sections share their parent sheet's header. The data is simulated through
 the UI message boundary; the three selected-object sheets are exercised by the map-context cases below.
+About checks original-author credits, the full-credits source link, and all six offline license disclosures without
+horizontal overflow, including the full GPL text.
+
+[panel-visibility.smoke.mjs](panel-visibility.smoke.mjs) checks the five optional Map panels default to shown,
+hide/show choices survive reload, Restore defaults restores every entry, hidden saved panels fall back to the map,
+and malformed preferences cannot hide baseline panels. Saved drawings, live drawing layers and map layer preferences
+remain independent. The System Panels sheet is also included in the landscape/close-button checks above.
 
 [map-view.smoke.mjs](map-view.smoke.mjs) checks URL-over-storage precedence on boot, move-end storage/Intel
 cookie/history synchronization, and restored position after reload without URL position parameters.

@@ -164,6 +164,8 @@
 .iitc-iris-sheet-search .iitc-iris-request-side-panel,
 .iitc-iris-sheet-help .iitc-iris-request-side-panel,
 .iitc-iris-sheet-appearance .iitc-iris-request-side-panel,
+.iitc-iris-sheet-panelSettings .iitc-iris-request-side-panel,
+.iitc-iris-sheet-about .iitc-iris-request-side-panel,
 .iitc-iris-sheet-system .iitc-iris-system-panel {
     display: grid;
 }

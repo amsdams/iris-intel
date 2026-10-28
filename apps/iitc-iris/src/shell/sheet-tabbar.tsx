@@ -12,6 +12,7 @@ import {IITC_IRIS_COMM_TABS} from '../comm/tabs';
 import type {IitcIrisCommState, IitcIrisCommTab, IitcIrisMissionsState} from '../messages';
 
 interface IitcIrisSheetTabBarProps {
+  isPanelVisible: (sheet: IitcIrisSheetId) => boolean;
   activePrimaryMenu: IitcIrisPrimaryMenuId;
   togglePrimaryMenu: (id: IitcIrisPrimaryMenuId) => void;
   selectedPrimaryLabel: string;
@@ -27,6 +28,7 @@ interface IitcIrisSheetTabBarProps {
 }
 
 export function IitcIrisSheetTabBar({
+  isPanelVisible,
   activePrimaryMenu,
   togglePrimaryMenu,
   selectedPrimaryLabel,
@@ -96,7 +98,7 @@ export function IitcIrisSheetTabBar({
       <div className="iitc-iris-sheet-tabbar-secondary">
         {activePrimaryMenu === 'map' && (
           <>
-            {MAP_MENU_SHEET_REGISTRY.map((entry) =>
+            {MAP_MENU_SHEET_REGISTRY.filter(entry => isPanelVisible(entry.id)).map((entry) =>
               entry.id === 'missions'
                 ? renderSheetTab(
                     entry.id,

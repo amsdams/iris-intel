@@ -17,9 +17,30 @@ The retained ownership rules and known limits are in [Application Architecture](
 **Session pickup:** triage concrete alpha feedback first, especially crashes, login, data loss, or broken workflows.
 Release consistency and automatic base-map recovery are implemented (2026-10-25); run the phone checks below
 and verify the next GitHub Actions run. The [Play Store readiness review](play-store-readiness.md) is complete: resolve
-supported authentication and website-distribution permission evidence before beginning store delivery work. [Optional additional features](../backlog.md#optional-additional-features-deferred-2026-10-21)
-are deferred; the baseline includes Passcode and Missions. The current map-runtime extraction preserves behavior;
+supported authentication and website-distribution permission evidence before beginning store delivery work.
+[Optional panel visibility](../backlog.md#optional-additional-features) is implemented; reordering remains deferred,
+and the baseline includes Passcode and Missions. The current map-runtime extraction preserves behavior;
 further decomposition should follow clear responsibility boundaries rather than a line-count target.
+
+**Credits and About (2026-10-28):** System → About acknowledges IITC/IITC-CE, original plugin authors and inventory
+references, with project/source links and six offline license disclosures. Root `CREDITS.md` records feature/source
+lineage, and the missing GPL-3.0 text now matches the license already declared in the README. Packaging includes
+credits, GPL and Preact notices alongside the retained IITC, Leaflet and MapLibre notices in extension/APK assets.
+`npm run check` passes (662 app/core tests + six release gates); Chrome coverage passes (46 suite cases plus the four
+final panel cases), as do four Firefox panel checks. Packaging and signed Android checks pass. All seven notice files,
+22 APK assets, extension contents and served downloads match; the APK certificate matches the release pin.
+XPI/ZIP: `2026-10-28T21-10-31`; signed APK `0.4.1-alpha+fe2683b` (1853), available on port 6969.
+Live smoke pending: About credits, license expansion and closure on XPI/APK.
+
+**Optional panel visibility (2026-10-28):** System → Panels shows/hides Counts, List, Scoreboard, Links and Markers.
+All start shown, with local preferences and Restore defaults; baseline panels remain available. Menu/navigation and
+stored-sheet restoration respect visibility. Saved drawings, rendered overlays and layer settings remain independent.
+Preferences save during the action so immediate reloads retain changes. Reordering remains deferred.
+`npm run check` passes (662 app/core tests + six release gates); all 50 Chrome cases and six focused Firefox cases
+pass, including persistence/reset, malformed preferences, drawing preservation and four viewport/close-button checks.
+Packaging and signed Android checks pass; certificate, 19 bundled assets, extension assets and served downloads match.
+XPI/ZIP: `2026-10-28T21-01-36`; APK `0.4.1-alpha+fe2683b` (1853), available on port 6969.
+Live smoke pending: hide/show panels, reload and Restore defaults on XPI/APK.
 
 **Zoom-dependent availability (2026-10-28):** Display, Counts, Lists and Scoreboard now show inline coverage notes
 at wider views, including shorter-link omissions where applicable. Labels/highlighters use known per-portal data at
@@ -97,8 +118,10 @@ APK `0.4.1-alpha+7357dfe` (1848), rebuilt with the canvas renderer.
 The user tested the new APK and reports it is a lot smoother; the live performance smoke is accepted.
 Inventory availability remains a watch item; zoom-dependent availability progress is recorded above.
 
-**Session wrap-up (2026-10-28):** zoom availability smoke is accepted; checks and signed artifacts are ready for
-commit/push. Verify release CI after pushing. No additional implementation is required before wrapping up.
+**Session wrap-up (2026-10-28):** optional panel visibility and About/credits await the short smoke checks above.
+Zoom availability smoke is accepted; checks and signed artifacts are ready for the user's commit/push. The final
+build includes both System → Panels and System → About. Verify release CI and install its published build after
+pushing. No additional implementation is required before wrapping up.
 Main lesson: distinguish missing Intel data from disabled display settings, and unknown metadata from a negative result.
 Next candidates are the existing search-during-zoom race and panel cancellation/reopening checks; player-tracker zoom
 overrides and COMM coverage feedback remain optional/deferred. Earlier combined overlay smoke limits remain above.

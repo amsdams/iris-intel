@@ -119,8 +119,10 @@ Start with the [documentation index](docs/README.md), [architecture](docs/iitc-i
 
 ## Attribution
 
-The repository's existing declared license is GPL-3.0.
+IRIS is distributed under [GPL-3.0](LICENSE).
 
 This independent project is not affiliated with or endorsed by Niantic. IITC-derived bundled assets and Leaflet assets
 retain their notices in [assets/licenses](apps/iitc-iris/assets/licenses/). Existing source lineage and IITC behavior
-references are documented in the port plan and feature notes.
+references are documented in the port plan and feature notes. See [Credits](CREDITS.md) for the original projects,
+plugin authors and source links. System → About provides visible credits and offline license notices; these are
+included with both extension and APK builds.
