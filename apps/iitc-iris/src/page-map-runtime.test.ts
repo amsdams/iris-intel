@@ -9,6 +9,7 @@ vi.mock('leaflet', () => ({default: {
 }}));
 
 vi.mock('./map/layers/base-layers', () => ({createBaseLayer: leaflet.tileLayer}));
+vi.mock('./map/entities/portal-level-canvas', () => ({createPortalLevelCanvas: vi.fn(), createPortalLevelLabel: vi.fn()}));
 
 class Container extends EventTarget {
   getBoundingClientRect(): {left: number; top: number} { return {left: 0, top: 0}; }

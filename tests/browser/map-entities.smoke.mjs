@@ -12,6 +12,26 @@ const entities = {
   ]}],
 };
 const render = (page, value) => page.evaluate(entities => window.postMessage({type: 'IITC_IRIS_RENDER_ENTITIES', entities}, '*'), value);
+const levelLabels = (page, team) => page.evaluate(team => window.__iitcIrisLayers.labels
+  .filter(layer => typeof layer.options.levelLabel === 'number' && (!team || layer.options.className.endsWith(`-${team}`)))
+  .map(layer => String(layer.options.levelLabel)), team);
+const levelInkAtPortal = (page, guid) => page.evaluate(guid => {
+  const canvas = document.querySelector('.iitc-iris-level-labels-canvas');
+  const marker = window.__iitcIrisLayers.entityLayerIndex.portals.get(guid)?.[0];
+  if (!canvas || !marker) return false;
+  const map = window.__iitcIrisMap;
+  const point = map.latLngToContainerPoint(marker.getLatLng());
+  const mapRect = map.getContainer().getBoundingClientRect();
+  const rect = canvas.getBoundingClientRect();
+  const scale = canvas.width / rect.width;
+  const x = Math.round((mapRect.left + point.x - rect.left) * scale);
+  const y = Math.round((mapRect.top + point.y - rect.top) * scale);
+  const pixels = canvas.getContext('2d').getImageData(x - 6 * scale, y - 6 * scale, 12 * scale, 12 * scale).data;
+  for (let i = 0; i < pixels.length; i += 4) {
+    if (pixels[i] > 220 && pixels[i + 1] > 220 && pixels[i + 2] > 130 && pixels[i + 3] > 128) return true;
+  }
+  return false;
+}, guid);
 const counts = page => page.evaluate(() => {
   const layers = window.__iitcIrisLayers;
   return ['portals', 'links', 'fields'].map(key => layers.coreLayerGroups[key].getLayers().filter(layer => window.__iitcIrisMap.hasLayer(layer)).length);
@@ -101,7 +121,124 @@ test('overlay, faction and level filters restore layers; highlighters restyle ex
   await expect.poll(marker).toEqual({same: true, fill: originalFill});
 });
 
+test('level labels retain layers and their shared canvas through refreshes, update changed levels and obey collisions and filters', async ({page}) => {
+  await settings(page, {labels: true});
+  await expect.poll(async () => (await levelLabels(page)).length).toBe(3);
+  await expect(page.locator('.iitc-iris-level-labels-canvas')).toHaveCount(1);
+  await expect(page.locator('.iitc-iris-level-label')).toHaveCount(0);
+  await expect.poll(() => levelInkAtPortal(page, 'res')).toBe(true);
+  await page.evaluate(() => {
+    window.entityFixture.levelLabels = window.__iitcIrisLayers.labels.slice();
+    window.entityFixture.levelCanvas = document.querySelector('.iitc-iris-level-labels-canvas');
+  });
+  await render(page, {...entities, generation: 901, portals: entities.portals.map(p => ({...p, health: 80}))});
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  expect(await page.evaluate(() => window.__iitcIrisLayers.labels.every((label, i) =>
+    label === window.entityFixture.levelLabels[i]) &&
+    document.querySelector('.iitc-iris-level-labels-canvas') === window.entityFixture.levelCanvas)).toBe(true);
+
+  const updated = {...entities.portals[0], level: 7};
+  await render(page, {...entities, generation: 902, portals: [updated, ...entities.portals.slice(1)]});
+  await expect.poll(() => levelLabels(page, 'R')).toEqual(['7']);
+  expect(await page.evaluate(() => ({
+    oldDetached: !window.entityFixture.levelLabels[0]._map,
+    othersRetained: window.entityFixture.levelLabels.slice(1).every(label => window.__iitcIrisLayers.labels.includes(label)),
+  }))).toEqual({oldDetached: true, othersRetained: true});
+
+  await render(page, {...entities, generation: 903, portals: [updated, ...entities.portals.slice(1),
+    {...updated, guid: 'overlapping', level: 8},
+    {...portal('placeholder', 'R', 8, 3000), isPlaceholder: true},
+    {...portal('unknown', 'R', undefined, 4000)},
+  ]});
+  await expect.poll(() => levelLabels(page, 'R')).toEqual(['8']);
+  await expect.poll(async () => (await levelLabels(page)).length).toBe(3);
+  await settings(page, {level8Portals: false});
+  await expect.poll(() => levelLabels(page, 'R')).toEqual(['7']);
+  await settings(page, {resistance: false});
+  await expect.poll(async () => (await levelLabels(page)).length).toBe(2);
+  await settings(page, {labels: false});
+  await expect.poll(async () => (await levelLabels(page)).length).toBe(0);
+  await settings(page, {labels: true});
+  await expect.poll(async () => (await levelLabels(page)).length).toBe(2);
+  await render(page, {...entities, generation: 904, portals: []});
+  await expect.poll(async () => (await levelLabels(page)).length).toBe(0);
+});
+
+test('canvas level text follows animated pan and zoom and clears when disabled', async ({page}) => {
+  await page.route('**/entity-fixture.json', route => route.fulfill({json: {result: {map: {fixture: {
+    gameEntities: entities.portals.map(p => [p.guid, 1000, ['p', p.team, p.latE6, p.lngE6, p.level, 100, 8, '', 'Fixture', [], false, false, null, 1000]]),
+  }}}}}));
+  await settings(page, {labels: true});
+  await expect.poll(() => levelInkAtPortal(page, 'res')).toBe(true);
+  await page.evaluate(() => new Promise(resolve => {
+    const map = window.__iitcIrisMap;
+    map.once('moveend', resolve);
+    map.panBy([40, 30], {animate: true, duration: 0.1});
+  }));
+  await expect.poll(() => levelInkAtPortal(page, 'res')).toBe(true);
+  await page.evaluate(() => new Promise(resolve => {
+    const map = window.__iitcIrisMap;
+    map.once('zoomend', resolve);
+    map.setZoom(17, {animate: true});
+  }));
+  await expect.poll(() => levelInkAtPortal(page, 'res')).toBe(true);
+  await expect(page.locator('.iitc-iris-level-labels-canvas')).toHaveCount(1);
+  await settings(page, {labels: false});
+  await expect.poll(() => page.evaluate(() => {
+    const canvas = document.querySelector('.iitc-iris-level-labels-canvas');
+    const data = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+    return data.some((_, i) => i % 4 === 3 && data[i] !== 0);
+  })).toBe(false);
+});
+
+test('level and key-count labels coexist and recover after zoom gating and a full clear', async ({page}) => {
+  await page.evaluate(() => {
+    const original = window.fetch;
+    window.fetch = (url, init) => {
+      if (String(url).endsWith('/getHasActiveSubscription')) return Promise.resolve(Response.json({result: true}));
+      if (String(url).endsWith('/getInventory')) return Promise.resolve(Response.json({result: [
+        ['key', 1, {resource: {resourceType: 'PORTAL_LINK_KEY'}, portalCoupler: {portalGuid: 'res', portalTitle: 'Res'}}],
+      ]}));
+      return original(url, init);
+    };
+    window.addEventListener('message', ({data}) => {
+      if (data.type === 'IITC_IRIS_INVENTORY_STATUS') window.entityFixture.inventory = data.inventory;
+    });
+    window.postMessage({type: 'IITC_IRIS_REQUEST_INVENTORY'}, '*');
+  });
+  await expect.poll(() => page.evaluate(() => window.entityFixture.inventory?.status)).toBe('ready');
+  await settings(page, {labels: true, keyCount: true});
+  await expect.poll(async () => (await levelLabels(page)).length).toBe(3);
+  await expect(page.locator('.iitc-iris-key-count-label')).toHaveText('1');
+  await settings(page, {labels: false});
+  await expect.poll(async () => (await levelLabels(page)).length).toBe(0);
+  await expect(page.locator('.iitc-iris-key-count-label')).toHaveText('1');
+  await settings(page, {labels: true, keyCount: false});
+  await expect.poll(async () => (await levelLabels(page)).length).toBe(3);
+  await expect(page.locator('.iitc-iris-key-count-label')).toHaveCount(0);
+
+  await page.evaluate(() => window.__iitcIrisMap.setZoom(13, {animate: false}));
+  await expect.poll(() => page.evaluate(() => window.entityFixture.status?.renderPolicy?.labels)).toBe(false);
+  await expect.poll(async () => (await levelLabels(page)).length).toBe(0);
+  await page.evaluate(() => window.__iitcIrisMap.setZoom(16, {animate: false}));
+  await expect.poll(() => page.evaluate(() => window.entityFixture.status?.renderPolicy?.labels)).toBe(true);
+  await render(page, {...entities, generation: 905});
+  await expect.poll(async () => (await levelLabels(page)).length).toBe(3);
+
+  // Fetching the empty fixture clears all layers independently of incremental render synchronization.
+  await page.evaluate(() => window.postMessage({type: 'IITC_IRIS_DATA_SOURCE_SETTINGS', dataSource: {
+    mode: 'fixture', id: 'clear-labels', label: 'clear-labels', url: '/entity-fixture.json',
+  }}, '*'));
+  await expect.poll(() => page.evaluate(() => window.entityFixture.status?.status)).toBe('fixture clear-labels');
+  await expect.poll(async () => (await levelLabels(page)).length).toBe(0);
+  await render(page, {...entities, generation: 906});
+  await expect.poll(async () => (await levelLabels(page)).length).toBe(3);
+});
+
 test('replacement maps receive fresh entity layers without retaining old renderer resources', async ({page}) => {
+  await settings(page, {labels: true});
+  await expect.poll(async () => (await levelLabels(page)).length).toBe(3);
+  await page.evaluate(() => { window.entityFixture.oldLevelLabel = window.__iitcIrisLayers.labels[0]; });
   // Let Canvas finish painting before replacement; the immediate-redraw edge case is tracked separately.
   await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   await page.evaluate(() => {
@@ -123,11 +260,15 @@ test('replacement maps receive fresh entity layers without retaining old rendere
   await expect.poll(() => counts(page)).toEqual([0, 0, 0]);
   await render(page, {...entities, generation: 902});
   await expect.poll(() => counts(page)).toEqual([3, 1, 1]);
+  await settings(page, {labels: true});
+  await expect.poll(async () => (await levelLabels(page)).length).toBe(3);
   expect(await page.evaluate(() => {
     const current = window.__iitcIrisLayers.entityLayerIndex.portals.get('res')[0];
     const old = window.entityFixture.original.portals.get('res')[0];
-    return {fresh: current !== old, oldDetached: !old._map, currentMap: current._map === window.__iitcIrisMap};
-  })).toEqual({fresh: true, oldDetached: true, currentMap: true});
+    const oldLabel = window.entityFixture.oldLevelLabel;
+    return {fresh: current !== old, oldDetached: !old._map, currentMap: current._map === window.__iitcIrisMap,
+      labelsFresh: !window.__iitcIrisLayers.labels.includes(oldLabel), oldLabelDetached: !oldLabel._map};
+  })).toEqual({fresh: true, oldDetached: true, currentMap: true, labelsFresh: true, oldLabelDetached: true});
 });
 
 test('portal details promote shared entities, reuse cached state and reject a cancelled late response', async ({page}) => {

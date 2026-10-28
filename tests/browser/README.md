@@ -45,6 +45,25 @@ cached-state display while refreshing, cancelled late responses, pending portal 
 across map replacement, and native context gestures for portals, links, fields and empty map points. A combined
 layer/highlighter/base-map message verifies update ordering, retained marker identity and both deferred frame timings.
 
+Level-label cases protect retained layers/shared canvas on unchanged refreshes, level changes, collision winners,
+placeholder exclusion, faction/level toggles, removal and map-replacement cleanup. Pixel checks verify visible text
+at portal positions after animated pan/zoom and an empty canvas after labels are disabled. Collision unit tests compare the
+spatial buckets against the previous exhaustive scan, including boundary points and seeded dense/sparse clouds.
+
+To repeat the optional performance probe, build with `npm run build -w apps/iitc-iris`, then run
+`node tests/browser/server.mjs` in one terminal and `node tests/browser/profile-level-labels.mjs` in another.
+Stop the server afterward; keep it stopped when running the regular browser suite. The probe prints JSON for
+1,000/4,000 synthetic portals: three samples after a warm-up, toggle phase timings, refresh latency and retained labels.
+Frame durations include message dispatch and two animation frames after DOM detection (refreshes use a queued task
+and two frames). They are paint opportunities, not measured GPU completion or real-device frame rates; no timing
+threshold gates the tests. All external requests are stubbed.
+
+Use `node tests/browser/profile-level-labels.mjs --gestures` with the same server for animated pan/zoom.
+This keeps a simulated 4,000-portal dataset through camera-triggered refreshes, compares labels off/on at 412×780
+and 2× pixel density, and applies 4× Chrome CPU throttling. JSON includes animation-frame gaps and CDP style/layout/
+task durations. It approximates CPU pressure, not Android hardware, GPU/compositor completion or live map/network
+work. Run it alone, without concurrent builds/browser probes; durations are observations, not test thresholds.
+
 [panel-requests.smoke.mjs](panel-requests.smoke.mjs) runs real Scores, Inventory/Profile, Passcode and COMM panel workflows
 with simulated endpoint responses, checking request metadata, selected-portal key counts and rendered rewards. It also
 checks that Inventory waits for an active shared subscription check, closing during that wait does not dispatch

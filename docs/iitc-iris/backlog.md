@@ -20,15 +20,19 @@ The user reports the extraction still behaves as before, with three follow-ups:
   close together. Stop active investigation here and retain timing/availability as a watch item. The final correction
   waits for active C.O.R.E. before requesting inventory, matching reference prerequisites, with cancellation guarded
   during the wait. Its live effect remains unverified; neither a shared-device quota nor a server cooldown is proven.
-- **Level-label performance:** enabling level labels noticeably slows the map. Profile real portal counts, DOM label
-  construction/recreation and pan/zoom paint costs; compare against IITC before choosing an optimization.
+- **Level-label performance:** the 2026-10-28 pass replaces pairwise collision checks with spatial buckets and retains
+  unchanged label layers during incremental refreshes. The user still reported APK pan/zoom lag in Amsterdam, with
+  labels off noticeably smoother. A shared canvas now replaces thousands of DOM labels; the CPU-throttled gesture
+  probe shows much smaller frame gaps. Differential collision and pixel/lifecycle regressions protect the change.
+  Reference comparison, measurements and the saved probe are in the port plan/browser README. The user tested
+  the new APK and reports it is a lot smoother. This performance item is closed; revisit on a concrete regression.
 - **Zoom-dependent features:** investigate and explain why features such as unclaimed portals become unavailable when
   zoomed out. Separate data omitted by Intel's zoom-dependent responses from IRIS render/filter/overlay policies;
   compare with reference IITC. Avoid implying that a filter can retrieve portals absent from the response.
 
 The behavior-preserving extraction is complete. Inventory feedback and mobile retrieval have live confirmation;
-desktop availability and the final subscription-order correction remain watch items. Label performance and zoom
-policy remain deferred. The original smoke report alone does not establish a root cause.
+desktop availability and the final subscription-order correction remain watch items. The level-label optimization
+has live APK acceptance after the canvas follow-up; zoom policy remains deferred. The original smoke report alone does not establish a root cause.
 
 ### Cancelled panel can remain loading on reopen (2026-10-27)
 

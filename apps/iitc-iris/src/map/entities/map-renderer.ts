@@ -6,6 +6,8 @@ import type {
   IitcIrisRenderMutationDiagnostics, IitcIrisRenderMutationLayerDiagnostics, IitcIrisRenderPolicy, IitcIrisRenderPortal,
 } from '../../messages';
 import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from '../../iitc-colors';
+import {createPortalLevelCanvas, createPortalLevelLabel} from './portal-level-canvas';
+import {getVisibleLevelLabelGuids} from './portal-level-numbers';
 import {DEFAULT_HIGHLIGHTER_ID, getPortalHighlighter} from '../layers/highlighter-registry';
 import {createIitcGeodesicPolygon, createIitcGeodesicPolyline} from '../leaflet-geodesic';
 import {getLayerPane, type IitcIrisCoreLayerKey, type IitcIrisEntityLayerIndex, type IitcIrisMapLayers} from '../map-layers';
@@ -97,7 +99,13 @@ export function createMapRenderer({
   const LEVEL_COLORS = IITC_LEVEL_COLORS;
   const LEVEL_TO_WEIGHT = [2, 2, 2, 2, 2, 3, 3, 4, 4] as const;
   const LEVEL_TO_RADIUS = [7, 7, 7, 7, 8, 8, 9, 10, 11] as const;
-  const LEVEL_LABEL_COLLISION_SIZE = 15;
+  const levelLabelIndex: IitcIrisEntityLayerIndex = new Map();
+  let previousLevelLabelPortals: IitcIrisRenderPortal[] = [];
+
+  function resetLevelLabels(): void {
+    levelLabelIndex.clear();
+    previousLevelLabelPortals = [];
+  }
 
   function getPortalMarkerScale(zoom: number): number {
     return zoom >= 14 ? 1 : zoom >= 11 ? 0.8 : zoom >= 8 ? 0.65 : 0.5;
@@ -336,6 +344,7 @@ export function createMapRenderer({
     clearRenderedLayers(layers.ornaments);
     clearRenderedLayers(layers.artifacts);
     clearRenderedLayers(layers.labels);
+    resetLevelLabels();
     clearEntityLayerIndexes(layers);
   }
 
@@ -348,7 +357,11 @@ export function createMapRenderer({
     if (update.portalOverlays) {
       clearRenderedLayers(layers.ornaments);
       clearRenderedLayers(layers.artifacts);
-      clearRenderedLayers(layers.labels);
+      // Key-count markers are separate decorations; keep unchanged level markers attached.
+      const levelLayers = new Set([...levelLabelIndex.values()].flat());
+      const removedLabels = new Set(layers.labels.filter((layer) => !levelLayers.has(layer)));
+      clearRenderedLayers([...removedLabels]);
+      compactRenderedLayers(layers.labels, removedLabels);
     }
   }
 
@@ -436,45 +449,32 @@ export function createMapRenderer({
   }
 
   function createLevelLabelMarker(latLng: [number, number], level: number, team: keyof typeof TEAM_COLORS): LeafletLayer {
-    return L.marker(latLng, {
-      icon: L.divIcon({
-        className: `iitc-iris-level-label iitc-iris-level-label-${team}`,
-        html: String(level),
-        iconSize: [12, 12],
-        iconAnchor: [6, 6],
-      }),
-      interactive: false,
-      keyboard: false,
-      pane: getLayerPane('labels'),
-      zIndexOffset: 1000,
-    });
+    const map = getMap() as (LeafletMap & {__iitcIrisLevelLabelRenderer?: L.Canvas}) | undefined;
+    if (!map) throw new Error('Cannot create portal level labels without a map');
+    map.__iitcIrisLevelLabelRenderer ??= createPortalLevelCanvas(getLayerPane('labels'));
+    return createPortalLevelLabel(latLng, level, team, map.__iitcIrisLevelLabelRenderer);
   }
 
-  function getVisibleLevelLabelGuids(portals: IitcIrisRenderEntities['portals']): Set<string> {
+  function getLevelLabelCandidates(portals: IitcIrisRenderEntities['portals']): Parameters<typeof getVisibleLevelLabelGuids>[0] {
     const map = getMap();
-    if (!map) return new Set();
-
-    const candidates = portals
+    if (!map) return [];
+    return portals
       .filter((portal) => !portal.isPlaceholder && portal.level !== undefined)
       .map((portal) => ({
         guid: portal.guid,
         level: getPortalLevel(portal.level, false),
         point: map.project(L.latLng(portal.latE6 / 1e6, portal.lngE6 / 1e6)),
-      }))
-      .sort((a, b) => b.level - a.level || a.guid.localeCompare(b.guid));
+      }));
+  }
 
-    const visible = new Set<string>();
-    const keptPoints: L.Point[] = [];
-    for (const candidate of candidates) {
-      const overlaps = keptPoints.some((point) =>
-        Math.abs(point.x - candidate.point.x) <= LEVEL_LABEL_COLLISION_SIZE &&
-        Math.abs(point.y - candidate.point.y) <= LEVEL_LABEL_COLLISION_SIZE);
-      if (overlaps) continue;
-      visible.add(candidate.guid);
-      keptPoints.push(candidate.point);
-    }
-
-    return visible;
+  function syncLevelLabels(layers: IitcIrisMapLayers, portals: IitcIrisRenderPortal[]): void {
+    syncEntityLayers(
+      layers.labels, levelLabelIndex, previousLevelLabelPortals, portals,
+      (previous, next) => previous.level === next.level && previous.team === next.team &&
+        previous.latE6 === next.latE6 && previous.lngE6 === next.lngE6,
+      (portal) => createLevelLabelMarker(toLatLng(portal.latE6, portal.lngE6), portal.level ?? 0, portal.team),
+    );
+    previousLevelLabelPortals = portals;
   }
 
   function getRenderPolicy(): IitcIrisRenderPolicy {
@@ -1465,7 +1465,7 @@ export function createMapRenderer({
 
     stepStartedAt = performance.now();
     const visibleLevelLabelGuids = secondaryUpdate.portalOverlays && renderPolicy.labels
-      ? getVisibleLevelLabelGuids(getVisiblePortalsForRender())
+      ? getVisibleLevelLabelGuids(getLevelLabelCandidates(getVisiblePortalsForRender()))
       : new Set<string>();
     if (timing) timing.visibleLabelsMs = roundTimingMs(performance.now() - stepStartedAt);
 
@@ -1552,17 +1552,20 @@ export function createMapRenderer({
 
     stepStartedAt = performance.now();
     if (secondaryUpdate.portalOverlays) {
+      const levelLabelPortals: IitcIrisRenderPortal[] = [];
       for (const portal of getVisiblePortalsForRender()) {
         const latLng = toLatLng(portal.latE6, portal.lngE6);
         const radius = getPortalRadius(portal.level, portal.isPlaceholder);
         if (renderPolicy.labels && visibleLevelLabelGuids.has(portal.guid) && portal.level !== undefined) {
-          addRenderedLayer(layers.labels, createLevelLabelMarker(latLng, portal.level, portal.team));
+          levelLabelPortals.push(portal);
         }
         const keyCount = getPortalKeyCount(portal.guid);
         if (layerSettings.keyCount && keyCount !== undefined && keyCount > 0) {
           addRenderedLayer(layers.labels, createKeyCountMarker(latLng, keyCount, radius));
         }
       }
+
+      syncLevelLabels(layers, levelLabelPortals);
 
       if (renderPolicy.artifacts) {
         for (const portal of entities.portals) {
@@ -1605,8 +1608,8 @@ export function createMapRenderer({
   return {
     renderEntities, getPortalRadius, getRenderPolicy, isPortalVisible, isLinkVisible, isFieldVisible,
     getSecondaryEntityRenderUpdate, refreshPortalMarkerStylesForHighlighter, clearCoreEntityLayerGroup, clearEntityLayerIndexes,
-    invalidateRenderContext: (): void => { latestEntityRenderContextKey = ''; },
-    resetRenderDiagnostics: (): void => { latestEntityRenderContextKey = ''; latestRenderMutationDiagnostics = null; },
+    invalidateRenderContext: (): void => { latestEntityRenderContextKey = ''; resetLevelLabels(); },
+    resetRenderDiagnostics: (): void => { latestEntityRenderContextKey = ''; latestRenderMutationDiagnostics = null; resetLevelLabels(); },
     getRenderDiagnostics: () => ({mutation: latestRenderMutationDiagnostics, ornaments: latestOrnamentDiagnostics}),
   };
 }

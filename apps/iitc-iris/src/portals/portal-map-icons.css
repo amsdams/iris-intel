@@ -7,11 +7,3 @@
 .iitc-iris-artifact-icon {
     pointer-events: none;
 }
-
-.iitc-iris-level-label {
-    color: #ffb;
-    font: 700 10px/12px monospace;
-    text-align: center;
-    text-shadow: 0 0 1px #000, 0 0 1em #000, 0 0 0.2em #000;
-    pointer-events: none;
-}

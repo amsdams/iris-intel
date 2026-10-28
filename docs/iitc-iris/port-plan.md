@@ -84,6 +84,47 @@ Naming checklist before creating a new file or exported function:
   IITC naming is not appropriate.
 - Is the divergence only for code cleanliness? Keep the IITC name at the boundary and hide the cleaner structure inside.
 
+## Portal Level Numbers performance checkpoint — 2026-10-28
+
+Reference: `reference/ingress-intel-total-conversion/plugins/portal-level-numbers.js`, especially
+`updatePortalLabels`, `addLabel`, `removeLabel`, and `delayedUpdatePortalLabels`. The plugin owns GUID-indexed
+Leaflet markers in a layer group, filters portals attached to the map with known levels, uses spatial buckets to
+avoid testing every pair, and coalesces request/refresh/layer hooks with short timers. Its `addLabel` still replaces
+existing markers. Labels are passive overlays, not portal state or a plugin-visible data mutation.
+
+IRIS keeps its existing immediate render lifecycle, zoom/detail gating, 15 px inclusive collision square,
+higher-level-first/GUID tie priority, neutral labels, styling and message contracts. These are retained IRIS behavior;
+this pass does not claim identical upstream tie resolution, mobile spacing (upstream scales by 1.5), or hook timing.
+The new neighbouring-bucket scan is checked against the previous exhaustive algorithm. Unchanged label markers/DOM
+are retained through incremental refreshes; changed/hidden/removed labels are replaced or removed, and full clear/map
+replacement resets their index. Key counts remain independent decorations in the shared labels pane.
+
+Synthetic Chrome profiling (1280×800, zoom 16, 20 px grid, three measured runs after warm-up) found 4,000-label collision
+selection falling from a median 49.3 ms to 5.0 ms; unchanged refresh/frame sampling fell from 288.7 ms to 33.4 ms,
+retaining all 4,000 markers instead of replacing all. Initial toggle/frame sampling stayed about 165 ms in both runs;
+creating/painting thousands of DOM labels remains expensive. These are local fixture observations, not phone or
+live-IITC speed claims. The repeatable probe and frame-sampling limits are in `tests/browser/README.md`.
+
+### Dense-map gestures: shared label canvas follow-up
+
+The first APK smoke in Amsterdam still felt sluggish; the user confirmed labels off was noticeably smoother.
+A second probe measures animated pan/zoom with 4,000 loaded portals, a 412×780 viewport at 2× pixel density and
+4× Chromium CPU throttling. Retaining markers did not remove their DOM animation/style overhead. Removing text
+shadows alone barely helped. The DOM version's label-on p95 frame gaps were about 67 ms for pan and 200 ms for zoom;
+labels off stayed near 17 ms. With a shared canvas, label-on gaps stayed near 17 ms in the same local probe.
+These are synthetic browser observations, not Android frame-rate guarantees. The user subsequently tested the new
+APK and reports it is a lot smoother; the live performance smoke is accepted.
+
+IRIS now draws the selected level labels using passive CircleMarker layers on one map-owned Leaflet Canvas renderer.
+The font, colour, fixed settled size and collision winners remain; cached per-level glyphs approximate the previous
+CSS shadows. Native renderer bounds skip offscreen painting, its transform follows gestures, and label indices still
+retain unchanged layers. During zoom animation, raster text scales with the map and redraws at its fixed size at the
+end. Key counts remain independent DOM badges above the label canvas. Renderer disposal follows the map lifecycle.
+`portal-level-canvas.ts` isolates Leaflet 1.9's private `_updateCircle`/`_point`/`_empty` drawing seam; recheck it when
+upgrading Leaflet. Browser regressions check actual text pixels at portal positions after animated pan/zoom, an empty
+canvas after disabling labels, retained layers/canvas and full-clear/map-replacement behavior. The browser README
+records the repeatable `--gestures` probe. Request/data/collision policy and core remain unchanged.
+
 ## Inventory reliability reference checkpoint — 2026-10-27
 
 Reference: `core/code/send_request.js` (`postAjax`) routes HTTP failures through the error callback;

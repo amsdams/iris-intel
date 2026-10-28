@@ -21,10 +21,27 @@ supported authentication and website-distribution permission evidence before beg
 are deferred; the baseline includes Passcode and Missions. The current map-runtime extraction preserves behavior;
 further decomposition should follow clear responsibility boundaries rather than a line-count target.
 
+**Level-label performance (2026-10-28):** the first pass replaces pairwise collisions with spatial buckets and
+retains unchanged labels through incremental refreshes. It improved synthetic refresh timings, but the user still
+reported APK pan/zoom lag in dense Amsterdam and confirmed labels off was noticeably smoother. The follow-up now
+draws labels on one map-owned Leaflet Canvas with cached glyphs, avoiding thousands of animated DOM elements.
+Settled font/colour/size, collision selection, filters, request policy, key-count badges, persisted settings and core
+remain unchanged by intent. The private Leaflet renderer seam is isolated in `portal-level-canvas.ts`.
+A 4,000-portal/phone-size/4×-CPU Chrome gesture probe reduced label-on p95 frame gaps from about 67 ms (pan)/200 ms
+(zoom) to about 17 ms for both. These are local fixture observations, not Android frame-rate claims.
+`npm run check` passes (669 app/core tests + six release-gate tests, lint/types/CSS/workbench), with no lint warnings.
+All 39 Chrome browser cases and five focused Firefox cases pass, including text-pixel alignment after animated
+pan/zoom, clearing disabled labels, retention, key-count coexistence and map replacement. The browser README records
+the saved refresh and `--gestures` probes; both pass. The port plan records reference comparison, intentional differences
+and limits. Extension packaging and signed Android release checks pass (31 native + 15 JavaScript tests, lint/build);
+pinned signature, all 19 bundled assets and port-6969 downloads match. Latest XPI/ZIP: `2026-10-28T15-49-12`;
+APK `0.4.1-alpha+7357dfe` (1848), rebuilt with the canvas renderer.
+The user tested the new APK and reports it is a lot smoother; the live performance smoke is accepted.
+Inventory availability and zoom-dependent feature policy remain deferred.
+
 **Session wrap-up:** checks, packaging and desktop XPI/mobile APK smoke pass; no known blocker to committing/pushing
-this session. After pushing, verify release CI and install its published build. Next engineering priority is profiling
-level-label performance; keep inventory availability under observation and investigate zoom-dependent data/features
-afterward. Further architecture/UI cleanup is driven by concrete findings. Play Store authentication/distribution
+this session. After pushing, verify release CI and install its published build. The level-label performance follow-up is accepted;
+keep inventory availability under observation and investigate zoom-dependent data/features afterward. Further architecture/UI cleanup is driven by concrete findings. Play Store authentication/distribution
 requirements remain a separate pre-submission task.
 
 **Summary cards (2026-10-27):** all nine panels use the shared value-first `SummaryCell`/`SummaryGrid`:
