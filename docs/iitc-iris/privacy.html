@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IRIS Privacy Policy</title>
+<style>
+  body { font: 1rem/1.6 system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem; }
+  h1, h2 { line-height: 1.25; }
+  a { overflow-wrap: anywhere; }
+</style>
+<main>
+  <h1>IRIS Privacy Policy</h1>
+  <p>Last updated: 28 October 2026</p>
+  <p>IRIS is an independent, open-source Ingress Intel companion maintained by Julien Langeveld
+    (<a href="https://github.com/amsdams/iris-intel">IRIS project</a>). It is not affiliated with
+    Niantic Spatial or Google. This policy describes the IRIS Android app.</p>
+
+  <h2>Intel and authentication</h2>
+  <p>The app loads the Ingress Intel website and provides the IRIS interface within Android's WebView.
+    Signing in contacts Niantic Spatial and the authentication provider you choose. Intel requests use your
+    authenticated session to retrieve map, agent, portal, COMM, mission and inventory information, and to
+    perform actions you request, such as sending COMM messages or redeeming a passcode. Inventory access
+    depends on your account's subscription and service availability.</p>
+  <p>The WebView stores session cookies and website data on your device. IRIS does not operate an authentication
+    server or receive copies of your credentials on a maintainer-operated backend. The current login uses an
+    experimental embedded-browser compatibility workaround. Your authentication provider and Niantic Spatial
+    handle information according to their own policies.</p>
+
+  <h2>Maps, searches and images</h2>
+  <p>Your selected base map contacts OpenStreetMap or OpenFreeMap and the resources used by that provider.
+    Address searches send the entered query to OpenStreetMap Nominatim. Portal, mission and map-decoration
+    images load from their supplied hosts, including Google-hosted Ingress resources. These services receive
+    network information such as your IP address and the requested map area, search query or image identifier.
+    An automatic base-map fallback can contact another supported provider if the selected map fails.</p>
+
+  <h2>Optional location and clipboard</h2>
+  <p>Locate requests Android foreground location permission when you choose that feature. Approximate or
+    precise location is used to center the map. Subsequent Intel and base-map requests can reveal that area
+    to their providers. IRIS does not request background location permission. You can deny or revoke permission
+    in Android settings and continue using the other features.</p>
+  <p>Copy actions place the data you select, such as a portal title, drawn markers or diagnostics, on your
+    device clipboard. Pasting or importing text makes the text available to the feature you use. Android
+    and apps you subsequently paste into control further clipboard handling.</p>
+
+  <h2>Updates, feedback and diagnostics</h2>
+  <p>The GitHub APK's manual update check requests public build metadata from GitHub, without attaching Intel
+    cookies or account details. The Play build opens its Google Play listing for updates and does not use that
+    GitHub update check. The chosen service receives the network request. Feedback opens GitHub Issues in
+    your browser. External browser links are also subject to that browser's session and privacy settings.</p>
+  <p>IRIS has no maintainer-operated analytics or automatic crash-reporting service. Diagnostics are shared only
+    if you copy and send them. They contain app, Android and WebView versions, hosts and fixed status messages;
+    they exclude cookies, tokens, player identity and response bodies. Screenshots or reports you add may contain
+    personal or game information. Review them before sharing. GitHub Issues are public: never submit passwords,
+    cookies, tokens or private portal information.</p>
+
+  <h2>Storage, retention and deletion</h2>
+  <p>Session data, website storage and IRIS preferences are stored locally. Settings, map view and saved drawing
+    data remain until you change or clear them or remove the app's storage. Some retrieved game data is cached
+    in memory while the app is running. Android backups are disabled for this app. IRIS does not maintain a
+    separate server-side user profile.</p>
+  <p>Intel logout signs you out while preserving preferences. To remove all app-local session and settings data,
+    use Android Settings → Apps → IRIS → Storage → Clear storage, or uninstall IRIS. Clearing app data does not
+    remove text already copied elsewhere, files you saved separately or reports submitted to GitHub.</p>
+  <p>Clearing IRIS is not deletion of your Ingress, Google or other provider account, COMM messages, or data those
+    providers retain. Use the relevant provider's account and deletion controls. Feedback remains with its
+    recipient under that service's retention policy; contact the maintainer if you need help removing information
+    from a project issue. The maintainer cannot delete data held independently by those providers.</p>
+
+  <h2>Contact and changes</h2>
+  <p>For privacy questions, contact the maintainer through
+    <a href="https://github.com/amsdams/iris-intel/issues/new">the IRIS issue tracker</a> without including sensitive
+    information. Ask for a private contact route if needed. This policy will be updated when the app's data handling
+    changes; the date above identifies this version.</p>
+</main>
+</html>

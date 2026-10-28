@@ -8,6 +8,7 @@
 | [Port plan](iitc-iris/port-plan.md) | IITC behavior, naming, intentional divergences, and feature index. |
 | [Backlog](iitc-iris/backlog.md) | Unprioritized gaps, deferred work, and live-validation watch items. |
 | [APK plan](iitc-iris/plans/android-apk-installable-plan.md) | Android feasibility proofs and implementation readiness. |
+| [Play submission](iitc-iris/play-store-submission.md) | Local AAB build, listing copy, privacy and reviewer setup. |
 | [Facade pattern](iitc-iris/facade-pattern.md) | Selective extraction of pure IITC-shaped domain contracts. |
 | [Payload samples](iitc-iris/fixtures/README.md) | Retained reference samples and capture policy. |
 

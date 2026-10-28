@@ -73,6 +73,15 @@ keep increasing. `IRIS_ANDROID_VERSION_CODE` can explicitly override the code wh
 Moving from the earlier local debug APK requires uninstall/reinstall once, losing its session/settings; later
 release builds use the same signing key and can update in place. Local debug builds retain their separate key.
 
+## Play preparation
+
+Use `source apps/android-intel-spike/signing/release.env` followed by `npm run android:bundle` to test/lint and build
+the signed Play AAB at `app/build/outputs/bundle/release/app-release.aab`. This opts into `-PirisPlayStore=true`:
+**Check for updates** opens Google Play and the GitHub **Releases** menu entry is omitted. Normal APK builds retain
+GitHub updates. No Play publishing or signing enrollment is automated. Application ID, signing key and bundled
+login remain unchanged. The AAB is not directly installable; final Play delivery/signature checks remain required.
+See [Console copy, privacy source and remaining setup](../../docs/iitc-iris/play-store-submission.md).
+
 ## Phone Check
 
 1. Install the update over **IRIS** (previously **IRIS Intel Test**) when the signing key matches, preserving its session. For the first

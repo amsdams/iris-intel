@@ -177,7 +177,9 @@ public final class MainActivity extends Activity {
         PopupMenu menu = new PopupMenu(this, anchor);
         menu.getMenu().add(R.string.about).setOnMenuItemClickListener(item -> { showAbout(); return true; });
         menu.getMenu().add(R.string.check_updates).setOnMenuItemClickListener(item -> { checkUpdates(); return true; });
-        menu.getMenu().add(R.string.releases).setOnMenuItemClickListener(item -> { openBrowser(ReleaseUpdate.RELEASES_URL); return true; });
+        if (!BuildConfig.PLAY_STORE) {
+            menu.getMenu().add(R.string.releases).setOnMenuItemClickListener(item -> { openBrowser(ReleaseUpdate.RELEASES_URL); return true; });
+        }
         menu.getMenu().add(R.string.reload).setOnMenuItemClickListener(item -> { webView.reload(); return true; });
         android.view.SubMenu recovery = menu.getMenu().addSubMenu(R.string.recovery);
         recovery.add(R.string.load_iris).setOnMenuItemClickListener(item -> { openMode(true); return true; });
@@ -195,7 +197,8 @@ public final class MainActivity extends Activity {
     }
 
     private void showPrivacy() {
-        new AlertDialog.Builder(this).setTitle(R.string.privacy).setMessage(R.string.privacy_text)
+        new AlertDialog.Builder(this).setTitle(R.string.privacy).setMessage(getString(R.string.privacy_text,
+                        getString(BuildConfig.PLAY_STORE ? R.string.privacy_updates_play : R.string.privacy_updates_github)))
                 .setPositiveButton(android.R.string.ok, null).show();
     }
 
@@ -206,6 +209,10 @@ public final class MainActivity extends Activity {
     }
 
     private void checkUpdates() {
+        if (BuildConfig.PLAY_STORE) {
+            openBrowser("https://play.google.com/store/apps/details?id=" + getPackageName());
+            return;
+        }
         if (updateDialog != null) return;
         AlertDialog dialog = new AlertDialog.Builder(this).setTitle(R.string.check_updates)
                 .setMessage(R.string.updates_checking)

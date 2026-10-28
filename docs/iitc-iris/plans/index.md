@@ -14,10 +14,17 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
-**Session pickup:** triage concrete alpha feedback first, especially crashes, login, data loss, or broken workflows.
+**Session pickup (2026-10-28):** the maintainer chose Play preparation and actual review feedback rather than waiting
+for an operator inquiry. Work is on `feat/play-store-preparation`; identity/address verification is pending.
+`npm run android:bundle` builds a signed AAB with Play update routing, preserving regular GitHub APK behavior.
+[Submission materials](../play-store-submission.md) include listing copy, a public privacy HTML source and reviewer
+instructions. Public privacy hosting, support email, reviewer credentials/access, final declarations, signing enrollment
+and internal-track/device validation remain pending. GitHub Issues remains the privacy contact by maintainer choice.
+The [investigation](play-store-readiness.md#authenticationdistribution-investigation--2026-10-28) records unresolved
+authentication/permission concerns; no approval or inquiry delivery is claimed. Defer optional features/refactoring.
 Release consistency and automatic base-map recovery are implemented (2026-10-25); run the phone checks below
-and verify the next GitHub Actions run. The [Play Store readiness review](play-store-readiness.md) is complete: resolve
-supported authentication and website-distribution permission evidence before beginning store delivery work. [Optional additional features](../backlog.md#optional-additional-features-deferred-2026-10-21)
+and verify the next GitHub Actions run. Keep the [Play Store readiness findings](play-store-readiness.md) visible during
+preparation and review. [Optional additional features](../backlog.md#optional-additional-features-deferred-2026-10-21)
 are deferred; the baseline includes Passcode and Missions. The current map-runtime extraction preserves behavior;
 further decomposition should follow clear responsibility boundaries rather than a line-count target.
 

@@ -2,6 +2,9 @@ plugins {
     id 'com.android.application'
 }
 
+def playStore = providers.gradleProperty('irisPlayStore').orElse('false').get()
+if (!(playStore in ['true', 'false'])) throw new GradleException('irisPlayStore must be true or false')
+
 android {
     namespace 'org.iris.intelspike'
     compileSdk 36
@@ -14,7 +17,10 @@ android {
         versionCode Integer.parseInt(System.getenv('IRIS_ANDROID_VERSION_CODE') ?: '16')
         versionName '0.4.1-alpha' + (System.getenv('IRIS_ANDROID_BUILD_SHA') ? '+' + System.getenv('IRIS_ANDROID_BUILD_SHA') : '')
         resValue 'string', 'spike_version', versionName
+        buildConfigField 'boolean', 'PLAY_STORE', playStore
     }
+
+    buildFeatures { buildConfig = true }
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
