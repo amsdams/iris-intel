@@ -14,24 +14,36 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
-**Session pickup:** triage concrete alpha feedback first, especially crashes, login, data loss, or broken workflows.
-Release consistency and automatic base-map recovery are implemented (2026-10-25); run the phone checks below
-and verify the next GitHub Actions run. The [Play Store readiness review](play-store-readiness.md) is complete: resolve
-supported authentication and website-distribution permission evidence before beginning store delivery work.
-[Optional panel visibility](../backlog.md#optional-additional-features) is implemented; reordering remains deferred,
-and the baseline includes Passcode and Missions. The current map-runtime extraction preserves behavior;
-further decomposition should follow clear responsibility boundaries rather than a line-count target.
+**Session pickup (2026-10-29):** resume Play Console closed testing. The user reports the Console requires a
+published closed-testing release, at least 12 opted-in testers and at least 14 days with 12 testers; currently it
+shows 0 opted in. Next: select countries/regions and testers, create a release (reuse an eligible existing bundle
+from the library if offered), preview/confirm and send for review, then share the closed-test opt-in link. Internal
+installation smoke has passed; it does not establish closed-test participation or production access. Record tester
+feedback during the test for the later production-access application. No closed release was submitted this session.
+
+Store artwork and four actual phone screenshots are ready in
+[`apps/android-intel-spike/store-listing/`](../../../apps/android-intel-spike/store-listing/README.md), with upload order
+and capture details. AI asset declaration was discussed; final Console labels/submission are not confirmed.
+The [readiness review](play-store-readiness.md) retains unresolved reviewer-access, authentication/permission,
+UGC and signing/channel questions; internal testing acceptance does not resolve them.
+
+**Branch checkpoint:** current work is on `main` (`22a48fc`, tracking `origin/main`).
+`feat/play-store-preparation` (`0bf9abe`, also on origin) has one unique older preparation commit; main has since
+received the permanent package identity and published privacy work. Keep the branch for now and review its unique
+submission notes before deciding what to carry forward or delete; do not blindly restore its old package paths or
+privacy page. No branch switch, merge, commit or push was performed during this wrap-up.
 
 **Public privacy policy (2026-10-29):** `site/privacy/index.html` describes Android/extension data flows,
 third-party services, retention/deletion and the approved support contact `1sos.2play@gmail.com`.
 System → About and the native offline Privacy dialog link to it. The pinned Pages workflow publishes only `site/`.
-Publication is pending: enable repository Settings → Pages → GitHub Actions, push to main, then verify
-`https://amsdams.github.io/iris-intel/privacy/` before entering it in Play Console. No remote settings were changed.
+Publication succeeded after enabling GitHub Actions as the Pages source: the public page returned HTTP 200 and
+matched the source; the user confirmed it loads and reported entering it in Play Console.
 `npm run check`, all 50 Chrome cases, extension packaging, signed Android release/bundle and workflow validation
 pass. The standalone page passes light/dark and phone/desktop checks with no external requests or overflow.
 APK/AAB certificate pins, bundletool validation, all 22 web assets, extension assets and served APK match.
 Updated APK/AAB: `0.4.1-alpha+77521ef` (1855); XPI/ZIP: `2026-10-29T20-56-36`.
-The new in-app links require an updated app release; public-page publication and Play Data safety remain pending.
+The new in-app links require an updated app release. Public-page publication is complete; the user worked through
+Play content/listing declarations, but final Data safety answers and submission have not been independently audited.
 
 **First Play internal-testing bundle (2026-10-29):** the user reports developer verification complete and testers
 added, and is at the internal release's App bundles upload. `npm run android:bundle` now checks Android JavaScript

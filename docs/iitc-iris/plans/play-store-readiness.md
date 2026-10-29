@@ -44,8 +44,10 @@ is not a prerequisite. A WebView does not itself mean automatic rejection, and t
   [User data/privacy](https://support.google.com/googleplay/android-developer/answer/10144311),
   [account deletion scope](https://support.google.com/googleplay/android-developer/answer/13327111).
 - **Listing declarations/assets:** prepare description, support/privacy links, screenshots, high-resolution icon,
-  feature graphic, content rating, target audience, ads declaration, and app-access instructions. The existing vector
-  launcher icon is not the whole store asset set. Keep independent-project attribution clear.
+  feature graphic, content rating, target audience, ads declaration, and app-access instructions.
+  `apps/android-intel-spike/store-listing/` now contains upload-ready 512 × 512 launcher a[r](https://github.com/IITC-CE)twork and a 1024 × 500
+  feature graphic, editable source, a local renderer and phone capture instructions (2026-10-29). Dimensions,
+  PNG color types and file-size limits pass; phone screenshots await device capture. Keep independent-project attribution clear.
   [App content](https://support.google.com/googleplay/android-developer/answer/9859455).
 - **Testing:** use an internal track/pre-launch report, then the required closed test if applicable. For personal
   accounts created after November 13, 2023, production access requires at least 12 testers opted in continuously
