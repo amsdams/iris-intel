@@ -23,6 +23,9 @@ IRIS is an early alpha, currently shared for friends testing. Android uses an ex
 compatibility workaround; saved-password support remains unresolved. It is not affiliated with or endorsed by Niantic.
 See the [Android notes](apps/android-intel-spike/README.md) for known limits.
 
+Privacy: [IRIS privacy policy](https://amsdams.github.io/iris-intel/privacy/).
+Support and privacy contact: [1sos.2play@gmail.com](mailto:1sos.2play@gmail.com).
+
 For Android updates, use **App → Check for updates** or **App → Releases**. Install the signed APK over your
 existing release with the same application ID to preserve settings and your session. The 2026-10-29 change to
 `io.github.amsdams.iris` creates a separate installation from the old `org.iris.intelspike` alpha: download it manually

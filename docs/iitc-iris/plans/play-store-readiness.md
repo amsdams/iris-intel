@@ -21,7 +21,9 @@ is not a prerequisite. A WebView does not itself mean automatic rejection, and t
 - **Bundle delivery:** local `npm run android:bundle` now runs Android JavaScript/release unit tests and lint, then
   produces a signed `app/build/outputs/bundle/release/app-release.aab` (2026-10-29). Bundletool validation, manifest
   identity/target API, JAR signature, pinned certificate and all 22 bundled web assets pass. CI still produces
-  APK/XPI/ZIP, not an AAB. Internal-track upload, Play signing enrollment and a Play-delivered phone test remain pending.
+  APK/XPI/ZIP, not an AAB. The user uploaded/published the first internal release and accepted its Play-delivered
+  phone smoke: install, retained sign-in on reopen, location and clipboard. The Play app-signing fingerprint still
+  needs comparison with the GitHub certificate before assuming cross-channel update compatibility.
   Keep GitHub APK delivery. New Play apps require Android App Bundles.
   [Android App Bundles](https://developer.android.com/guide/app-bundle).
 - **Target API:** `targetSdk 36` already meets the current API 36 requirement for new phone apps and updates
@@ -31,8 +33,10 @@ is not a prerequisite. A WebView does not itself mean automatic rejection, and t
   Git-history-based Android version codes require preserved history. Establish monotonically increasing Play codes
   and compatible cross-channel updates before publishing. A Play build should direct update help to its store
   channel; the current manual checker points to GitHub APKs. No channel behavior is changed by this assessment.
-- **Privacy/Data safety:** the app has offline privacy text and the friends guide describes data use. Prepare a
-  clearly labelled, public privacy-policy page with a named contact and retention/deletion details, then complete
+- **Privacy/Data safety:** `site/privacy/index.html` now contains a dedicated policy with retention/deletion details
+  and the user-approved public contact `1sos.2play@gmail.com` (2026-10-29). A pinned Pages workflow publishes only `site/`;
+  enable GitHub Actions as the Pages source, push and verify `https://amsdams.github.io/iris-intel/privacy/` publicly.
+  Android keeps an offline summary and adds Online policy; the shared About panel links to the page. Then complete
   Data safety from actual flows: authentication/session data, agent/COMM/inventory data, optional foreground location,
   map areas, address searches, image hosts, GitHub update requests, and user-initiated feedback. No IRIS analytics
   backend does not mean no data handling. Determine whether any in-app signup path triggers account-deletion

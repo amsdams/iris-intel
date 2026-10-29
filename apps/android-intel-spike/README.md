@@ -82,6 +82,13 @@ release builds use the same signing key and can update in place. Local debug bui
 
 ## Play Console App Bundle
 
+The public policy source is `site/privacy/index.html`, with support/privacy contact `1sos.2play@gmail.com`.
+The expected URL is `https://amsdams.github.io/iris-intel/privacy/`. To host it, select **GitHub repository Settings →
+Pages → Source → GitHub Actions**, then push the page and `.github/workflows/pages.yml` to main. The workflow
+publishes only `site/`; it can also be run manually from Actions after Pages is enabled. Verify the URL loads without
+sign-in before entering it in Play Console. The native privacy dialog retains its offline summary and offers an
+Online policy button; System → About links to the same page in the shared UI.
+
 For Play Console's **App bundles** upload, build an AAB instead of an APK:
 
 ```bash

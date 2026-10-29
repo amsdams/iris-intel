@@ -22,6 +22,17 @@ supported authentication and website-distribution permission evidence before beg
 and the baseline includes Passcode and Missions. The current map-runtime extraction preserves behavior;
 further decomposition should follow clear responsibility boundaries rather than a line-count target.
 
+**Public privacy policy (2026-10-29):** `site/privacy/index.html` describes Android/extension data flows,
+third-party services, retention/deletion and the approved support contact `1sos.2play@gmail.com`.
+System → About and the native offline Privacy dialog link to it. The pinned Pages workflow publishes only `site/`.
+Publication is pending: enable repository Settings → Pages → GitHub Actions, push to main, then verify
+`https://amsdams.github.io/iris-intel/privacy/` before entering it in Play Console. No remote settings were changed.
+`npm run check`, all 50 Chrome cases, extension packaging, signed Android release/bundle and workflow validation
+pass. The standalone page passes light/dark and phone/desktop checks with no external requests or overflow.
+APK/AAB certificate pins, bundletool validation, all 22 web assets, extension assets and served APK match.
+Updated APK/AAB: `0.4.1-alpha+77521ef` (1855); XPI/ZIP: `2026-10-29T20-56-36`.
+The new in-app links require an updated app release; public-page publication and Play Data safety remain pending.
+
 **First Play internal-testing bundle (2026-10-29):** the user reports developer verification complete and testers
 added, and is at the internal release's App bundles upload. `npm run android:bundle` now checks Android JavaScript
 tests/release unit tests/lint and builds the signed AAB at
@@ -29,9 +40,10 @@ tests/release unit tests/lint and builds the signed AAB at
 Bundletool validation, package `io.github.amsdams.iris`, version `0.4.1-alpha+f3e3c7e` (1854), target API 36,
 JAR signature/pinned release certificate and all 22 bundled web assets pass. The AAB uses the existing release key
 for upload; this does not configure Google's delivered-APK signing key. The user reports uploading and selecting
-Save and publish for the internal release; Console says processing usually takes up to an hour. Availability and
-Play signing fingerprints have not been independently verified. Next: compare Play's app-signing certificate with
-the pinned GitHub certificate, then install through the tester opt-in link and smoke test the delivered app.
+Save and publish for the internal release. User smoke accepted on the Play-delivered installation: installed through
+the tester link, app usable, closing/reopening preserves the signed-in session and goes straight to the map,
+location and clipboard work. The Play app-signing fingerprint remains unverified; compare its app-signing certificate
+with the pinned GitHub certificate before assuming cross-channel update compatibility.
 A separate upload key remains recommended; no new key or signing secret was created. CI AAB delivery
 and Play-specific update-channel behavior remain future work. Previously recorded auth/permission questions remain.
 

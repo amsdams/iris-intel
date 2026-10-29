@@ -31,7 +31,8 @@ export function AboutPanel({closeAbout}: {closeAbout: () => void}): h.JSX.Elemen
           <p>IRIS is an independent Ingress Intel companion, built on the work of the IITC community.</p>
           <p><SourceLink href={REPOSITORY}>Source code</SourceLink>{' · '}
             <SourceLink href={`${REPOSITORY}/releases/tag/latest`}>Releases</SourceLink>{' · '}
-            <SourceLink href={`${REPOSITORY}/issues`}>Report an issue</SourceLink></p>
+            <SourceLink href={`${REPOSITORY}/issues`}>Report an issue</SourceLink>{' · '}
+            <SourceLink href="https://amsdams.github.io/iris-intel/privacy/">Privacy policy</SourceLink></p>
           <p>Not affiliated with or endorsed by Niantic.</p>
         </Section>
         <Section titleHeading="Credits">

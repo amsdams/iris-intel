@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Privacy policy for IRIS for Ingress, an independent Intel map companion.">
+  <title>Privacy policy — IRIS for Ingress</title>
+  <style>
+    :root { color-scheme: light dark; font: 17px/1.65 system-ui, sans-serif; }
+    body { max-width: 50rem; margin: auto; padding: 2rem 1.25rem 4rem; }
+    h1, h2 { line-height: 1.25; }
+    h2 { margin-top: 2rem; }
+    a { color: light-dark(#0756a5, #8dc8ff); overflow-wrap: anywhere; }
+    code { overflow-wrap: anywhere; }
+    li + li { margin-top: .6rem; }
+    .meta { color: light-dark(#505050, #bbb); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Privacy policy</h1>
+    <p><strong>IRIS for Ingress</strong> (also called IRIS)<br>
+      Android package: <code>io.github.amsdams.iris</code></p>
+    <p class="meta">Effective and last updated: <time datetime="2026-10-29">29 October 2026</time></p>
+
+    <h2>Who provides IRIS</h2>
+    <p>IRIS is an independent, open-source Intel map companion maintained by the
+      <a href="https://github.com/amsdams/iris-intel">IRIS project maintainer, amsdams</a>.
+      It is not affiliated with or endorsed by Niantic, Google, or IITC.
+      For support, privacy questions or requests about information you have sent to the maintainer, email
+      <a href="mailto:1sos.2play@gmail.com">1sos.2play@gmail.com</a>.</p>
+    <p>This policy covers the IRIS Android app, its related browser extensions and this privacy webpage.
+      The app uses Intel, authentication, map and hosting services operated by others. Their own policies also
+      apply when you use those services.</p>
+
+    <h2>What the app accesses and why</h2>
+    <ul>
+      <li><strong>Sign-in and session information.</strong> The Android app loads Intel and its sign-in providers
+        in a WebView. Login information is submitted to those services, and the WebView retains session cookies
+        and website storage so you can remain signed in. IRIS uses that session to make Intel requests for the
+        features you use. There is no separate IRIS account or IRIS-operated account server.</li>
+      <li><strong>Ingress account and game data.</strong> IRIS requests, processes and displays data available
+        through your Intel session, such as agent profile information, portals, links, fields, missions, scores,
+        COMM messages and activity, and inventory when your account has access. Player Tracker derives history
+        from activity returned by Intel; it does not obtain other players' device GPS locations.</li>
+      <li><strong>COMM messages.</strong> When you send a message, IRIS sends its text, selected channel and
+        map-center coordinates to Intel using your signed-in session. Other players may see the message according
+        to the service's channel rules. Reading COMM also sends requests for the selected map area.</li>
+      <li><strong>Optional device location.</strong> Tapping Locate requests foreground location permission and
+        uses the returned position to center the map. Android may provide approximate or precise location,
+        depending on your permission choice. The app does not request background location permission. You can
+        deny or revoke location permission and continue using other features. Map requests made after locating
+        can reveal that area to Intel and map providers.</li>
+      <li><strong>Map areas and online searches.</strong> Browsing the map sends requested areas to Intel and
+        the selected map provider. Online address/place searches send your search text and, for a bounded search,
+        the current map bounds to OpenStreetMap Nominatim. Portal and mission images, ornaments and artifacts
+        load from the hosts supplied by the relevant services.</li>
+      <li><strong>Local settings and drawings.</strong> Preferences, map view, drawn links/markers and some
+        feature caches are kept in app or browser storage. These are used to restore your choices and app state.
+        Android app backup and device-transfer backup are disabled in the app's configuration.</li>
+      <li><strong>Clipboard and links.</strong> Copy actions write your selected data, such as a portal title,
+        link or drawing, to the device clipboard. Pasting/importing uses the content you choose to provide.
+        Opening an external link sends you to the selected service in your browser.</li>
+    </ul>
+
+    <h2>Services that receive network requests</h2>
+    <p>Requests go directly from your device to the relevant service, rather than through an IRIS-operated
+      proxy. The recipient receives normal connection information such as your IP address and request headers,
+      along with the information needed for that request. Depending on the feature, recipients include:</p>
+    <ul>
+      <li><strong>Intel and your sign-in provider:</strong> authentication, session and game requests.</li>
+      <li><strong>OpenStreetMap, OpenFreeMap and their resource hosts:</strong> map tiles, styles and related
+        resources. OpenStreetMap Nominatim receives online search requests.</li>
+      <li><strong>Image hosts:</strong> requests for portal, mission and other map imagery.</li>
+      <li><strong>GitHub:</strong> the Android manual update checker fetches public build metadata only when
+        you request a check, without Intel cookies or account details. Releases, source-code and feedback links
+        also open GitHub. This privacy page is hosted on GitHub Pages, which receives requests to view it.</li>
+      <li><strong>Google Play:</strong> if you install through Play, Google handles distribution and updates
+        under its own terms and privacy practices.</li>
+    </ul>
+    <p>Relevant service information includes
+      <a href="https://nianticlabs.com/privacy">Niantic's privacy policy</a>,
+      <a href="https://policies.google.com/privacy">Google's privacy policy</a>,
+      <a href="https://osmfoundation.org/wiki/Privacy_Policy">the OpenStreetMap Foundation privacy policy</a>,
+      <a href="https://openfreemap.org/">OpenFreeMap's service information</a> and
+      <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's privacy statement</a>.
+      We do not control those services' retention or processing practices.</p>
+
+    <h2>Diagnostics, support and advertising</h2>
+    <p>IRIS operates no analytics, advertising or automatic crash-reporting backend. The app does not sell
+      personal data. Native diagnostics contain technical status such as app/Android/WebView versions, page hosts,
+      session-check results and permission status. Other diagnostic exports or screenshots may contain map or
+      game data. Diagnostics stay on your device unless you choose to copy or send them.</p>
+    <p>If you email support or submit feedback, the maintainer receives what you send, including your email
+      address or GitHub identity, message and any attachments. This information is used to answer requests and
+      investigate problems. Email is handled through Gmail; GitHub issues and their attachments may be public.
+      Review reports before sending them, and do not include passwords, cookies or session tokens.</p>
+
+    <h2>Retention, deletion and your choices</h2>
+    <ul>
+      <li><strong>On your device:</strong> session data, preferences and saved drawings can persist between
+        launches; temporary caches can be replaced during use. You can remove Android app data using system
+        settings or by uninstalling. In a browser, clear the relevant Intel site storage/cookies and remove the
+        extension if desired. Clearing data also removes saved local choices and drawings.</li>
+      <li><strong>Signing out:</strong> Intel logout ends the Intel session while preserving local preferences.
+        It does not delete your Ingress or sign-in-provider account. Account deletion and requests concerning
+        data held by those services must be made through the relevant provider.</li>
+      <li><strong>Support correspondence:</strong> the maintainer retains messages as needed to respond,
+        investigate an issue and meet applicable obligations. Email the support address to request access,
+        correction or deletion of information you supplied. We will address requests concerning information
+        under our control; provider records and public copies may be subject to their own processes.</li>
+      <li><strong>Permissions and optional features:</strong> you can revoke location permission in Android
+        settings, leave location disabled, choose a map provider and avoid sending feedback or online searches.
+        Local clipboard contents can be cleared through your device's clipboard controls.</li>
+    </ul>
+
+    <h2>Security and international processing</h2>
+    <p>The app's configured service endpoints use HTTPS. Local app data is protected by the app/browser and
+      operating system's storage controls. No method of transmission or storage can be guaranteed completely
+      secure. Services such as Intel, authentication providers, map hosts, GitHub and Gmail may process information
+      in countries other than your own under their respective policies.</p>
+
+    <h2>Children and policy changes</h2>
+    <p>IRIS is a companion for existing Ingress users and is not designed specifically for children. If you believe
+      a child has provided personal information to the maintainer, contact the support email so it can be addressed.</p>
+    <p>We will update this page when the app's data practices change and revise the date above. Material changes
+      that require additional notice or consent will also be communicated through the app or its release information.</p>
+
+    <p><strong>Contact:</strong> <a href="mailto:1sos.2play@gmail.com">1sos.2play@gmail.com</a></p>
+  </main>
+</body>
+</html>

@@ -196,7 +196,9 @@ public final class MainActivity extends Activity {
 
     private void showPrivacy() {
         new AlertDialog.Builder(this).setTitle(R.string.privacy).setMessage(R.string.privacy_text)
-                .setPositiveButton(android.R.string.ok, null).show();
+                .setPositiveButton(android.R.string.ok, null)
+                .setNeutralButton(R.string.privacy_online,
+                        (dialog, which) -> openBrowser(getString(R.string.privacy_policy_url))).show();
     }
 
     @SuppressWarnings("deprecation") // versionCode is needed on API 26–27.

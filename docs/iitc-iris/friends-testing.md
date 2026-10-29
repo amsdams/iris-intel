@@ -1,7 +1,7 @@
 # IRIS Friends Testing
 
 IRIS is an independent Ingress Intel companion based on IITC, currently an early Android alpha.
-Start with 2–5 trusted players who are comfortable installing an APK. Play Store distribution is deferred.
+GitHub APKs and a Google Play internal test are available; broader Play distribution is still being prepared.
 Google sign-in uses an experimental embedded-browser workaround; saved-password support remains unresolved.
 
 ## Install And Try
@@ -58,5 +58,7 @@ including IP address and requested map areas. Portal/mission images use their su
 Locate requests foreground location when tapped; it centers the map, whose requests can reveal that area to the map
 provider. IRIS requests no background location permission. Preferences, map view, and drawn links/markers stay local;
 explicit Copy actions use the device clipboard. Clear Android app storage or uninstall to remove local app data;
-Intel logout preserves preferences. Contact the maintainer through the project's GitHub Issues for privacy questions.
-The same information is available offline from **App → About IRIS → Privacy**.
+Intel logout preserves preferences. Contact [1sos.2play@gmail.com](mailto:1sos.2play@gmail.com) for support,
+privacy questions or requests about information you sent to the maintainer. GitHub issues may be public.
+The [full privacy policy](https://amsdams.github.io/iris-intel/privacy/) covers retention, deletion and service providers.
+An offline summary and an Online policy link are available from **App → About IRIS → Privacy**.
