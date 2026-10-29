@@ -1,4 +1,4 @@
-package org.iris.intelspike;
+package io.github.amsdams.iris;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -58,7 +58,7 @@ final class ReleaseUpdate {
             String code = values.getProperty("versionCode", "");
             String name = values.getProperty("versionName", "");
             if (!"1".equals(values.getProperty("schema"))
-                    || !"org.iris.intelspike".equals(values.getProperty("applicationId"))
+                    || !"io.github.amsdams.iris".equals(values.getProperty("applicationId"))
                     || !code.matches("[1-9][0-9]{0,9}") || !name.matches("[0-9A-Za-z.+-]{1,100}")) {
                 throw new IOException("Invalid release metadata");
             }

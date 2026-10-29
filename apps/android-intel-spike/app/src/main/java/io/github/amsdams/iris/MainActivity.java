@@ -1,4 +1,4 @@
-package org.iris.intelspike;
+package io.github.amsdams.iris;
 
 import android.annotation.SuppressLint;
 import android.Manifest;

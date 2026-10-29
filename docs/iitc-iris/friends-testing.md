@@ -8,8 +8,13 @@ Google sign-in uses an experimental embedded-browser workaround; saved-password 
 
 Download **iitc-iris-android.apk**, the signed APK from the maintainer. Published versions are available from
 [GitHub Releases](https://github.com/amsdams/iris-intel/releases/latest); a local test build may be newer.
-Use the same signing key for updates and install over the existing release to retain your session/settings.
-Only the first move from a debug APK needs uninstalling, which clears app data. Android 8 or newer is required.
+Updates with the same application ID and signing key retain your session/settings. Android 8 or newer is required.
+
+On 2026-10-29 the permanent package changed to `io.github.amsdams.iris`. Users of the old `org.iris.intelspike` alpha
+must download the new APK manually from Releases; it installs separately and requires signing in again. Preferences
+and drawings do not transfer automatically. Keep the old app until you have copied any drawings you want to retain;
+both apps have the IRIS launcher name. Its update checker rejects the new app's metadata. Subsequent updates to the
+new app work normally. Switching debug/release signing for the same ID requires uninstalling, which clears app data.
 
 1. Open **IRIS**, sign in, and check that the IRIS map appears.
 2. Try portal details, COMM, inventory, map styles, copying a portal title, and **Map → Controls → Locate**.

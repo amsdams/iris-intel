@@ -22,6 +22,31 @@ supported authentication and website-distribution permission evidence before beg
 and the baseline includes Passcode and Missions. The current map-runtime extraction preserves behavior;
 further decomposition should follow clear responsibility boundaries rather than a line-count target.
 
+**First Play internal-testing bundle (2026-10-29):** the user reports developer verification complete and testers
+added, and is at the internal release's App bundles upload. `npm run android:bundle` now checks Android JavaScript
+tests/release unit tests/lint and builds the signed AAB at
+`apps/android-intel-spike/app/build/outputs/bundle/release/app-release.aab`.
+Bundletool validation, package `io.github.amsdams.iris`, version `0.4.1-alpha+f3e3c7e` (1854), target API 36,
+JAR signature/pinned release certificate and all 22 bundled web assets pass. The AAB uses the existing release key
+for upload; this does not configure Google's delivered-APK signing key. The user reports uploading and selecting
+Save and publish for the internal release; Console says processing usually takes up to an hour. Availability and
+Play signing fingerprints have not been independently verified. Next: compare Play's app-signing certificate with
+the pinned GitHub certificate, then install through the tester opt-in link and smoke test the delivered app.
+A separate upload key remains recommended; no new key or signing secret was created. CI AAB delivery
+and Play-specific update-channel behavior remain future work. Previously recorded auth/permission questions remain.
+
+**Permanent Android identity (2026-10-29):** the user chose `io.github.amsdams.iris` before Play listing creation.
+Application ID, Java namespace/source paths and update metadata now use it, retaining the pinned release key.
+The old `org.iris.intelspike` installation cannot update in place: manually install the new APK, sign in again,
+and copy drawings from the old app before removing it. Settings do not migrate automatically. Both update metadata
+producer and consumer reject the old identity; installation/testing notes explain the transition.
+`npm run check`, extension packaging, `android:check` and signed `android:release` pass (31 native tests per build,
+15 Android JavaScript tests). Both APK manifests and launcher activities use the new ID; 22 bundled assets and served
+downloads match. The release certificate is unchanged and generated update metadata carries the new ID.
+Signed APK: `0.4.1-alpha+f3e3c7e` (1854), available on port 6969; XPI/ZIP: `2026-10-29T19-37-44`.
+Phone check pending: fresh login, IRIS injection, session persistence, location and clipboard with the new package.
+Play signing enrollment, AAB delivery and the previously recorded auth/permission questions remain separate work.
+
 **Credits and About (2026-10-28):** System → About acknowledges IITC/IITC-CE, original plugin authors and inventory
 references, with project/source links and six offline license disclosures. Root `CREDITS.md` records feature/source
 lineage, and the missing GPL-3.0 text now matches the license already declared in the README. Packaging includes

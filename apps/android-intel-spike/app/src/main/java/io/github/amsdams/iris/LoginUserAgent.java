@@ -1,4 +1,4 @@
-package org.iris.intelspike;
+package io.github.amsdams.iris;
 
 /** IITC-style compatibility experiment; not a supported Google OAuth integration. */
 final class LoginUserAgent {

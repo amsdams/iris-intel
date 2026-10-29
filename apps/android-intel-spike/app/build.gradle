@@ -3,12 +3,12 @@ plugins {
 }
 
 android {
-    namespace 'org.iris.intelspike'
+    namespace 'io.github.amsdams.iris'
     compileSdk 36
     buildToolsVersion '36.0.0'
 
     defaultConfig {
-        applicationId 'org.iris.intelspike'
+        applicationId 'io.github.amsdams.iris'
         minSdk 26
         targetSdk 36
         versionCode Integer.parseInt(System.getenv('IRIS_ANDROID_VERSION_CODE') ?: '16')

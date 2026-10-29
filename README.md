@@ -24,7 +24,10 @@ compatibility workaround; saved-password support remains unresolved. It is not a
 See the [Android notes](apps/android-intel-spike/README.md) for known limits.
 
 For Android updates, use **App → Check for updates** or **App → Releases**. Install the signed APK over your
-existing release to preserve settings and your session. Report problems through **App → About IRIS → Feedback**
+existing release with the same application ID to preserve settings and your session. The 2026-10-29 change to
+`io.github.amsdams.iris` creates a separate installation from the old `org.iris.intelspike` alpha: download it manually
+from Releases and sign in again. Export any drawings you want to retain from the old app before removing it.
+Report problems through **App → About IRIS → Feedback**
 or [GitHub Issues](https://github.com/amsdams/iris-intel/issues), including the app version and steps to reproduce.
 
 ## Repository

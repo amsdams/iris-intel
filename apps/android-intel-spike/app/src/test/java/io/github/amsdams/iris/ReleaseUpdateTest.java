@@ -1,4 +1,4 @@
-package org.iris.intelspike;
+package io.github.amsdams.iris;
 
 import java.io.IOException;
 import java.io.BufferedReader;
@@ -13,7 +13,7 @@ import static org.junit.Assert.*;
 
 public class ReleaseUpdateTest {
     private static String metadata(String code, String name) {
-        return "schema=1\napplicationId=org.iris.intelspike\nversionCode=" + code + "\nversionName=" + name + "\n";
+        return "schema=1\napplicationId=io.github.amsdams.iris\nversionCode=" + code + "\nversionName=" + name + "\n";
     }
 
     @Test public void comparesAndroidCodesRatherThanVersionNamesOrCommitHashes() throws Exception {
@@ -29,7 +29,8 @@ public class ReleaseUpdateTest {
                 metadata("-1", "0.4.1"), metadata("2100000001", "0.4.1"), metadata("999999999999", "0.4.1"),
                 metadata("1833", ""), metadata("1833", "Untrusted version text!"),
                 metadata("1833", "0.4.1").replace("schema=1", "schema=2"),
-                metadata("1833", "0.4.1").replace("org.iris.intelspike", "another.app"),
+                metadata("1833", "0.4.1").replace("io.github.amsdams.iris", "another.app"),
+                metadata("1833", "0.4.1").replace("io.github.amsdams.iris", "org.iris.intelspike"),
                 "x".repeat(4097), "schema=\\uZZZZ"}) {
             assertThrows(IOException.class, () -> ReleaseUpdate.parse(text));
         }

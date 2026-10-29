@@ -31,6 +31,7 @@
     "android:build": "node scripts/android.mjs :app:assembleDebug",
     "android:check": "node --test apps/android-intel-spike/tests/*.test.mjs && node scripts/android.mjs :app:testDebugUnitTest :app:lintDebug :app:assembleDebug",
     "android:release": "node --test apps/android-intel-spike/tests/*.test.mjs && node scripts/android.mjs :app:testReleaseUnitTest :app:lintRelease :app:assembleRelease",
+    "android:bundle": "node --test apps/android-intel-spike/tests/*.test.mjs && node scripts/android.mjs :app:testReleaseUnitTest :app:lintRelease :app:bundleRelease",
     "android:serve": "npm run serve"
   },
   "devDependencies": {

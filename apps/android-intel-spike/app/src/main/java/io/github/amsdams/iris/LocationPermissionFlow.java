@@ -1,4 +1,4 @@
-package org.iris.intelspike;
+package io.github.amsdams.iris;
 
 /** Owns a single WebView request while Android's permission dialog is open. Main-thread only. */
 final class LocationPermissionFlow {

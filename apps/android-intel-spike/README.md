@@ -53,8 +53,15 @@ Signing uses a dedicated key in GitHub repository secrets: `ANDROID_SIGNING_KEYS
 The private local backup is the ignored `signing/` directory, including `release.env`; back up the whole directory
 securely. It is not included in artifacts or Git. The public certificate digest is pinned in `release-certificate.sha256`.
 The user confirmed the signing directory is backed up (2026-10-21); restoration has not been tested.
-Do not replace the key: Android requires it to update existing installations. Preserve the application ID
-`org.iris.intelspike` during later project promotion if installed releases must continue receiving updates.
+Do not replace the key: Android requires it to update existing installations. The permanent application ID and Java
+namespace are `io.github.amsdams.iris`. Keep this ID for future Play and GitHub releases.
+
+The user approved replacing the prototype ID `org.iris.intelspike` on 2026-10-29, before creating the Play listing.
+This is a separate Android app, not an in-place update: existing alpha users must install the new APK and sign in
+again; local settings and drawings do not transfer automatically. They can keep the old app while exporting drawings
+through its existing clipboard controls. The signing key is unchanged. Old apps reject the new package's update
+metadata, so use the GitHub release page to download the new app manually. The project directory name remains
+`apps/android-intel-spike`; it does not determine the installed package identity.
 
 To build locally with the same key:
 
@@ -73,10 +80,30 @@ keep increasing. `IRIS_ANDROID_VERSION_CODE` can explicitly override the code wh
 Moving from the earlier local debug APK requires uninstall/reinstall once, losing its session/settings; later
 release builds use the same signing key and can update in place. Local debug builds retain their separate key.
 
+## Play Console App Bundle
+
+For Play Console's **App bundles** upload, build an AAB instead of an APK:
+
+```bash
+source apps/android-intel-spike/signing/release.env
+npm run android:bundle
+```
+
+This runs the Android JavaScript tests, release unit tests and lint, then creates the signed
+`app/build/outputs/bundle/release/app-release.aab`. Select that file in the internal testing release's upload field.
+It uses the current release key to sign the bundle; that signature authenticates the upload and does not determine
+which key Google uses to sign delivered APKs. Configure Play App Signing to use the existing release app-signing key
+before rolling out to preserve GitHub/Play update compatibility. A separate upload key remains recommended; this
+initial local build uses the existing key. Never upload the keystore or `release.env` as an app bundle.
+
+Creating the AAB does not submit or publish a Play release. Signing enrollment and live Play-delivered installation
+still need verification. The local download page continues to list APK/XPI/ZIP artifacts.
+
 ## Phone Check
 
-1. Install the update over **IRIS** (previously **IRIS Intel Test**) when the signing key matches, preserving its session. For the first
-   release-signed APK, uninstall the old debug build first; this clears its session/settings. Open the app; sign in if needed.
+1. Install **IRIS** with application ID `io.github.amsdams.iris`. The first installation with this ID starts with a fresh
+   session/settings alongside any old `org.iris.intelspike` app. Later updates with the same ID and signing key preserve
+   its session. Debug/release signing switches for the same ID still require uninstall/reinstall. Open the app; sign in if needed.
    IRIS should start automatically; the loading/checking status line should disappear after success.
 2. Open **App → Diagnostics**. **Check session** starts the probe; reopen Diagnostics to see its result.
    PASS requires a signed-in player plus a valid `getHasActiveSubscription` response.

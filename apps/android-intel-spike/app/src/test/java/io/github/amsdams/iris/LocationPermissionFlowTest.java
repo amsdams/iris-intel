@@ -1,4 +1,4 @@
-package org.iris.intelspike;
+package io.github.amsdams.iris;
 
 import org.junit.Test;
 import static org.junit.Assert.*;

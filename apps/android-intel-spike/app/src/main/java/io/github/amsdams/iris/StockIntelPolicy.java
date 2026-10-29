@@ -1,4 +1,4 @@
-package org.iris.intelspike;
+package io.github.amsdams.iris;
 
 import java.net.URI;
 import java.net.URISyntaxException;
