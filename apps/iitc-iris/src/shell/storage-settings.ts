@@ -1,3 +1,4 @@
+import {readLocalStorage, writeLocalStorage} from '../platform/storage';
 import {BASE_LAYER_STORAGE_KEY, DEFAULT_BASE_LAYER_ID, normalizeBaseLayerId} from '../map/layers/base-layer-settings';
 export {isBaseLayerId} from '../map/layers/base-layer-settings';
 import {getExtensionUrl} from '../platform/assets';
@@ -39,12 +40,6 @@ export const PORTAL_SECTION_STORAGE_KEY = 'iitc-iris:portal-sections';
 export const SHORTCUTS_ENABLED_STORAGE_KEY = 'iitc-iris:shortcuts-enabled';
 export const MAP_FOCUS_MODE_STORAGE_KEY = 'iitc-iris:map-focus-mode';
 
-function getLocalStorage(): Storage | null {
-  if (typeof window !== 'undefined' && window.localStorage) {
-    return window.localStorage;
-  }
-  return null;
-}
 
 export interface DataSourceOption {
   id: string;
@@ -88,11 +83,7 @@ export function loadUrlMapView(): StoredMapView | null {
 }
 
 export function loadStoredMapView(): StoredMapView {
-  try {
-    return parseStoredMapView(getLocalStorage()?.getItem(MAP_VIEW_STORAGE_KEY) ?? null);
-  } catch {
-    return defaultMapView();
-  }
+  return readLocalStorage(storage => parseStoredMapView(storage?.getItem(MAP_VIEW_STORAGE_KEY) ?? null), defaultMapView);
 }
 
 export function loadInitialMapView(): StoredMapView {
@@ -100,20 +91,14 @@ export function loadInitialMapView(): StoredMapView {
 }
 
 export function storeMapView(view: StoredMapView): void {
-  try {
-    getLocalStorage()?.setItem(MAP_VIEW_STORAGE_KEY, JSON.stringify(view));
-  } catch {
-    // Map view persistence is optional.
-  }
+  writeLocalStorage(storage => storage?.setItem(MAP_VIEW_STORAGE_KEY, JSON.stringify(view)));
 }
 
 export function loadStoredBaseLayerId(): IitcIrisBaseLayerId {
-  try {
-    const value = getLocalStorage()?.getItem(BASE_LAYER_STORAGE_KEY);
+  return readLocalStorage(storage => {
+    const value = storage?.getItem(BASE_LAYER_STORAGE_KEY);
     return normalizeBaseLayerId(value);
-  } catch {
-    return DEFAULT_BASE_LAYER_ID;
-  }
+  }, () => DEFAULT_BASE_LAYER_ID);
 }
 
 export function isLayerSettings(value: unknown): value is Partial<IitcIrisLayerSettings> {
@@ -130,8 +115,8 @@ type LegacyStoredLayerSettings = Partial<IitcIrisLayerSettings> & {
 };
 
 export function loadStoredLayerSettings(): IitcIrisLayerSettings {
-  try {
-    const value = getLocalStorage()?.getItem(LAYER_SETTINGS_STORAGE_KEY);
+  return readLocalStorage(storage => {
+    const value = storage?.getItem(LAYER_SETTINGS_STORAGE_KEY);
     if (!value) return DEFAULT_LAYER_SETTINGS;
     const parsed = JSON.parse(value) as unknown;
     if (!isLayerSettings(parsed)) return DEFAULT_LAYER_SETTINGS;
@@ -180,9 +165,7 @@ export function loadStoredLayerSettings(): IitcIrisLayerSettings {
         : legacyPlayerTracker ?? DEFAULT_LAYER_SETTINGS.playerTrackerMachina,
       keyCount: storedKeyCount === true || storedKeyCount === 'on',
     };
-  } catch {
-    return DEFAULT_LAYER_SETTINGS;
-  }
+  }, () => DEFAULT_LAYER_SETTINGS);
 }
 
 export function legacyHighlighterFromLayerSettings(
@@ -200,8 +183,7 @@ export function legacyHighlighterFromLayerSettings(
 }
 
 export function loadStoredHighlighterSettings(): IitcIrisHighlighterSettings {
-  try {
-    const storage = getLocalStorage();
+  return readLocalStorage(storage => {
     const value = storage?.getItem(HIGHLIGHTER_SETTINGS_STORAGE_KEY);
     const legacyLayerValue = storage?.getItem(LAYER_SETTINGS_STORAGE_KEY);
     const legacyParsed = legacyLayerValue ? JSON.parse(legacyLayerValue) as unknown : undefined;
@@ -209,76 +191,44 @@ export function loadStoredHighlighterSettings(): IitcIrisHighlighterSettings {
     if (!value) return { active: legacyHighlighterFromLayerSettings(legacyStoredLayerSettings) };
     const parsed = JSON.parse(value) as Partial<IitcIrisHighlighterSettings>;
     return { active: normalizePortalHighlighterId(parsed.active) };
-  } catch {
-    return { active: legacyHighlighterFromLayerSettings() };
-  }
+  }, () => ({ active: legacyHighlighterFromLayerSettings() }));
 }
 
 export function loadStoredDataSourceId(): string {
-  try {
-    return normalizeDataSourceId(getLocalStorage()?.getItem(DATA_SOURCE_STORAGE_KEY));
-  } catch {
-    return 'live';
-  }
+  return readLocalStorage(storage => normalizeDataSourceId(storage?.getItem(DATA_SOURCE_STORAGE_KEY)), () => 'live');
 }
 
 export function loadStoredLifecycleSettings(): IitcIrisLifecycleSettings {
-  try {
-    const value = getLocalStorage()?.getItem(LIFECYCLE_SETTINGS_STORAGE_KEY);
+  return readLocalStorage(storage => {
+    const value = storage?.getItem(LIFECYCLE_SETTINGS_STORAGE_KEY);
     if (!value) return { iitcMovementDelay: false };
     const parsed = JSON.parse(value) as Partial<IitcIrisLifecycleSettings>;
     return { iitcMovementDelay: parsed.iitcMovementDelay === true };
-  } catch {
-    return { iitcMovementDelay: false };
-  }
+  }, () => ({ iitcMovementDelay: false }));
 }
 
 export function storeLayerSettings(value: IitcIrisLayerSettings): void {
-  try {
-    getLocalStorage()?.setItem(LAYER_SETTINGS_STORAGE_KEY, JSON.stringify(value));
-  } catch {
-    // Layer preferences are optional.
-  }
+  writeLocalStorage(storage => storage?.setItem(LAYER_SETTINGS_STORAGE_KEY, JSON.stringify(value)));
 }
 
 export function storeHighlighterSettings(value: IitcIrisHighlighterSettings): void {
-  try {
-    getLocalStorage()?.setItem(HIGHLIGHTER_SETTINGS_STORAGE_KEY, JSON.stringify(value));
-  } catch {
-    // Highlighter preferences are optional.
-  }
+  writeLocalStorage(storage => storage?.setItem(HIGHLIGHTER_SETTINGS_STORAGE_KEY, JSON.stringify(value)));
 }
 
 export function storeDataSourceId(value: string): void {
-  try {
-    getLocalStorage()?.setItem(DATA_SOURCE_STORAGE_KEY, normalizeDataSourceId(value));
-  } catch {
-    // Data source preference is optional.
-  }
+  writeLocalStorage(storage => storage?.setItem(DATA_SOURCE_STORAGE_KEY, normalizeDataSourceId(value)));
 }
 
 export function storeLifecycleSettings(value: IitcIrisLifecycleSettings): void {
-  try {
-    getLocalStorage()?.setItem(LIFECYCLE_SETTINGS_STORAGE_KEY, JSON.stringify(value));
-  } catch {
-    // Lifecycle diagnostics are optional.
-  }
+  writeLocalStorage(storage => storage?.setItem(LIFECYCLE_SETTINGS_STORAGE_KEY, JSON.stringify(value)));
 }
 
 export function loadStoredDebugDockVisible(): boolean {
-  try {
-    return getLocalStorage()?.getItem(DEBUG_DOCK_STORAGE_KEY) === 'true';
-  } catch {
-    return false;
-  }
+  return readLocalStorage(storage => storage?.getItem(DEBUG_DOCK_STORAGE_KEY) === 'true', () => false);
 }
 
 export function storeDebugDockVisible(value: boolean): void {
-  try {
-    getLocalStorage()?.setItem(DEBUG_DOCK_STORAGE_KEY, value ? 'true' : 'false');
-  } catch {
-    // Debug visibility is optional.
-  }
+  writeLocalStorage(storage => storage?.setItem(DEBUG_DOCK_STORAGE_KEY, value ? 'true' : 'false'));
 }
 
 export function isCommTab(value: string | null): value is IitcIrisCommTab {
@@ -286,52 +236,37 @@ export function isCommTab(value: string | null): value is IitcIrisCommTab {
 }
 
 export function loadStoredCommTab(): IitcIrisCommTab {
-  try {
-    const value = getLocalStorage()?.getItem(COMM_TAB_STORAGE_KEY);
+  return readLocalStorage(storage => {
+    const value = storage?.getItem(COMM_TAB_STORAGE_KEY);
     return isCommTab(value ?? null) ? (value as IitcIrisCommTab) : 'all';
-  } catch {
-    return 'all';
-  }
+  }, () => 'all');
 }
 
 export function storeCommTab(value: IitcIrisCommTab): void {
-  try {
-    getLocalStorage()?.setItem(COMM_TAB_STORAGE_KEY, value);
-  } catch {
-    // COMM tab preference is optional.
-  }
+  writeLocalStorage(storage => storage?.setItem(COMM_TAB_STORAGE_KEY, value));
 }
 
 export function loadStoredSidePanelId(): SidePanelId | null {
-  try {
-    const value = getLocalStorage()?.getItem(SIDE_PANEL_STORAGE_KEY);
+  return readLocalStorage(storage => {
+    const value = storage?.getItem(SIDE_PANEL_STORAGE_KEY);
     return isSidePanelId(value) ? value : null;
-  } catch {
-    return null;
-  }
+  }, () => null);
 }
 
 export function loadStoredActiveSheet(): SheetId {
-  try {
-    const value = getLocalStorage()?.getItem(ACTIVE_SHEET_STORAGE_KEY);
+  return readLocalStorage(storage => {
+    const value = storage?.getItem(ACTIVE_SHEET_STORAGE_KEY);
     if (isSheetId(value)) return isPanelVisible(value, loadHiddenPanels()) ? value : 'map';
     return loadStoredSidePanelId() ?? 'map';
-  } catch {
-    return loadStoredSidePanelId() ?? 'map';
-  }
+  }, () => loadStoredSidePanelId() ?? 'map');
 }
 
 export function storeActiveSheet(value: SheetId): void {
-  try {
-    getLocalStorage()?.setItem(ACTIVE_SHEET_STORAGE_KEY, value);
-  } catch {
-    // Sheet preference is optional.
-  }
+  writeLocalStorage(storage => storage?.setItem(ACTIVE_SHEET_STORAGE_KEY, value));
 }
 
 export function loadStoredPortalSections(): Record<PortalSectionId, boolean> {
-  try {
-    const storage = getLocalStorage();
+  return readLocalStorage(storage => {
     const parsed = JSON.parse(storage?.getItem(PORTAL_SECTION_STORAGE_KEY) ?? '{}') as Partial<
       Record<PortalSectionId, boolean>
     >;
@@ -341,47 +276,32 @@ export function loadStoredPortalSections(): Record<PortalSectionId, boolean> {
         typeof parsed[entry.id] === 'boolean' ? parsed[entry.id] : entry.defaultOpen,
       ]),
     ) as Record<PortalSectionId, boolean>;
-  } catch {
-    return DEFAULT_PORTAL_DETAIL_SECTION_SETTINGS;
-  }
+  }, () => DEFAULT_PORTAL_DETAIL_SECTION_SETTINGS);
 }
 
 export function storePortalSections(value: Record<PortalSectionId, boolean>): void {
-  try {
-    getLocalStorage()?.setItem(PORTAL_SECTION_STORAGE_KEY, JSON.stringify(value));
-  } catch {
-    // Portal section state is optional.
-  }
+  writeLocalStorage(storage => storage?.setItem(PORTAL_SECTION_STORAGE_KEY, JSON.stringify(value)));
 }
 
 export function loadStoredBoolean(key: string, fallback: boolean): boolean {
-  try {
-    const value = getLocalStorage()?.getItem(key);
+  return readLocalStorage(storage => {
+    const value = storage?.getItem(key);
     if (value === 'true') return true;
     if (value === 'false') return false;
     return fallback;
-  } catch {
-    return fallback;
-  }
+  }, () => fallback);
 }
 
 export function storeBoolean(key: string, value: boolean): void {
-  try {
-    getLocalStorage()?.setItem(key, value ? 'true' : 'false');
-  } catch {
-    // Storage preference is optional.
-  }
+  writeLocalStorage(storage => storage?.setItem(key, value ? 'true' : 'false'));
 }
 
 export function storeSidePanelId(value: SidePanelId | null): void {
-  try {
-    const storage = getLocalStorage();
+  writeLocalStorage(storage => {
     if (value) {
       storage?.setItem(SIDE_PANEL_STORAGE_KEY, value);
     } else {
       storage?.removeItem(SIDE_PANEL_STORAGE_KEY);
     }
-  } catch {
-    // Side panel preference is optional.
-  }
+  });
 }

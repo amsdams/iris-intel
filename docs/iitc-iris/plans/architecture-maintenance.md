@@ -1,6 +1,6 @@
 # Architecture Maintenance Plan
 
-Status: in progress. ARCH-09, ARCH-01, ARCH-02, ARCH-03, ARCH-04, ARCH-05 and ARCH-06a/b implemented; ARCH-07/08 are pending.
+Status: in progress. ARCH-09, ARCH-01, ARCH-02, ARCH-03, ARCH-04, ARCH-05, ARCH-06a/b and ARCH-07 implemented; ARCH-08 is pending.
 
 This is the implementation tracker for the validated parts of the [architecture review](arch-review.md).
 The [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes the work; this file owns scope,
@@ -47,7 +47,8 @@ and remaining responsibilities in the completion log; do not improve one file's 
 
 ARCH-09 and ARCH-01 are committed as `64cdfb2`; ARCH-03 is committed as `db6ac6b` after user COMM smoke.
 ARCH-04 is committed as `3820481` after user portal smoke; ARCH-05 is committed as `d457c62` after user map/portal smoke.
-ARCH-06a/b are committed as `455a0fd` after user acceptance of the type-only change. ARCH-02 is implemented in the working tree.
+ARCH-06a/b are committed as `455a0fd`; ARCH-02 is committed as `98eaf2e` after user acceptance of the checked change.
+ARCH-07 is implemented in the working tree.
 Complete one bounded item at a time; record the change/PR, validation and remaining
 device checks in the completion log below. Do not treat a partial move as completion of the entire hotspot.
 
@@ -60,7 +61,7 @@ device checks in the completion log below. Do not treat a partial move as comple
 | [x] | ARCH-04 | Extract portal styling from `map-renderer.ts` | Styling/radius calculations take explicit inputs and can be tested without initializing Leaflet; appearance and zoom thresholds match. |
 | [x] | ARCH-05 | Extract map-response adaptation from `map-request.ts` | Conversion/type guards have explicit clock/history dependencies; queue/cache/generation/cancellation behavior stays with the scheduler. |
 | [x] | ARCH-06 | Share portal types and organize message payload types | Common fields have one definition; required/optional distinctions, existing imports and wire contracts remain compatible. |
-| [ ] | ARCH-07 | Consolidate storage I/O handling | Small read/write helpers retain feature parsers, legacy migrations, defaults, remove-item behavior and exact stored formats. |
+| [x] | ARCH-07 | Consolidate storage I/O handling | Small read/write helpers retain feature parsers, legacy migrations, defaults, remove-item behavior and exact stored formats. |
 | [ ] | ARCH-08 | Move remaining domain aggregation to core | List summarization has a core owner and equivalent results; presentation, filtering tied to UI choices, and SVG geometry stay in the app. |
 
 ## Slice Order
@@ -197,7 +198,7 @@ implementation; do not introduce a runtime registry or abstraction solely to sup
 
 The [current-state review](architecture-current-state-review.md) rechecks this plan at `6a8c9a4` and records two
 additional COMM response/acknowledgment gaps. These are now included in ARCH-09 before ARCH-03. Its browser-CI
-finding stays in the testing plan. ARCH-09/01/03 are implemented; the remaining items are pending.
+finding stays in the testing plan. Current implementation status is tracked in Progress above.
 
 - `content-command-callbacks.ts` contains real sheet/menu coordination as well as pass-throughs. Do not delete its
   entire test suite or promise the review's estimated 1,200-line saving. Keep behavioral tests at their new owner.
@@ -405,4 +406,39 @@ All 65 Chrome browser cases pass (50.1 seconds). The app/core count drops by twe
 were removed. XPI/ZIP `2026-11-04T19-41-44` reuse verified assets; all 23 archive files match dist and served downloads
 match the archives. APK unchanged; live UI smoke is pending. No new test dependency or implementation-mirroring test was added.
 
-ARCH-02 remains uncommitted for review. Next: ARCH-07 shared storage I/O handling, then ARCH-08 core aggregation.
+Committed as `98eaf2e` after the user accepted the checked change without requesting an additional device test.
+Continued with ARCH-07 below.
+
+### 2026-11-04 — ARCH-07: optional preference storage boundary
+
+`platform/storage.ts` owns safe local-storage acquisition, read/parse failure fallback and optional write/removal
+failure handling. `readLocalStorage` receives a read/parser operation and a lazy fallback; `writeLocalStorage`
+receives a persistence operation. Operation callbacks deliberately retain multi-key reads and serialization within
+the same failure boundary, rather than independently defaulting each key or parsing every preference as JSON.
+There is no storage registry or feature parser in the platform module.
+
+The 23 shell preference operations use this boundary, along with four page-map preference operations and the two
+each for panel visibility and theme. Feature owners retain keys, normalization, defaults, legacy layer/highlighter/
+tracker/key-count migrations, raw-string versus JSON formats and side-panel key removal. In particular, a failed
+first highlighter read still skips the legacy read; malformed legacy JSON still fails that entire load even if the
+new highlighter value is valid. The active-sheet fallback can still read a saved side panel. URL/cookie/history
+synchronization, session/auth storage, mission caches, ornament configuration and Draw Tools persistence keep their
+existing boundaries: their error reporting or state/cache behavior differs from optional preferences.
+
+Shell storage settings: 387 → 307 LOC (-80); page map-view: 66 → 50; panel visibility: 46 → 45; theme: 31 → 30.
+New platform owner: 22 LOC. Whole production source: 24,370 → 24,294 (-76). The 31 repeated optional-preference
+boundaries now share an implementation while each feature's parser remains readable at its owner. Stored formats
+and UI behavior are unchanged by intent; no performance gain is claimed.
+
+Validation: six preference regressions exercise missing window, a throwing storage getter/getItem, malformed JSON,
+legacy migration precedence, active-sheet fallback, exact raw/JSON writes, side-panel removal, quota/removal errors
+and serialization failures. The 26 focused storage/map-view/panel/theme tests pass. A temporary comparison against
+the prior shell implementation matches all 816 read and 60 write/removal scenarios, including storage-method order
+and resulting bytes. `npm run check` passes with 702 app/core tests, 6 release checks, 18 build guards, lint/types,
+CSS and workbench build. All 65 Chrome browser cases pass (50.5 seconds). XPI/ZIP `2026-11-04T19-46-58` reuse the
+verified build; all 23 archive files match dist and served downloads match the archives. APK unchanged; live preference
+persistence smoke is pending.
+
+ARCH-07 remains uncommitted for review. Next: ARCH-08 remaining portal-list aggregation in core, retaining app-owned
+filter choices, formatting and SVG geometry. This is the last planned slice; later renderer coordinators remain
+separate candidates requiring a concrete maintenance need.

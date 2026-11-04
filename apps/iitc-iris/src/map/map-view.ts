@@ -1,13 +1,10 @@
+import {readLocalStorage, writeLocalStorage} from '../platform/storage';
 import type {IitcIrisBaseLayerId} from '../messages';
 import {BASE_LAYER_STORAGE_KEY, DEFAULT_BASE_LAYER_ID, normalizeBaseLayerId} from './layers/base-layer-settings';
 import {MAP_VIEW_STORAGE_KEY, defaultMapView, parseStoredMapView, parseUrlMapView, type StoredMapView} from './map-view-settings';
 
 export function loadStoredMapView(): StoredMapView {
-  try {
-    return parseStoredMapView(window.localStorage.getItem(MAP_VIEW_STORAGE_KEY));
-  } catch {
-    return defaultMapView();
-  }
+  return readLocalStorage(storage => parseStoredMapView(storage?.getItem(MAP_VIEW_STORAGE_KEY) ?? null), defaultMapView);
 }
 
 export function loadUrlMapView(): StoredMapView | null {
@@ -19,28 +16,15 @@ export function loadUrlMapView(): StoredMapView | null {
 }
 
 export function storeMapView(view: StoredMapView): void {
-  try {
-    window.localStorage.setItem(MAP_VIEW_STORAGE_KEY, JSON.stringify(view));
-  } catch {
-    // Local storage is optional; map sync should keep working when unavailable.
-  }
+  writeLocalStorage(storage => storage?.setItem(MAP_VIEW_STORAGE_KEY, JSON.stringify(view)));
 }
 
 export function loadStoredBaseLayerId(): IitcIrisBaseLayerId {
-  try {
-    const value = window.localStorage.getItem(BASE_LAYER_STORAGE_KEY);
-    return normalizeBaseLayerId(value);
-  } catch {
-    return DEFAULT_BASE_LAYER_ID;
-  }
+  return readLocalStorage(storage => normalizeBaseLayerId(storage?.getItem(BASE_LAYER_STORAGE_KEY)), () => DEFAULT_BASE_LAYER_ID);
 }
 
 export function storeBaseLayerId(value: IitcIrisBaseLayerId): void {
-  try {
-    window.localStorage.setItem(BASE_LAYER_STORAGE_KEY, value);
-  } catch {
-    // Base layer preference is optional.
-  }
+  writeLocalStorage(storage => storage?.setItem(BASE_LAYER_STORAGE_KEY, value));
 }
 
 function setIntelMapCookie(name: string, value: string): void {

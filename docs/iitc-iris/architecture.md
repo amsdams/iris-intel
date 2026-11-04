@@ -60,6 +60,12 @@ their feature payload types. Inventory uses Agent's subscription state through a
 must not depend back on the bridge or introduce runtime imports. This organization does not validate incoming JSON;
 message source/contract validation remains at its runtime boundary.
 
+`platform/storage.ts` owns the failure boundary for optional local preferences. Shell settings, page map-view
+preferences, panel visibility and theme supply read/parser or write/removal operations; they retain keys, formats,
+normalization, migrations and lazy defaults. Keep multi-key reads and serialization inside their existing operation
+boundary. This helper does not govern session/auth storage, reported Draw Tools persistence errors or mission-cache
+maintenance, which retain their feature-specific behavior.
+
 ## CSS And Component Contract
 
 1. **Dependencies point toward shared UI.** Features compose shared primitives. Shared primitives must not import

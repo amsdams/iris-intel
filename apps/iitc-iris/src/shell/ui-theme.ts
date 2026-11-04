@@ -1,3 +1,4 @@
+import {readLocalStorage, writeLocalStorage} from '../platform/storage';
 import {useEffect, useState} from 'preact/hooks';
 
 export type UiThemePreference = 'system' | 'dark' | 'light';
@@ -12,8 +13,7 @@ export function resolveUiTheme(preference: UiThemePreference, systemDark: boolea
 }
 
 export function loadUiTheme(): UiThemePreference {
-  try { return normalizeUiTheme(window.localStorage.getItem(UI_THEME_STORAGE_KEY)); }
-  catch { return 'dark'; }
+  return readLocalStorage(storage => normalizeUiTheme(storage?.getItem(UI_THEME_STORAGE_KEY)), () => 'dark');
 }
 
 export function useUiTheme(): {uiTheme: UiThemePreference; setUiTheme: (theme: UiThemePreference) => void} {
@@ -22,8 +22,7 @@ export function useUiTheme(): {uiTheme: UiThemePreference; setUiTheme: (theme: U
     const media = window.matchMedia('(prefers-color-scheme: dark)');
     const apply = (): void => {document.documentElement.dataset.iitcIrisTheme = resolveUiTheme(uiTheme, media.matches);};
     apply();
-    try { window.localStorage.setItem(UI_THEME_STORAGE_KEY, uiTheme); }
-    catch { /* The choice still applies for this page if storage is unavailable. */ }
+    writeLocalStorage(storage => storage?.setItem(UI_THEME_STORAGE_KEY, uiTheme));
     media.addEventListener('change', apply);
     return (): void => media.removeEventListener('change', apply);
   }, [uiTheme]);

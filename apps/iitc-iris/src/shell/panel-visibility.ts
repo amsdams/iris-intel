@@ -1,3 +1,4 @@
+import {readLocalStorage, writeLocalStorage} from '../platform/storage';
 import {useCallback, useState} from 'preact/hooks';
 import {OPTIONAL_PANEL_REGISTRY, type IitcIrisSheetId} from './menu-registry';
 
@@ -13,13 +14,11 @@ export function isPanelVisible(sheet: IitcIrisSheetId, hiddenPanels: readonly Ii
 }
 
 export function loadHiddenPanels(): IitcIrisSheetId[] {
-  try { return normalizeHiddenPanels(JSON.parse(window.localStorage.getItem(HIDDEN_PANELS_STORAGE_KEY) ?? '[]')); }
-  catch { return []; }
+  return readLocalStorage(storage => normalizeHiddenPanels(JSON.parse(storage?.getItem(HIDDEN_PANELS_STORAGE_KEY) ?? '[]')), () => []);
 }
 
 function storeHiddenPanels(hiddenPanels: IitcIrisSheetId[]): void {
-  try { window.localStorage.setItem(HIDDEN_PANELS_STORAGE_KEY, JSON.stringify(hiddenPanels)); }
-  catch { /* Visibility still applies for this page when persistence is unavailable. */ }
+  writeLocalStorage(storage => storage?.setItem(HIDDEN_PANELS_STORAGE_KEY, JSON.stringify(hiddenPanels)));
 }
 
 export function usePanelVisibility(): {
