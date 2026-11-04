@@ -66,6 +66,10 @@ normalization, migrations and lazy defaults. Keep multi-key reads and serializat
 boundary. This helper does not govern session/auth storage, reported Draw Tools persistence errors or mission-cache
 maintenance, which retain their feature-specific behavior.
 
+Core `portal-analysis.ts` owns counts, portal-list/AP, scoreboard and list-summary aggregation.
+`summarizeIitcPortalsList` sums the supplied rows; the app workflow selects its filtered subset and retains sorting,
+state/memoization, formatting, colors and SVG geometry. Portal-list panel/control props use the core summary type.
+
 ## CSS And Component Contract
 
 1. **Dependencies point toward shared UI.** Features compose shared primitives. Shared primitives must not import

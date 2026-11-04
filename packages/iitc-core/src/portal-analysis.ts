@@ -86,6 +86,20 @@ export interface IitcPortalsListEntry {
   mission: boolean;
 }
 
+export interface IitcPortalsListSummary {
+  portals: number;
+  links: number;
+  fields: number;
+  enemyAp: number;
+  keys: number;
+  teams: Record<IitcPortalAnalysisTeam, number>;
+  history: {
+    visited: number;
+    captured: number;
+    scoutControlled: number;
+  };
+}
+
 export interface IitcPortalCountsLevel {
   level: number;
   count: number;
@@ -283,6 +297,34 @@ export function getIitcPortalsList(
         mission: Boolean(portal.mission || portal.mission50plus),
       };
     });
+}
+
+/** Sum the supplied list rows, including per-portal links/fields; callers choose the filtered subset. */
+export function summarizeIitcPortalsList(entries: readonly IitcPortalsListEntry[]): IitcPortalsListSummary {
+  return entries.reduce<IitcPortalsListSummary>((summary, entry) => {
+    summary.portals += 1;
+    summary.links += entry.links.count;
+    summary.fields += entry.fields;
+    summary.enemyAp += entry.ap.enemyAp;
+    summary.keys += entry.keyCount ?? 0;
+    summary.teams[entry.team] += 1;
+    if (entry.history.visited) summary.history.visited += 1;
+    if (entry.history.captured) summary.history.captured += 1;
+    if (entry.history.scoutControlled) summary.history.scoutControlled += 1;
+    return summary;
+  }, {
+    portals: 0,
+    links: 0,
+    fields: 0,
+    enemyAp: 0,
+    keys: 0,
+    teams: {E: 0, R: 0, M: 0, N: 0},
+    history: {
+      visited: 0,
+      captured: 0,
+      scoutControlled: 0,
+    },
+  });
 }
 
 export function getIitcScoreboard(entities: IitcPortalAnalysisEntities, bounds: IitcPortalAnalysisBounds): IitcScoreboard {

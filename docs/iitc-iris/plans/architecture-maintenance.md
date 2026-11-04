@@ -1,6 +1,7 @@
 # Architecture Maintenance Plan
 
-Status: in progress. ARCH-09, ARCH-01, ARCH-02, ARCH-03, ARCH-04, ARCH-05, ARCH-06a/b and ARCH-07 implemented; ARCH-08 is pending.
+Status: complete for the selected implementation scope (nine tracked items, ten slices). General IRIS smoke is
+accepted after ARCH-08; validation and remaining specific live/device boundaries are recorded below.
 
 This is the implementation tracker for the validated parts of the [architecture review](arch-review.md).
 The [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes the work; this file owns scope,
@@ -48,7 +49,7 @@ and remaining responsibilities in the completion log; do not improve one file's 
 ARCH-09 and ARCH-01 are committed as `64cdfb2`; ARCH-03 is committed as `db6ac6b` after user COMM smoke.
 ARCH-04 is committed as `3820481` after user portal smoke; ARCH-05 is committed as `d457c62` after user map/portal smoke.
 ARCH-06a/b are committed as `455a0fd`; ARCH-02 is committed as `98eaf2e` after user acceptance of the checked change.
-ARCH-07 is implemented in the working tree.
+ARCH-07 is committed as `248d409`. ARCH-08 is complete and accepted after the user's general IRIS smoke test.
 Complete one bounded item at a time; record the change/PR, validation and remaining
 device checks in the completion log below. Do not treat a partial move as completion of the entire hotspot.
 
@@ -62,7 +63,7 @@ device checks in the completion log below. Do not treat a partial move as comple
 | [x] | ARCH-05 | Extract map-response adaptation from `map-request.ts` | Conversion/type guards have explicit clock/history dependencies; queue/cache/generation/cancellation behavior stays with the scheduler. |
 | [x] | ARCH-06 | Share portal types and organize message payload types | Common fields have one definition; required/optional distinctions, existing imports and wire contracts remain compatible. |
 | [x] | ARCH-07 | Consolidate storage I/O handling | Small read/write helpers retain feature parsers, legacy migrations, defaults, remove-item behavior and exact stored formats. |
-| [ ] | ARCH-08 | Move remaining domain aggregation to core | List summarization has a core owner and equivalent results; presentation, filtering tied to UI choices, and SVG geometry stay in the app. |
+| [x] | ARCH-08 | Move remaining domain aggregation to core | List summarization has a core owner and equivalent results; presentation, filtering tied to UI choices, and SVG geometry stay in the app. |
 
 ## Slice Order
 
@@ -439,6 +440,65 @@ CSS and workbench build. All 65 Chrome browser cases pass (50.5 seconds). XPI/ZI
 verified build; all 23 archive files match dist and served downloads match the archives. APK unchanged; live preference
 persistence smoke is pending.
 
-ARCH-07 remains uncommitted for review. Next: ARCH-08 remaining portal-list aggregation in core, retaining app-owned
-filter choices, formatting and SVG geometry. This is the last planned slice; later renderer coordinators remain
-separate candidates requiring a concrete maintenance need.
+Committed as `248d409` after the user accepted the checked change without requesting an additional device test.
+Continued with the final planned slice, ARCH-08, below.
+
+### 2026-11-04 — ARCH-08: portal-list aggregation in core
+
+`packages/iitc-core/src/portal-analysis.ts` now owns `IitcPortalsListSummary` and `summarizeIitcPortalsList`, alongside
+existing portal counts/list/AP/scoreboard domain logic. The reducer and result shape move unchanged, with a read-only
+input contract. The app workflow calls core directly on its filtered list. Panel/control props use the core result
+type; there is no forwarding wrapper or compatibility alias in the app presentation module.
+
+Team/level/text filter choices, sorting and tie-breaking, state/memoization, labels/percentages/number formatting,
+colors and chart/SVG geometry remain in the app. Link/field totals still sum each supplied row's topology; they do not
+deduplicate shared links/fields or portal identities. Missing key counts still contribute zero, and history flags are
+counted independently. No domain behavior, UI or wire/storage format change is intended.
+
+App presentation helper: 311 → 270 LOC (-41); core analysis: 340 → 382 (+42). Whole production source:
+24,294 → 24,292 (-2), including changed imports/props at consumers. This slice moves ownership rather than claiming a
+large LOC saving or relocating domain logic that already lived in core.
+
+Validation: aggregation coverage moves from the app to core. Three core cases check all factions/AP/topology/history,
+missing/zero keys, frozen inputs, independent empty results and duplicate-row semantics. The app workflow regression
+now verifies summarization of the UI-filtered subset and an empty filter result. All 18 focused core/app analysis
+cases pass. A temporary comparison against the former app reducer matches 390 captured-fixture, faction-subset,
+empty, key/history and duplicate-row scenarios. `npm run check` passes with 704 app/core tests (137 core, 567 app),
+6 release checks, 18 build guards, lint/types, CSS and workbench build. All 65 Chrome browser cases pass (50.6 seconds).
+XPI/ZIP `2026-11-04T19-51-47` reuse verified assets; all 23 archive files match dist and served downloads match the
+archives. APK unchanged. The user reports a quick IRIS smoke test passed; general smoke is accepted without
+claiming exhaustive portal-list paths or platform coverage.
+
+ARCH-08 is accepted for commit after the general IRIS smoke above. All selected plan items are complete; no further
+slice is automatically queued by this plan.
+
+### Final implementation checkpoint — 2026-11-04
+
+The four original largest files now have explicit domain/feature boundaries. Relative to the `6a8c9a4` baseline:
+renderer 1,644 → 1,567; App 1,161 → 1,036; map requests 947 → 859; bridge messages 813 → 230. Their combined
+reduction is 873 LOC, with new owners recorded above. Whole production source is 24,453 → 24,292 (-161); most work
+improves where responsibilities live rather than deleting functionality. Command wrappers additionally shrink
+441 → 157 and storage settings 387 → 307. Earlier completion-log measurements use each slice's immediate input,
+so the App extraction starts at 1,162 after the preceding correctness work.
+
+Current ranked production inventory (same source scope, excluding tests):
+
+| Rank | File | LOC | Responsibilities retained / future boundary |
+| --- | --- | --- | --- |
+| 1 | `apps/iitc-iris/src/map/entities/map-renderer.ts` | 1,567 | Leaflet layers/diffs/visibility, labels/decorations, rendering/disposal; later overlay owners need a concrete maintenance case. |
+| 2 | `apps/iitc-iris/src/content.tsx` | 1,036 | Explicit App/bridge/auth/navigation composition; feature workflows have their own owners. |
+| 3 | `apps/iitc-iris/src/map/map-request.ts` | 859 | Transport, scheduling/cache/generation/retry/refill, history publication and diagnostics; response adaptation is separate. |
+| 4 | `packages/iitc-core/src/map-data-request.ts` | 787 | Request lifecycle and pure queue/retry/partition algorithms; keep state-machine ownership. |
+| 5 | `apps/iitc-iris/src/page-map-runtime.ts` | 664 | Page/map lifecycle, feature wiring and message routing; retain composition. |
+| 6 | `packages/iitc-core/src/comm.ts` | 476 | COMM parsing, validation and channel/domain rules. |
+| 7 | `apps/iitc-iris/src/comm/comm-runtime.ts` | 445 | Buffers, transport coordination, polling and activity adaptation. |
+| 8 | `apps/iitc-iris/src/map/draw-tools/draw-tools-runtime.ts` | 434 | Persistence/error reporting, mutations, highlighting and rendering; watch item. |
+| 9 | `apps/iitc-iris/src/map/missions/missions-runtime.ts` | 431 | Requests/status, cache lifetimes, navigation and overlays; watch item. |
+| 10 | `packages/iitc-core/src/portal-analysis.ts` | 382 | Domain models and counts/list/AP/scoreboard/summary aggregation. |
+| 11 | `apps/iitc-iris/src/portals/portal-details-panel/portal-details-panel.tsx` | 358 | Portal presentation/section composition; no new split selected. |
+| 12 | `apps/iitc-iris/src/map/controls-panel/controls-panel-container.tsx` | 352 | Control/panel assembly and explicit feature props; no new split selected. |
+
+Large files remain because this plan selected bounded ownership improvements, not arbitrary size limits. Later label/
+decoration coordinators, request-diagnostic extraction or listener-lifetime changes need a new concrete task and their
+own behavior/lifetime evidence. Branch review/commit/merge and device testing remain separate from implementation
+completion; existing smoke acceptance and its limits are recorded per slice above.

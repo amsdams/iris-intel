@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {getIitcPortalAnalysis, getIitcPortalsListApGain, type IitcPortalAnalysisEntities} from './portal-analysis';
+import {getIitcPortalAnalysis, getIitcPortalsListApGain, summarizeIitcPortalsList, type IitcPortalAnalysisEntities} from './portal-analysis';
 
 const entities: IitcPortalAnalysisEntities = {
   portals: [
@@ -166,6 +166,43 @@ describe('portal analysis', () => {
       destroyAp: 1574,
       destroyResoAp: 450,
       captureAp: 1925,
+    });
+  });
+});
+
+
+describe('portal list summarization', () => {
+  it('totals all factions, per-portal links/fields, AP, optional keys and independent history flags', () => {
+    const list = getIitcPortalAnalysis(entities, {south: 51, west: 3, north: 54, east: 6}, {
+      getKeyCount: guid => guid === 'res-5' ? 2 : undefined,
+    }).portalslist;
+    for (const entry of list) {
+      Object.freeze(entry.history);
+      Object.freeze(entry.links);
+      Object.freeze(entry.ap);
+      Object.freeze(entry);
+    }
+    expect(summarizeIitcPortalsList(Object.freeze(list))).toEqual({
+      portals: 4, links: 2, fields: 2, enemyAp: 11224, keys: 2,
+      teams: {E: 1, R: 1, M: 1, N: 1}, history: {visited: 2, captured: 1, scoutControlled: 1},
+    });
+  });
+
+  it('returns independent zero totals for empty lists', () => {
+    const expected = {portals: 0, links: 0, fields: 0, enemyAp: 0, keys: 0,
+      teams: {E: 0, R: 0, M: 0, N: 0}, history: {visited: 0, captured: 0, scoutControlled: 0}};
+    const first = summarizeIitcPortalsList([]);
+    expect(first).toEqual(expected);
+    first.teams.R = 10;
+    first.history.visited = 10;
+    expect(summarizeIitcPortalsList([])).toEqual(expected);
+  });
+
+  it('sums the supplied rows without deduplicating shared topology or portal identities', () => {
+    const entry = getIitcPortalAnalysis(entities, bounds, {getKeyCount: () => 0}).portalslist[0];
+    expect(summarizeIitcPortalsList([entry, entry])).toEqual({
+      portals: 2, links: 2, fields: 2, enemyAp: 6924, keys: 0,
+      teams: {E: 2, R: 0, M: 0, N: 0}, history: {visited: 2, captured: 2, scoutControlled: 0},
     });
   });
 });

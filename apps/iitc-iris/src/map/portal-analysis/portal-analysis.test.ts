@@ -9,7 +9,6 @@ import {
   getPortalCountsPieSegments,
   getScoreboardTeamLabel,
   sortPortalsList,
-  summarizePortalsList,
 } from './portal-analysis';
 
 function mockEntry(overrides: Partial<IitcPortalsListEntry> = {}): IitcPortalsListEntry {
@@ -73,24 +72,6 @@ describe('content-portal-analysis', () => {
 
     const sortedByTitleAsc = sortPortalsList(list, 'title', 1);
     expect(sortedByTitleAsc.map((entry) => entry.title)).toEqual(['Apple', 'Mango', 'Zebra']);
-  });
-
-  it('summarizes portal list counts and history flags', () => {
-    const list: IitcPortalsListEntry[] = [
-      mockEntry({guid: 'p1', team: 'R', links: {in: 1, out: 1, count: 2}, fields: 1, keyCount: 5, history: {visited: true, captured: true, scoutControlled: false}}),
-      mockEntry({guid: 'p2', team: 'E', links: {in: 0, out: 1, count: 1}, fields: 0, keyCount: 2, history: {visited: true, captured: false, scoutControlled: true}}),
-    ];
-
-    const summary = summarizePortalsList(list);
-    expect(summary.portals).toBe(2);
-    expect(summary.links).toBe(3);
-    expect(summary.fields).toBe(1);
-    expect(summary.keys).toBe(7);
-    expect(summary.teams.R).toBe(1);
-    expect(summary.teams.E).toBe(1);
-    expect(summary.history.visited).toBe(2);
-    expect(summary.history.captured).toBe(1);
-    expect(summary.history.scoutControlled).toBe(1);
   });
 
   it('computes portal counts bars and pie segments', () => {

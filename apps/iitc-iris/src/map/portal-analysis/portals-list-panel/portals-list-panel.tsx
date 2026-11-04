@@ -6,6 +6,7 @@ import '../../../ui/shared/control.css';
 import {
   IitcPortalCounts,
   IitcPortalsListEntry,
+  type IitcPortalsListSummary,
   IitcScoreboard,
 } from '@iris/iitc-core';
 import { formatInteger } from '../../../ui-status';
@@ -19,7 +20,6 @@ import {
   formatScoutControlled,
   formatTeamClass,
   formatTeamShortLabel,
-  PortalAnalysisListSummary,
   PortalsListLevelFilter,
   PortalsListSortField,
   PortalsListTeamFilter,
@@ -42,7 +42,7 @@ export interface IitcIrisPortalsListPanelProps {
   portalsListLevelFilter: PortalsListLevelFilter;
   portalsListSortBy: PortalsListSortField;
   portalsListSortOrder: SortOrder;
-  portalsListSummary: PortalAnalysisListSummary;
+  portalsListSummary: IitcPortalsListSummary;
   portalsListTeamFilter: PortalsListTeamFilter;
   portalsListTextFilter: string;
   sortedPortalsList: IitcPortalsListEntry[];

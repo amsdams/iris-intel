@@ -7,9 +7,10 @@ Unprioritized product/parity gaps and dated comparison evidence. The [roadmap](p
 
 The [architecture maintenance plan](plans/architecture-maintenance.md) tracks ARCH-01–09 with a ranked production
 inventory, concrete module destinations and acceptance checks. ARCH-09 COMM boundary hardening, ARCH-01 copy-feedback
-ownership, ARCH-03 COMM UI workflow, ARCH-04 portal styling, ARCH-05 response adaptation and ARCH-06a/b shared portal/
-feature payload types, ARCH-02 selective wrapper cleanup and ARCH-07 optional storage I/O are implemented.
-Next: ARCH-08 remaining core aggregation, the last planned slice. Broad renderer/AppShell/state-machine rewrites and unmeasured listener changes are not
+ownership, ARCH-03 COMM UI workflow, ARCH-04 portal styling, ARCH-05 response adaptation, ARCH-06a/b shared portal/
+feature payload types, ARCH-02 selective wrapper cleanup, ARCH-07 optional storage I/O and ARCH-08 core list
+aggregation are implemented. All selected items are done; the plan records the final inventory and remaining review/
+device boundaries. Broad renderer/AppShell/state-machine rewrites and unmeasured listener changes are not
 automatic scope. Keep progress and completion evidence in the plan rather than duplicating checklists here.
 
 ### COMM Review Follow-ups (implemented 2026-11-04, live acceptance pending)

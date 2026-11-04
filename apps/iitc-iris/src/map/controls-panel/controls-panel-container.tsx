@@ -14,13 +14,12 @@ import {type IitcIrisMapContextSelection} from '../../portals/selection-lifecycl
 import {type IitcIrisBooleanLayerSettingKey} from '../layers/layer-registry';
 import {type DrawToolsLinkEndpointLabels, type DrawToolsMarkerPortalInfo, type DrawToolsTarget} from '../draw-tools/draw-tools';
 import {
-  type PortalAnalysisListSummary,
   type PortalsListLevelFilter,
   type PortalsListSortField,
   type PortalsListTeamFilter,
   type SortOrder,
 } from '../portal-analysis/portal-analysis';
-import {type IitcPortalsListEntry} from '@iris/iitc-core';
+import type {IitcPortalsListEntry, IitcPortalsListSummary} from '@iris/iitc-core';
 import {
   type IitcIrisDrawToolsItem,
   type IitcIrisDrawToolsLatLng,
@@ -87,7 +86,7 @@ export interface IitcIrisMapControlsPanelContainerProps {
   portalsListLevelFilter: PortalsListLevelFilter;
   portalsListSortBy: PortalsListSortField;
   portalsListSortOrder: SortOrder;
-  portalsListSummary: PortalAnalysisListSummary;
+  portalsListSummary: IitcPortalsListSummary;
   portalsListTeamFilter: PortalsListTeamFilter;
   portalsListTextFilter: string;
   sortedPortalsList: IitcPortalsListEntry[];

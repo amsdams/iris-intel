@@ -27,12 +27,14 @@ ARCH-05 is committed as `d457c62` after the user's quick map/portal smoke. Respo
 and ten `messages/` modules own payload types behind compatible exports (bridge 813 → 230 LOC; all prior type
 contracts and shipped runtime asset bytes match). ARCH-02 is committed as `98eaf2e` after user acceptance:
 twenty-one redundant command wrappers are removed; eleven navigation/context commands remain unchanged (441 → 157 LOC).
-ARCH-07 is implemented in the working tree: `platform/storage.ts` shares optional-preference read/write failure
-handling across shell/map-view/panel/theme, retaining feature parsers, migrations, formats and key removal.
-Shell storage settings shrink 387 → 307 LOC; comparison matches 816 read and 60 write/removal scenarios.
-Checks pass: 702 app/core tests and 65 Chrome cases. XPI/ZIP `2026-11-04T19-46-58` is served on port 6969 for
-preference smoke; APK unchanged, no push. Next and final planned slice: ARCH-08 remaining portal-list aggregation in core. Keep coordination explicit; use LOC/context size to track ownership improvements rather than
-treating file size as the sole criterion.
+ARCH-07 is committed as `248d409` after user acceptance: optional preference I/O is shared through
+`platform/storage.ts`, retaining feature parsers/migrations/formats/removal (shell settings 387 → 307 LOC).
+ARCH-08 is complete and user smoke accepted: portal-list summary type/reducer live in core; app filters, sorting,
+formatting and SVG remain app-owned. All nine tracked architecture items (ten slices) are implemented. Validation,
+artifact handoff and the refreshed ranked inventory are in the plan's final checkpoint. Checks pass: 704 app/core tests
+and 65 Chrome cases. XPI/ZIP `2026-11-04T19-51-47` is served on port 6969; APK unchanged, no push. No further slice is queued;
+The user authorized the final slice commit after a quick IRIS smoke. Branch integration remains separate. Large-file follow-ups require a concrete maintenance
+need and their own lifecycle/behavior evidence.
 
 **Faster testing (2026-11-04):** user authorized the testing workflow improvements. Repeated 61-case benchmarks passed
 at 89.51 seconds with one worker and 48.80/47.83 seconds with two; local default is now two, CI retains one. A baseline

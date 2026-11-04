@@ -1,17 +1,15 @@
 import {useMemo, useState} from 'preact/hooks';
 import {
   filterPortalsList,
-  PortalAnalysisListSummary,
   PortalsListLevelFilter,
   PortalsListSortField,
   PortalsListTeamFilter,
   SortOrder,
   sortPortalsList,
-  summarizePortalsList,
 } from './portal-analysis';
 import {calculateNextSortOrder} from './actions';
 import type {IitcIrisPortalAnalysis} from '../../messages';
-import type {IitcPortalsListEntry} from '@iris/iitc-core';
+import {summarizeIitcPortalsList, type IitcPortalsListEntry, type IitcPortalsListSummary} from '@iris/iitc-core';
 
 export interface UsePortalAnalysisWorkflowParams {
   portalAnalysis: IitcIrisPortalAnalysis | null | undefined;
@@ -25,7 +23,7 @@ export interface UsePortalAnalysisWorkflowResult {
   portalsListTextFilter: string;
   filteredPortalsList: IitcPortalsListEntry[];
   sortedPortalsList: IitcPortalsListEntry[];
-  portalsListSummary: PortalAnalysisListSummary;
+  portalsListSummary: IitcPortalsListSummary;
   setPortalsListLevelFilter: (filter: PortalsListLevelFilter) => void;
   setPortalsListTeamFilter: (filter: PortalsListTeamFilter) => void;
   setPortalsListTextFilter: (text: string) => void;
@@ -51,7 +49,7 @@ export function usePortalAnalysisWorkflow(params: UsePortalAnalysisWorkflowParam
     [filteredPortalsList, portalsListSortBy, portalsListSortOrder],
   );
 
-  const portalsListSummary = useMemo(() => summarizePortalsList(filteredPortalsList), [filteredPortalsList]);
+  const portalsListSummary = useMemo(() => summarizeIitcPortalsList(filteredPortalsList), [filteredPortalsList]);
 
   const sortPortalsListBy = (field: PortalsListSortField): void => {
     const {nextField, nextOrder} = calculateNextSortOrder(field, portalsListSortBy, portalsListSortOrder);

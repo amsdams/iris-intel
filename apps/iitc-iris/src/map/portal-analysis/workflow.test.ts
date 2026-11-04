@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest';
-import {filterPortalsList, sortPortalsList, summarizePortalsList} from './portal-analysis';
-import type {IitcPortalsListEntry} from '@iris/iitc-core';
+import {filterPortalsList, sortPortalsList} from './portal-analysis';
+import {summarizeIitcPortalsList, type IitcPortalsListEntry} from '@iris/iitc-core';
 
 const SAMPLE_ENTRIES: IitcPortalsListEntry[] = [
   {
@@ -58,10 +58,11 @@ describe('content-portal-analysis-workflow', () => {
     expect(sortedAscending[0].guid).toBe('p2');
   });
 
-  it('summarizes portal list entries correctly', () => {
-    const summary = summarizePortalsList(SAMPLE_ENTRIES);
-    expect(summary.portals).toBe(2);
-    expect(summary.teams.E).toBe(1);
-    expect(summary.teams.R).toBe(1);
+  it('summarizes only entries retained by the UI filters', () => {
+    const filtered = filterPortalsList(SAMPLE_ENTRIES, 'R', '5', ' beta ');
+    const summary = summarizeIitcPortalsList(filtered);
+    expect(summary).toMatchObject({portals: 1, links: 1, fields: 0, enemyAp: 1200, keys: 0,
+      teams: {E: 0, R: 1, M: 0, N: 0}});
+    expect(summarizeIitcPortalsList(filterPortalsList(SAMPLE_ENTRIES, 'R', '8', '')).portals).toBe(0);
   });
 });
