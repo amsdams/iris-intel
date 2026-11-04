@@ -1,154 +1,16 @@
+import {createCancelPanelRequestsMessage} from './shell/outbound-messages';
+import type {IitcIrisCommTab, IitcIrisMapContextPortalAnchor, IitcIrisMessage, IitcIrisMissionSource} from './messages';
 import {
-  createCancelPanelRequestsMessage,
-  createRequestInventoryMessage,
-  createRequestScoresMessage,
-} from './shell/outbound-messages';
-import {
-  addCommNicknameAction,
-  redeemPasscodeAction,
-  sendCommAction,
-} from './comm/panel-actions';
-import type {
-  IitcIrisCommTab,
-  IitcIrisMapContextPortalAnchor,
-  IitcIrisMessage,
-  IitcIrisMissionSource,
-  IitcIrisPasscodeState,
-  IitcIrisSelectedPortal,
-} from './messages';
-import {
-  closeIitcIrisSheet,
-  openIitcIrisSheet,
-  toggleIitcIrisSheet,
-  type IitcIrisSheetNavigationEffect,
+  closeIitcIrisSheet, openIitcIrisSheet, toggleIitcIrisSheet, type IitcIrisSheetNavigationEffect,
 } from './shell/sheet-navigation';
-import {getIitcIrisPrimaryMenuEffect} from './shell/primary-menu';
-import {
-  performIntelLoginRedirect,
-  performIntelLogoutRedirect,
-} from './auth/navigation';
-import {
-  clearPortalSelectionAction,
-  focusSelectedPortalAction,
-  selectPortalByLatLngAction,
-  setPortalSectionOpenAction,
-  zoomToAndShowPortalAction,
-  type PortalSectionId,
-} from './portals/selection-actions';
-import {
-  buildPanByMessage,
-  buildSetViewMessage,
-} from './map/camera-actions';
-import {
-  copyMapContextGuid as copyMapContextGuidHelper,
-  copyMapContextLatLng as copyMapContextLatLngHelper,
-  copyMapContextPortalGuids as copyMapContextPortalGuidsHelper,
-  copyMapContextUrl as copyMapContextUrlHelper,
-  copySelectedPortalGuid as copySelectedPortalGuidHelper,
-  copySelectedPortalLink as copySelectedPortalLinkHelper,
-  copySelectedPortalTitle as copySelectedPortalTitleHelper,
-} from './shell/copy-helpers';
+import {getIitcIrisPrimaryMenuEffect, type IitcIrisPrimaryMenuContext} from './shell/primary-menu';
+import {zoomToAndShowPortalAction} from './portals/selection-actions';
 import type {IitcIrisMapContextSelection} from './portals/selection-lifecycle';
-import type {IitcIrisPanDirection} from './shell/keyboard-shortcuts';
-
 import type {IitcIrisSheetId, IitcIrisSidePanelId, IitcIrisPrimaryMenuId} from './shell/menu-registry';
-import type {IitcIrisPrimaryMenuContext} from './shell/primary-menu';
 
-/** Narrow postMessage adapter type accepted by every command in this module. */
+/** Commands with context guards, argument adaptation, or navigation/cancellation ordering. */
 export type PostMessageFn = (message: IitcIrisMessage) => void;
 
-// ---------------------------------------------------------------------------
-// Simple panel-request commands
-// ---------------------------------------------------------------------------
-
-export function refreshScoresCommand(postMessage: PostMessageFn): void {
-  postMessage(createRequestScoresMessage());
-}
-
-export function refreshInventoryCommand(postMessage: PostMessageFn): void {
-  postMessage(createRequestInventoryMessage());
-}
-
-// ---------------------------------------------------------------------------
-// Passcode / COMM commands
-// ---------------------------------------------------------------------------
-
-/**
- * Attempt to redeem a passcode.
- *
- * No-ops when `passcodeState.status === 'loading'` or the draft is empty/
- * whitespace. Returns `true` when the message was posted, `false` otherwise.
- * Delegates to `redeemPasscodeAction` from `content-comm-panel-actions`.
- */
-export function redeemPasscodeCommand(
-  passcodeState: IitcIrisPasscodeState,
-  passcodeDraft: string,
-  setPasscodeDraft: (draft: string) => void,
-  postMessage: PostMessageFn,
-): boolean {
-  return redeemPasscodeAction(passcodeState, passcodeDraft, setPasscodeDraft, postMessage);
-}
-
-/**
- * Attempt to send a COMM message.
- *
- * No-ops when the draft is empty/whitespace or the active tab is `'alerts'`.
- * Returns `true` when the message was posted, `false` otherwise.
- * Delegates to `sendCommAction` from `content-comm-panel-actions`.
- */
-export function sendCommCommand(
-  commTab: IitcIrisCommTab,
-  commDraft: string,
-  setCommDraft: (draft: string) => void,
-  postMessage: PostMessageFn,
-): boolean {
-  return sendCommAction(commTab, commDraft, setCommDraft, postMessage);
-}
-
-/**
- * Append `@nickname` to the current COMM draft.
- *
- * Returns the new draft string; the caller is responsible for calling the
- * state setter. Delegates to `addCommNicknameAction` from
- * `content-comm-panel-actions`.
- */
-export function addCommNicknameCommand(currentDraft: string, nickname: string): string {
-  return addCommNicknameAction(currentDraft, nickname);
-}
-
-// ---------------------------------------------------------------------------
-// Map, context, and portal commands (Checkpoint 3)
-// ---------------------------------------------------------------------------
-
-/** Post a `setView` message. */
-export function setMapViewCommand(
-  lat: number,
-  lng: number,
-  zoom: number,
-  postMessage: PostMessageFn,
-): void {
-  postMessage(buildSetViewMessage(lat, lng, zoom));
-}
-
-/**
- * Pan the map in one of the four cardinal directions.
- *
- * The offset in pixels is kept fixed and matches `IITC_PAN_CONTROL_OFFSET_PX`
- * in `content.tsx`; callers pass it explicitly so the command is testable.
- */
-export function panMapCommand(
-  direction: IitcIrisPanDirection,
-  offsetPx: number,
-  postMessage: PostMessageFn,
-): void {
-  postMessage(buildPanByMessage(direction, offsetPx));
-}
-
-/**
- * Center the map on the current map-context coordinates.
- *
- * No-ops when `mapContext` is null.
- */
 export function centerMapContextCommand(
   mapContext: IitcIrisMapContextSelection | null,
   setMapView: (lat: number, lng: number, zoom: number) => void,
@@ -157,26 +19,6 @@ export function centerMapContextCommand(
   setMapView(mapContext.lat, mapContext.lng, mapContext.zoom);
 }
 
-/**
- * Zoom to and optionally show a portal on the map.
- *
- * Delegates to `zoomToAndShowPortalAction`.
- */
-export function zoomToAndShowPortalCommand(
-  portalGuid: string | undefined,
-  latE6: number | undefined,
-  lngE6: number | undefined,
-  zoom: number,
-  postMessage: PostMessageFn,
-): void {
-  zoomToAndShowPortalAction(portalGuid, latE6, lngE6, zoom, postMessage);
-}
-
-/**
- * Zoom to a map-context portal anchor.
- *
- * The caller is responsible for passing the resolved zoom level.
- */
 export function selectMapContextAnchorCommand(
   anchor: IitcIrisMapContextPortalAnchor,
   zoom: number,
@@ -184,115 +26,6 @@ export function selectMapContextAnchorCommand(
 ): void {
   zoomToAndShowPortalAction(anchor.guid, anchor.latE6, anchor.lngE6, zoom, postMessage);
 }
-
-/**
- * Select a portal by `latE6`/`lngE6` coordinates.
- *
- * No-ops (returns `false`) when either coordinate is undefined. Delegates to
- * `selectPortalByLatLngAction`.
- */
-export function selectPortalByLatLngCommand(
-  latE6: number | undefined,
-  lngE6: number | undefined,
-  portalGuid: string | undefined,
-  cameraZoom: number,
-  postMessage: PostMessageFn,
-): boolean {
-  return selectPortalByLatLngAction(latE6, lngE6, portalGuid, cameraZoom, postMessage);
-}
-
-/** Post a `clearPortalSelection` message. */
-export function clearPortalSelectionCommand(postMessage: PostMessageFn): void {
-  clearPortalSelectionAction(postMessage);
-}
-
-/**
- * Move the camera to the selected portal.
- *
- * In map-focus mode, also calls `closeSheets`. No-ops when `selectedPortal`
- * is null.
- */
-export function focusSelectedPortalCommand(
-  selectedPortal: IitcIrisSelectedPortal | null,
-  cameraZoom: number,
-  mapFocusMode: boolean,
-  setMapView: (lat: number, lng: number, zoom?: number) => void,
-  closeSheets: () => void,
-): void {
-  focusSelectedPortalAction(selectedPortal, cameraZoom, mapFocusMode, setMapView, closeSheets);
-}
-
-/**
- * Persist and apply the open/closed state of a portal detail section.
- *
- * Delegates to `setPortalSectionOpenAction`.
- */
-export function setPortalSectionOpenCommand(
-  portalSections: Record<PortalSectionId, boolean>,
-  section: PortalSectionId,
-  open: boolean,
-  setPortalSections: (sections: Record<PortalSectionId, boolean>) => void,
-): void {
-  setPortalSectionOpenAction(portalSections, section, open, setPortalSections);
-}
-
-// ---------------------------------------------------------------------------
-// Copy commands (Checkpoint 3)
-// ---------------------------------------------------------------------------
-
-export function copyMapContextLatLngCommand(
-  mapContext: IitcIrisMapContextSelection | null,
-  setStatus: (msg: string) => void,
-): void {
-  copyMapContextLatLngHelper(mapContext, setStatus);
-}
-
-export function copyMapContextUrlCommand(
-  mapContext: IitcIrisMapContextSelection | null,
-  setStatus: (msg: string) => void,
-): void {
-  copyMapContextUrlHelper(mapContext, setStatus);
-}
-
-export function copyMapContextGuidCommand(
-  mapContext: IitcIrisMapContextSelection | null,
-  setStatus: (msg: string) => void,
-): void {
-  copyMapContextGuidHelper(mapContext, setStatus);
-}
-
-export function copyMapContextPortalGuidsCommand(
-  mapContext: IitcIrisMapContextSelection | null,
-  setStatus: (msg: string) => void,
-): void {
-  copyMapContextPortalGuidsHelper(mapContext, setStatus);
-}
-
-export function copySelectedPortalLinkCommand(
-  selectedPortal: {latE6: number; lngE6: number; guid: string} | null,
-  zoom: number,
-  setStatus: (msg: string) => void,
-): void {
-  copySelectedPortalLinkHelper(selectedPortal, zoom, setStatus);
-}
-
-export function copySelectedPortalGuidCommand(
-  selectedPortal: {guid: string} | null,
-  setStatus: (msg: string) => void,
-): void {
-  copySelectedPortalGuidHelper(selectedPortal, setStatus);
-}
-
-export function copySelectedPortalTitleCommand(
-  selectedPortal: {title?: string; guid: string} | null,
-  setStatus: (msg: string) => void,
-): void {
-  copySelectedPortalTitleHelper(selectedPortal, setStatus);
-}
-
-// ---------------------------------------------------------------------------
-// Checkpoint 4 — Sheet/Menu/Auth/Data Source Commands
-// ---------------------------------------------------------------------------
 
 export interface SheetNavigationSetters {
   setActiveSheet: (sheet: IitcIrisSheetId) => void;
@@ -421,21 +154,4 @@ export function togglePrimaryMenuCommand(
   } else if (effect.kind === 'toggleSheet') {
     toggleSheet(effect.sheet);
   }
-}
-
-export function openIntelLoginCommand(
-  loginBypassStorageKey: string,
-  loginBypassMs: number,
-  rootElement: HTMLElement | null,
-  location: Location,
-): void {
-  performIntelLoginRedirect(loginBypassStorageKey, loginBypassMs, rootElement, location);
-}
-
-export function logoutIntelCommand(
-  loginBypassStorageKey: string,
-  rootElement: HTMLElement | null,
-  location: Location,
-): void {
-  performIntelLogoutRedirect(loginBypassStorageKey, rootElement, location);
 }

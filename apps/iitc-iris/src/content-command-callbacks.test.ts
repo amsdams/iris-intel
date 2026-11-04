@@ -1,457 +1,46 @@
 import {describe, expect, it, vi} from 'vitest';
 import {
-  addCommNicknameCommand,
-  centerMapContextCommand,
-  clearPortalSelectionCommand,
-  copyMapContextGuidCommand,
-  copyMapContextLatLngCommand,
-  copyMapContextPortalGuidsCommand,
-  copyMapContextUrlCommand,
-  copySelectedPortalGuidCommand,
-  copySelectedPortalLinkCommand,
-  copySelectedPortalTitleCommand,
-  focusSelectedPortalCommand,
-  panMapCommand,
-  redeemPasscodeCommand,
-  refreshInventoryCommand,
-  refreshScoresCommand,
-  selectMapContextAnchorCommand,
-  selectPortalByLatLngCommand,
-  sendCommCommand,
-  setMapViewCommand,
-  setPortalSectionOpenCommand,
-  zoomToAndShowPortalCommand,
-  applySheetNavigationEffectCommand,
-  closeSheetToMapCommand,
-  logoutIntelCommand,
-  openIntelLoginCommand,
-  openCommPanelCommand,
-  openSheetCommand,
-  selectCommTabCommand,
-  toggleCommPanelCommand,
-  toggleMissionsSheetCommand,
-  togglePrimaryMenuCommand,
-  toggleSheetCommand,
+  centerMapContextCommand, selectMapContextAnchorCommand, applySheetNavigationEffectCommand,
+  closeSheetToMapCommand, openCommPanelCommand, openSheetCommand, selectCommTabCommand,
+  toggleCommPanelCommand, toggleMissionsSheetCommand, togglePrimaryMenuCommand, toggleSheetCommand,
   type SheetNavigationSetters,
 } from './content-command-callbacks';
 import {IITC_IRIS_MESSAGES} from './messages';
-import type {IitcIrisSelectedPortal} from './messages';
 import type {IitcIrisMapContextSelection} from './portals/selection-lifecycle';
-import type {PortalSectionId} from './portals/selection-actions';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function makeSelectedPortal(overrides?: Partial<IitcIrisSelectedPortal>): IitcIrisSelectedPortal {
-  return {
-    guid: 'guid-xyz',
-    title: 'Portal Title',
-    team: 'R',
-    latE6: 52367600,
-    lngE6: 4904100,
-    level: 8,
-    health: 100,
-    resCount: 8,
-    isPlaceholder: false,
-    ornaments: [],
-    artifacts: [],
-    links: {count: 0, incoming: 0, outgoing: 0, guids: []},
-    fields: {count: 0, guids: []},
-    ...overrides,
-  };
-}
 
 function makeMapContext(overrides?: Partial<IitcIrisMapContextSelection>): IitcIrisMapContextSelection {
   return {lat: 52.37, lng: 4.89, zoom: 14, target: 'map', ...overrides};
 }
 
-// ---------------------------------------------------------------------------
-// Checkpoint 1 — Simple panel-request commands
-// ---------------------------------------------------------------------------
-
-describe('content-command-callbacks', () => {
-  describe('refreshScoresCommand', () => {
-    it('posts a requestScores message', () => {
-      const postMessage = vi.fn();
-      refreshScoresCommand(postMessage);
-      expect(postMessage).toHaveBeenCalledOnce();
-      expect(postMessage).toHaveBeenCalledWith({type: IITC_IRIS_MESSAGES.requestScores});
-    });
+describe('centerMapContextCommand', () => {
+  it('calls setMapView with context coords', () => {
+    const setMapView = vi.fn();
+    const ctx = makeMapContext({lat: 52.37, lng: 4.89, zoom: 15});
+    centerMapContextCommand(ctx, setMapView);
+    expect(setMapView).toHaveBeenCalledWith(52.37, 4.89, 15);
   });
 
-  describe('refreshInventoryCommand', () => {
-    it('posts a requestInventory message', () => {
-      const postMessage = vi.fn();
-      refreshInventoryCommand(postMessage);
-      expect(postMessage).toHaveBeenCalledOnce();
-      expect(postMessage).toHaveBeenCalledWith({type: IITC_IRIS_MESSAGES.requestInventory});
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // redeemPasscodeCommand
-  // -------------------------------------------------------------------------
-
-  describe('redeemPasscodeCommand', () => {
-    it('posts passcode message and sets draft when valid', () => {
-      const postMessage = vi.fn();
-      const setDraft = vi.fn();
-      const result = redeemPasscodeCommand(
-        {status: 'idle', requestState: 'idle'},
-        '  ABC123  ',
-        setDraft,
-        postMessage,
-      );
-      expect(result).toBe(true);
-      // setDraft is called (with trimmed value) before postMessage
-      expect(setDraft).toHaveBeenCalledWith('ABC123');
-      expect(postMessage).toHaveBeenCalledWith({
-        type: IITC_IRIS_MESSAGES.requestPasscode,
-        passcodeText: 'ABC123',
-      });
-      const setDraftOrder = setDraft.mock.invocationCallOrder[0];
-      const postMessageOrder = postMessage.mock.invocationCallOrder[0];
-      expect(setDraftOrder).toBeLessThan(postMessageOrder);
-    });
-
-    it('is a no-op when the draft is empty', () => {
-      const postMessage = vi.fn();
-      const setDraft = vi.fn();
-      const result = redeemPasscodeCommand(
-        {status: 'idle', requestState: 'idle'},
-        '   ',
-        setDraft,
-        postMessage,
-      );
-      expect(result).toBe(false);
-      expect(postMessage).not.toHaveBeenCalled();
-      expect(setDraft).not.toHaveBeenCalled();
-    });
-
-    it('is a no-op when passcode is loading', () => {
-      const postMessage = vi.fn();
-      const setDraft = vi.fn();
-      const result = redeemPasscodeCommand(
-        {status: 'loading', requestState: 'loading'},
-        'VALIDCODE',
-        setDraft,
-        postMessage,
-      );
-      expect(result).toBe(false);
-      expect(postMessage).not.toHaveBeenCalled();
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // sendCommCommand
-  // -------------------------------------------------------------------------
-
-  describe('sendCommCommand', () => {
-    it('posts send-comm message and retains the draft until delivery is confirmed', () => {
-      const postMessage = vi.fn();
-      const setDraft = vi.fn();
-      const result = sendCommCommand('all', 'hello agent', setDraft, postMessage);
-      expect(result).toBe(true);
-      expect(postMessage).toHaveBeenCalledWith({
-        type: IITC_IRIS_MESSAGES.sendComm,
-        commTab: 'all',
-        commMessage: 'hello agent',
-      });
-      expect(setDraft).not.toHaveBeenCalled();
-    });
-
-    it('is a no-op when the draft is empty or whitespace-only', () => {
-      const postMessage = vi.fn();
-      const setDraft = vi.fn();
-      const result = sendCommCommand('faction', '   ', setDraft, postMessage);
-      expect(result).toBe(false);
-      expect(postMessage).not.toHaveBeenCalled();
-      expect(setDraft).not.toHaveBeenCalled();
-    });
-
-    it('is a no-op when the tab is alerts', () => {
-      const postMessage = vi.fn();
-      const setDraft = vi.fn();
-      const result = sendCommCommand('alerts', 'hello', setDraft, postMessage);
-      expect(result).toBe(false);
-      expect(postMessage).not.toHaveBeenCalled();
-      expect(setDraft).not.toHaveBeenCalled();
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // addCommNicknameCommand
-  // -------------------------------------------------------------------------
-
-  describe('addCommNicknameCommand', () => {
-    it('appends @nickname to the current draft', () => {
-      expect(addCommNicknameCommand('hi ', 'agent1')).toBe('hi @agent1 ');
-    });
-
-    it('strips a leading @ from the supplied nickname', () => {
-      expect(addCommNicknameCommand('', '@AgentX')).toBe('@AgentX ');
-    });
-
-    it('returns the current draft unchanged for an empty nickname', () => {
-      expect(addCommNicknameCommand('hello', '')).toBe('hello');
-    });
-
-    it('trims leading whitespace from the result when the draft was empty', () => {
-      expect(addCommNicknameCommand('', 'AgentY')).toBe('@AgentY ');
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // Checkpoint 3 — Map, context, and portal commands
-  // -------------------------------------------------------------------------
-
-  describe('setMapViewCommand', () => {
-    it('posts a setView message', () => {
-      const postMessage = vi.fn();
-      setMapViewCommand(52.37, 4.89, 14, postMessage);
-      expect(postMessage).toHaveBeenCalledWith(expect.objectContaining({
-        type: IITC_IRIS_MESSAGES.setView,
-        lat: 52.37,
-        lng: 4.89,
-        zoom: 14,
-      }));
-    });
-  });
-
-  describe('panMapCommand', () => {
-    it('posts a panBy message with correct east offsets', () => {
-      const postMessage = vi.fn();
-      panMapCommand('east', 500, postMessage);
-      expect(postMessage).toHaveBeenCalledWith({
-        type: IITC_IRIS_MESSAGES.panBy,
-        panX: 500,
-        panY: 0,
-      });
-    });
-
-    it('posts a panBy message with correct north offsets', () => {
-      const postMessage = vi.fn();
-      panMapCommand('north', 500, postMessage);
-      expect(postMessage).toHaveBeenCalledWith({
-        type: IITC_IRIS_MESSAGES.panBy,
-        panX: 0,
-        panY: -500,
-      });
-    });
-
-    it('posts a panBy message with correct west offsets', () => {
-      const postMessage = vi.fn();
-      panMapCommand('west', 500, postMessage);
-      expect(postMessage).toHaveBeenCalledWith({
-        type: IITC_IRIS_MESSAGES.panBy,
-        panX: -500,
-        panY: 0,
-      });
-    });
-
-    it('posts a panBy message with correct south offsets', () => {
-      const postMessage = vi.fn();
-      panMapCommand('south', 500, postMessage);
-      expect(postMessage).toHaveBeenCalledWith({
-        type: IITC_IRIS_MESSAGES.panBy,
-        panX: 0,
-        panY: 500,
-      });
-    });
-  });
-
-  describe('centerMapContextCommand', () => {
-    it('calls setMapView with context coords', () => {
-      const setMapView = vi.fn();
-      const ctx = makeMapContext({lat: 52.37, lng: 4.89, zoom: 15});
-      centerMapContextCommand(ctx, setMapView);
-      expect(setMapView).toHaveBeenCalledWith(52.37, 4.89, 15);
-    });
-
-    it('is a no-op when mapContext is null', () => {
-      const setMapView = vi.fn();
-      centerMapContextCommand(null, setMapView);
-      expect(setMapView).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('zoomToAndShowPortalCommand', () => {
-    it('posts a zoomToAndShowPortal message with latE6/lngE6 conversion', () => {
-      const postMessage = vi.fn();
-      zoomToAndShowPortalCommand('guid-abc', 52367600, 4904100, 15, postMessage);
-      expect(postMessage).toHaveBeenCalledWith({
-        type: IITC_IRIS_MESSAGES.zoomToAndShowPortal,
-        portalGuid: 'guid-abc',
-        portalLat: 52.3676,
-        portalLng: 4.9041,
-        zoom: 15,
-      });
-    });
-
-    it('posts without guid and coordinates when both are undefined', () => {
-      const postMessage = vi.fn();
-      zoomToAndShowPortalCommand(undefined, undefined, undefined, 10, postMessage);
-      expect(postMessage).toHaveBeenCalledWith({
-        type: IITC_IRIS_MESSAGES.zoomToAndShowPortal,
-        portalGuid: undefined,
-        portalLat: undefined,
-        portalLng: undefined,
-        zoom: 10,
-      });
-    });
-  });
-
-  describe('selectMapContextAnchorCommand', () => {
-    it('posts a zoomToAndShowPortal message from anchor fields', () => {
-      const postMessage = vi.fn();
-      const anchor = {guid: 'anc-guid', label: 'Tower', latE6: 52367600, lngE6: 4904100};
-      selectMapContextAnchorCommand(anchor, 15, postMessage);
-      expect(postMessage).toHaveBeenCalledWith({
-        type: IITC_IRIS_MESSAGES.zoomToAndShowPortal,
-        portalGuid: 'anc-guid',
-        portalLat: 52.3676,
-        portalLng: 4.9041,
-        zoom: 15,
-      });
-    });
-  });
-
-  describe('selectPortalByLatLngCommand', () => {
-    it('posts zoomToAndShowPortal when coords are defined', () => {
-      const postMessage = vi.fn();
-      const result = selectPortalByLatLngCommand(52367600, 4904100, 'guid-123', 12, postMessage);
-      expect(result).toBe(true);
-      expect(postMessage).toHaveBeenCalledWith(expect.objectContaining({
-        type: IITC_IRIS_MESSAGES.zoomToAndShowPortal,
-      }));
-    });
-
-    it('is a no-op and returns false when latE6 is undefined', () => {
-      const postMessage = vi.fn();
-      const result = selectPortalByLatLngCommand(undefined, 4904100, 'guid-123', 12, postMessage);
-      expect(result).toBe(false);
-      expect(postMessage).not.toHaveBeenCalled();
-    });
-
-    it('is a no-op and returns false when lngE6 is undefined', () => {
-      const postMessage = vi.fn();
-      const result = selectPortalByLatLngCommand(52367600, undefined, 'guid-123', 12, postMessage);
-      expect(result).toBe(false);
-      expect(postMessage).not.toHaveBeenCalled();
-    });
-
-    it('uses at least zoom 15 even when camera zoom is lower', () => {
-      const postMessage = vi.fn();
-      selectPortalByLatLngCommand(52367600, 4904100, undefined, 5, postMessage);
-      expect(postMessage).toHaveBeenCalledWith(expect.objectContaining({zoom: 15}));
-    });
-  });
-
-  describe('clearPortalSelectionCommand', () => {
-    it('posts a clearPortalSelection message', () => {
-      const postMessage = vi.fn();
-      clearPortalSelectionCommand(postMessage);
-      expect(postMessage).toHaveBeenCalledWith({type: IITC_IRIS_MESSAGES.clearPortalSelection});
-    });
-  });
-
-  describe('focusSelectedPortalCommand', () => {
-    it('calls setMapView for the selected portal', () => {
-      const setMapView = vi.fn();
-      const closeSheets = vi.fn();
-      focusSelectedPortalCommand(makeSelectedPortal(), 14, false, setMapView, closeSheets);
-      expect(setMapView).toHaveBeenCalledWith(52.3676, 4.9041, 17);
-      expect(closeSheets).not.toHaveBeenCalled();
-    });
-
-    it('calls closeSheets in map-focus mode', () => {
-      const setMapView = vi.fn();
-      const closeSheets = vi.fn();
-      focusSelectedPortalCommand(makeSelectedPortal(), 14, true, setMapView, closeSheets);
-      expect(closeSheets).toHaveBeenCalledOnce();
-    });
-
-    it('is a no-op when selectedPortal is null', () => {
-      const setMapView = vi.fn();
-      focusSelectedPortalCommand(null, 14, false, setMapView, vi.fn());
-      expect(setMapView).not.toHaveBeenCalled();
-    });
-
-    it('uses at least zoom 17 even when camera zoom is lower', () => {
-      const setMapView = vi.fn();
-      focusSelectedPortalCommand(makeSelectedPortal(), 10, false, setMapView, vi.fn());
-      expect(setMapView).toHaveBeenCalledWith(expect.any(Number), expect.any(Number), 17);
-    });
-  });
-
-  describe('setPortalSectionOpenCommand', () => {
-    it('merges the new open state into the sections map', () => {
-      const setPortalSections = vi.fn();
-      const current: Record<PortalSectionId, boolean> = {mods: false, resonators: true, facts: true};
-      setPortalSectionOpenCommand(current, 'mods', true, setPortalSections);
-      expect(setPortalSections).toHaveBeenCalledWith({mods: true, resonators: true, facts: true});
-    });
-
-    it('does not mutate the current sections object', () => {
-      const setPortalSections = vi.fn();
-      const current: Record<PortalSectionId, boolean> = {mods: false, resonators: true, facts: true};
-      setPortalSectionOpenCommand(current, 'mods', true, setPortalSections);
-      expect(current.mods).toBe(false);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // Copy commands (Checkpoint 3)
-  // -------------------------------------------------------------------------
-
-  describe('copy map context commands', () => {
-    it('copyMapContextLatLngCommand is a no-op when context is null', () => {
-      // No throw, no clipboard write (copyIitcIrisText would be called but context guard prevents it)
-      expect(() => copyMapContextLatLngCommand(null, vi.fn())).not.toThrow();
-    });
-
-    it('copyMapContextUrlCommand is a no-op when context is null', () => {
-      expect(() => copyMapContextUrlCommand(null, vi.fn())).not.toThrow();
-    });
-
-    it('copyMapContextGuidCommand is a no-op when context has no guid', () => {
-      const setStatus = vi.fn();
-      copyMapContextGuidCommand(makeMapContext({guid: undefined}), setStatus);
-      expect(setStatus).not.toHaveBeenCalled();
-    });
-
-    it('copyMapContextPortalGuidsCommand is a no-op when no portal guids are present', () => {
-      const setStatus = vi.fn();
-      copyMapContextPortalGuidsCommand(makeMapContext({portalGuids: []}), setStatus);
-      expect(setStatus).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('copy selected portal commands', () => {
-    it('copySelectedPortalLinkCommand is a no-op when portal is null', () => {
-      const setStatus = vi.fn();
-      copySelectedPortalLinkCommand(null, 14, setStatus);
-      expect(setStatus).not.toHaveBeenCalled();
-    });
-
-    it('copySelectedPortalGuidCommand is a no-op when portal is null', () => {
-      const setStatus = vi.fn();
-      copySelectedPortalGuidCommand(null, setStatus);
-      expect(setStatus).not.toHaveBeenCalled();
-    });
-
-    it('copySelectedPortalTitleCommand is a no-op when portal is null', () => {
-      const setStatus = vi.fn();
-      copySelectedPortalTitleCommand(null, setStatus);
-      expect(setStatus).not.toHaveBeenCalled();
-    });
+  it('is a no-op when mapContext is null', () => {
+    const setMapView = vi.fn();
+    centerMapContextCommand(null, setMapView);
+    expect(setMapView).not.toHaveBeenCalled();
   });
 });
 
-// ---------------------------------------------------------------------------
-// Checkpoint 4 — Sheet/Menu/Auth/Data Source Commands
-// ---------------------------------------------------------------------------
+describe('selectMapContextAnchorCommand', () => {
+  it('posts a zoomToAndShowPortal message from anchor fields', () => {
+    const postMessage = vi.fn();
+    const anchor = {guid: 'anc-guid', label: 'Tower', latE6: 52367600, lngE6: 4904100};
+    selectMapContextAnchorCommand(anchor, 15, postMessage);
+    expect(postMessage).toHaveBeenCalledWith({
+      type: IITC_IRIS_MESSAGES.zoomToAndShowPortal,
+      portalGuid: 'anc-guid',
+      portalLat: 52.3676,
+      portalLng: 4.9041,
+      zoom: 15,
+    });
+  });
+});
 
 describe('applySheetNavigationEffectCommand', () => {
   it('applies effect and posts cancel message if requested', () => {
@@ -778,37 +367,5 @@ describe('togglePrimaryMenuCommand', () => {
     togglePrimaryMenuCommand('system', context, vi.fn(), vi.fn(), vi.fn(), toggleSheet);
     expect(toggleSheet).toHaveBeenNthCalledWith(1, 'agent');
     expect(toggleSheet).toHaveBeenNthCalledWith(2, 'appearance');
-  });
-});
-
-describe('Intel auth navigation command wrappers', () => {
-  it('openIntelLoginCommand delegates to login redirect behavior', () => {
-    const rootElement = {remove: vi.fn()} as unknown as HTMLElement;
-    const location = {
-      origin: 'https://intel.ingress.com',
-      pathname: '/map',
-      reload: vi.fn(),
-      assign: vi.fn(),
-    } as unknown as Location;
-
-    openIntelLoginCommand('login-bypass', 300_000, rootElement, location);
-
-    expect(rootElement.remove).toHaveBeenCalledOnce();
-    expect(location.assign).toHaveBeenCalledWith('https://intel.ingress.com/intel');
-  });
-
-  it('logoutIntelCommand delegates to Intel logout redirect behavior', () => {
-    const rootElement = {remove: vi.fn()} as unknown as HTMLElement;
-    const location = {
-      origin: 'https://intel.ingress.com',
-      pathname: '/intel',
-      reload: vi.fn(),
-      assign: vi.fn(),
-    } as unknown as Location;
-
-    logoutIntelCommand('login-bypass', rootElement, location);
-
-    expect(rootElement.remove).toHaveBeenCalledOnce();
-    expect(location.assign).toHaveBeenCalledWith('https://intel.ingress.com/logout');
   });
 });

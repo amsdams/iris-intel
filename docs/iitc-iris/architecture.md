@@ -47,6 +47,11 @@ with scroll effects after Missions/Search, preserving message/effect ordering. A
 bridge/auth composition and navigation; COMM transport stays in its runtime. Draw Tools and Portal Analysis retain
 their existing workflows. Avoid a broad app hook or global store that hides this wiring.
 
+App calls existing portal, clipboard, Passcode and auth actions directly and posts the existing panel/camera message
+builders. State-bound UI callbacks stay in App. `content-command-callbacks.ts` retains context guards/anchor adaptation
+and sheet/menu/COMM/Missions coordination, including request cancellation and setter/storage ordering. Do not add an
+extra command layer that only forwards a feature action or builder call.
+
 `messages.ts` owns bridge constants and envelope composition and preserves existing type imports through explicit
 exports. `messages/entities.ts` owns portal/render models: `IitcIrisPortalSummary` shares common selected/rendered portal
 fields while each keeps its own required/optional decorations, history and topology. `messages/map.ts` owns map settings

@@ -96,9 +96,67 @@ describe('content-comm-panel-actions', () => {
 
     expect(result).toBe(true);
     expect(setDraft).toHaveBeenCalledWith('2abc3def');
+    expect(setDraft.mock.invocationCallOrder[0]).toBeLessThan(postMessageFn.mock.invocationCallOrder[0]);
     expect(postMessageFn).toHaveBeenCalledWith({
       type: 'IITC_IRIS_REQUEST_PASSCODE',
       passcodeText: '2abc3def',
     });
+  });
+
+  it('is a no-op when the draft is empty', () => {
+    const postMessage = vi.fn();
+    const setDraft = vi.fn();
+    const result = redeemPasscodeAction(
+      {status: 'idle', requestState: 'idle'},
+      '   ',
+      setDraft,
+      postMessage,
+    );
+    expect(result).toBe(false);
+    expect(postMessage).not.toHaveBeenCalled();
+    expect(setDraft).not.toHaveBeenCalled();
+  });
+
+  it('is a no-op when passcode is loading', () => {
+    const postMessage = vi.fn();
+    const setDraft = vi.fn();
+    const result = redeemPasscodeAction(
+      {status: 'loading', requestState: 'loading'},
+      'VALIDCODE',
+      setDraft,
+      postMessage,
+    );
+    expect(result).toBe(false);
+    expect(postMessage).not.toHaveBeenCalled();
+  });
+
+  it('is a no-op when the draft is empty or whitespace-only', () => {
+    const postMessage = vi.fn();
+    const setDraft = vi.fn();
+    const result = sendCommAction('faction', '   ', setDraft, postMessage);
+    expect(result).toBe(false);
+    expect(postMessage).not.toHaveBeenCalled();
+    expect(setDraft).not.toHaveBeenCalled();
+  });
+
+  it('is a no-op when the tab is alerts', () => {
+    const postMessage = vi.fn();
+    const setDraft = vi.fn();
+    const result = sendCommAction('alerts', 'hello', setDraft, postMessage);
+    expect(result).toBe(false);
+    expect(postMessage).not.toHaveBeenCalled();
+    expect(setDraft).not.toHaveBeenCalled();
+  });
+
+  it('strips a leading @ from the supplied nickname', () => {
+    expect(addCommNicknameAction('', '@AgentX')).toBe('@AgentX ');
+  });
+
+  it('returns the current draft unchanged for an empty nickname', () => {
+    expect(addCommNicknameAction('hello', '')).toBe('hello');
+  });
+
+  it('trims leading whitespace from the result when the draft was empty', () => {
+    expect(addCommNicknameAction('', 'AgentY')).toBe('@AgentY ');
   });
 });

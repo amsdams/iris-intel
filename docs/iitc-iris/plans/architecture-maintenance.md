@@ -1,6 +1,6 @@
 # Architecture Maintenance Plan
 
-Status: in progress. ARCH-09, ARCH-01, ARCH-03, ARCH-04, ARCH-05 and ARCH-06a/b implemented; ARCH-02/07/08 are pending.
+Status: in progress. ARCH-09, ARCH-01, ARCH-02, ARCH-03, ARCH-04, ARCH-05 and ARCH-06a/b implemented; ARCH-07/08 are pending.
 
 This is the implementation tracker for the validated parts of the [architecture review](arch-review.md).
 The [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes the work; this file owns scope,
@@ -47,7 +47,7 @@ and remaining responsibilities in the completion log; do not improve one file's 
 
 ARCH-09 and ARCH-01 are committed as `64cdfb2`; ARCH-03 is committed as `db6ac6b` after user COMM smoke.
 ARCH-04 is committed as `3820481` after user portal smoke; ARCH-05 is committed as `d457c62` after user map/portal smoke.
-ARCH-06a and ARCH-06b are implemented together in the working tree.
+ARCH-06a/b are committed as `455a0fd` after user acceptance of the type-only change. ARCH-02 is implemented in the working tree.
 Complete one bounded item at a time; record the change/PR, validation and remaining
 device checks in the completion log below. Do not treat a partial move as completion of the entire hotspot.
 
@@ -55,7 +55,7 @@ device checks in the completion log below. Do not treat a partial move as comple
 | --- | --- | --- | --- |
 | [x] | ARCH-09 | Harden COMM response/acknowledgment boundaries | Recognized failures and unconfirmed replies preserve drafts; supported acknowledgments are evidence-based; invalid timestamps cannot alter buffers/cursors or throw in rendering. |
 | [x] | ARCH-01 | Copy-feedback correctness and ownership | Older timers/late clipboard results cannot clear or overwrite newer feedback; each feedback area remains independent; cleanup has an owner. |
-| [ ] | ARCH-02 | Remove genuine command forwarding wrappers | Direct delegation disappears; navigation/cancellation/ordering behavior and its meaningful tests remain at an explicit owner. |
+| [x] | ARCH-02 | Remove genuine command forwarding wrappers | Direct delegation disappears; navigation/cancellation/ordering behavior and its meaningful tests remain at an explicit owner. |
 | [x] | ARCH-03 | Extract COMM UI workflow from `content.tsx` | Drafts, send acknowledgments and scroll/history coordination have a cohesive owner without moving transport or changing effect ordering. |
 | [x] | ARCH-04 | Extract portal styling from `map-renderer.ts` | Styling/radius calculations take explicit inputs and can be tested without initializing Leaflet; appearance and zoom thresholds match. |
 | [x] | ARCH-05 | Extract map-response adaptation from `map-request.ts` | Conversion/type guards have explicit clock/history dependencies; queue/cache/generation/cancellation behavior stays with the scheduler. |
@@ -377,5 +377,32 @@ lint/types, CSS and workbench build; all 65 Chrome cases pass (50.4 seconds). XP
 the verified build; archive contents match dist and port-6969 downloads match the archives. APK unchanged. The prior
 map/portal smoke covers identical shipped runtime assets; no separate ARCH-06 device test is claimed.
 
-ARCH-06a/b remain uncommitted for review. Next: ARCH-02, removing genuine command forwarding wrappers while retaining
-navigation, cancellation and ordering at explicit owners. ARCH-07 storage and ARCH-08 aggregation follow afterward.
+Committed as `455a0fd` after the user accepted the type-only change based on validation; no additional device test
+was requested or claimed. Continued with ARCH-02 below.
+
+### 2026-11-04 — ARCH-02: selective command-wrapper cleanup
+
+Removed 21 commands that added no behavior: seventeen direct forwarders to existing COMM/Passcode, portal selection,
+copy and auth owners, plus four panel/camera builder-and-post wrappers. App now calls those feature actions directly
+or posts the existing Scores/Inventory/SetView/PanBy message builders. Its state-bound UI callbacks and callback
+dependencies remain in place. The unused send/nickname forwarders disappear too; the ARCH-03 COMM owner already
+calls those actions directly. No replacement dispatcher, re-export aliases or dependency bundle was introduced.
+
+`content-command-callbacks.ts` retains eleven commands with actual coordination, guards or argument adaptation:
+context centering and portal anchors; cancellation plus ordered sheet/side-panel persistence; COMM open/tab/toggle;
+Missions toggle; and primary-menu routing. A temporary declaration comparison confirms all eleven retained function
+signatures/bodies match the prior code exactly. Feature action implementations and message builders are unchanged.
+
+Command module: 441 → 157 LOC (-284). App: 1,036 → 1,036. Whole production source: 24,654 → 24,370 (-284).
+The root module now describes orchestration rather than requiring a second lookup through feature forwarders.
+
+Validation: the command test file keeps its 28 context/navigation/cancellation/order cases. Nineteen unique boundary
+cases move to the existing COMM, portal, clipboard and auth tests; twenty duplicate wrapper cases are removed.
+Passcode draft-before-post and focus-before-close ordering assertions remain at their action owners. Copy null guards
+now assert no clipboard write. All 80 focused tests across the seven command/action/builder suites pass.
+`npm run check` passes: 696 app/core tests, 6 release checks, 18 build guards, lint/types, CSS and workbench build.
+All 65 Chrome browser cases pass (50.1 seconds). The app/core count drops by twenty because duplicate wrapper tests
+were removed. XPI/ZIP `2026-11-04T19-41-44` reuse verified assets; all 23 archive files match dist and served downloads
+match the archives. APK unchanged; live UI smoke is pending. No new test dependency or implementation-mirroring test was added.
+
+ARCH-02 remains uncommitted for review. Next: ARCH-07 shared storage I/O handling, then ARCH-08 core aggregation.

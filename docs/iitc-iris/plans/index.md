@@ -23,13 +23,14 @@ ARCH-04 is committed as `3820481` after the user's quick portal smoke. Pure `map
 owns base marker appearance; the renderer retains Leaflet/highlighter/layer lifetime ownership (1,644 → 1,567 LOC).
 ARCH-05 is committed as `d457c62` after the user's quick map/portal smoke. Response projection lives in
 `map/map-entity-adapter.ts`; the coordinator retains history publication and scheduling/cache/generation/cancellation
-(947 → 859 LOC). ARCH-06a/b are implemented together in the working tree: selected/rendered portals share twelve
-summary fields, and ten named `messages/` modules own entity, map and feature payload declarations. Compatible exports
-remain in `messages.ts` (813 → 230 LOC); all 55 previous type contracts and all 23 shipped asset bytes match.
-Checks pass: 716 app/core tests and 65 Chrome cases. XPI/ZIP `2026-11-04T19-36-10` is served on port 6969;
-APK unchanged, no push. Next: ARCH-02 selective command-wrapper cleanup, then ARCH-07 storage
-and ARCH-08 aggregation. Keep coordination explicit; use LOC/context size to track ownership improvements rather
-than treating file size as the sole completion criterion.
+(947 → 859 LOC). ARCH-06a/b are committed as `455a0fd` after user acceptance: portal summary fields are shared,
+and ten `messages/` modules own payload types behind compatible exports (bridge 813 → 230 LOC; all prior type
+contracts and shipped runtime asset bytes match). ARCH-02 is implemented in the working tree: twenty-one redundant
+command wrappers are removed, App uses existing feature owners/builders directly, and eleven navigation/context
+commands remain unchanged (441 → 157 LOC). Unique tests move to those owners; duplicate wrapper tests are removed.
+Checks pass: 696 app/core tests (twenty duplicate cases removed) and 65 Chrome cases. XPI/ZIP
+`2026-11-04T19-41-44` is served on port 6969 for UI smoke; APK unchanged, no push. Next: ARCH-07 storage I/O, then ARCH-08 aggregation. Keep coordination
+explicit; use LOC/context size to track ownership improvements rather than treating file size as the sole criterion.
 
 **Faster testing (2026-11-04):** user authorized the testing workflow improvements. Repeated 61-case benchmarks passed
 at 89.51 seconds with one worker and 48.80/47.83 seconds with two; local default is now two, CI retains one. A baseline

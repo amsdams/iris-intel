@@ -107,4 +107,19 @@ describe('content-auth-navigation', () => {
     expect(formatAuthRecoveryText(['map'])).toBe('map needs an authenticated Intel session');
     expect(formatAuthRecoveryText([])).toBe('');
   });
+
+  it('removes IRIS and navigates from /map to Intel login', () => {
+    const rootElement = {remove: vi.fn()} as unknown as HTMLElement;
+    const location = {
+      origin: 'https://intel.ingress.com',
+      pathname: '/map',
+      reload: vi.fn(),
+      assign: vi.fn(),
+    } as unknown as Location;
+
+    performIntelLoginRedirect('login-bypass', 300_000, rootElement, location);
+
+    expect(rootElement.remove).toHaveBeenCalledOnce();
+    expect(location.assign).toHaveBeenCalledWith('https://intel.ingress.com/intel');
+  });
 });

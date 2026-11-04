@@ -30,24 +30,7 @@ import {
 import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} from './shell/message-adapter';
 import {
   centerMapContextCommand,
-  clearPortalSelectionCommand,
-  copyMapContextGuidCommand,
-  copyMapContextLatLngCommand,
-  copyMapContextPortalGuidsCommand,
-  copyMapContextUrlCommand,
-  copySelectedPortalGuidCommand,
-  copySelectedPortalLinkCommand,
-  copySelectedPortalTitleCommand,
-  focusSelectedPortalCommand,
-  panMapCommand,
-  redeemPasscodeCommand,
-  refreshInventoryCommand,
-  refreshScoresCommand,
   selectMapContextAnchorCommand,
-  selectPortalByLatLngCommand,
-  setMapViewCommand,
-  setPortalSectionOpenCommand,
-  zoomToAndShowPortalCommand,
   closeSheetToMapCommand,
   openSheetCommand,
   toggleSheetCommand,
@@ -56,9 +39,22 @@ import {
   toggleCommPanelCommand,
   toggleMissionsSheetCommand,
   togglePrimaryMenuCommand,
-  openIntelLoginCommand,
-  logoutIntelCommand,
 } from './content-command-callbacks';
+import {redeemPasscodeAction} from './comm/panel-actions';
+import {
+  clearPortalSelectionAction, focusSelectedPortalAction, selectPortalByLatLngAction,
+  setPortalSectionOpenAction, zoomToAndShowPortalAction,
+} from './portals/selection-actions';
+import {buildPanByMessage, buildSetViewMessage} from './map/camera-actions';
+import {
+  copyMapContextLatLng as copyMapContextLatLngHelper,
+  copyMapContextUrl as copyMapContextUrlHelper,
+  copyMapContextGuid as copyMapContextGuidHelper,
+  copyMapContextPortalGuids as copyMapContextPortalGuidsHelper,
+  copySelectedPortalLink as copySelectedPortalLinkHelper,
+  copySelectedPortalGuid as copySelectedPortalGuidHelper,
+  copySelectedPortalTitle as copySelectedPortalTitleHelper,
+} from './shell/copy-helpers';
 import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './shell/keyboard-shortcuts';
 import {copyIitcIrisText} from './shell/feedback';
 import {useCopyFeedbackStatus} from './shell/use-copy-feedback';
@@ -75,6 +71,8 @@ import {IitcIrisDiagnosticsPanelContainer} from './system/diagnostics-panel';
 import {createDockDiagnostics} from './system/dock-diagnostics';
 import {
   calculateSidePanelStatus,
+  performIntelLoginRedirect,
+  performIntelLogoutRedirect,
   formatAuthRecoveryText,
   getAuthSources,
   retryActiveAuthPanelRequest,
@@ -122,6 +120,8 @@ import {
   getScoresAutoRequest,
 } from './shell/side-panel-auto-requests';
 import {
+  createRequestInventoryMessage,
+  createRequestScoresMessage,
   buildDataSourceSettingsMessage,
   buildLifecycleSettingsMessage,
 } from './shell/outbound-messages';
@@ -360,19 +360,19 @@ function App(): h.JSX.Element {
   };
 
   const copyMapContextLatLng = (): void => {
-    copyMapContextLatLngCommand(mapContext, setContextCopyStatus);
+    copyMapContextLatLngHelper(mapContext, setContextCopyStatus);
   };
 
   const copyMapContextUrl = (): void => {
-    copyMapContextUrlCommand(mapContext, setContextCopyStatus);
+    copyMapContextUrlHelper(mapContext, setContextCopyStatus);
   };
 
   const copyMapContextGuid = (): void => {
-    copyMapContextGuidCommand(mapContext, setContextCopyStatus);
+    copyMapContextGuidHelper(mapContext, setContextCopyStatus);
   };
 
   const copyMapContextPortalGuids = (): void => {
-    copyMapContextPortalGuidsCommand(mapContext, setContextCopyStatus);
+    copyMapContextPortalGuidsHelper(mapContext, setContextCopyStatus);
   };
 
   const centerMapContext = (): void => {
@@ -381,15 +381,15 @@ function App(): h.JSX.Element {
 
 
   const copySelectedPortalLink = (): void => {
-    copySelectedPortalLinkCommand(entityFetch.selectedPortal, camera.zoom, setPortalCopyStatus);
+    copySelectedPortalLinkHelper(entityFetch.selectedPortal, camera.zoom, setPortalCopyStatus);
   };
 
   const copySelectedPortalGuid = (): void => {
-    copySelectedPortalGuidCommand(entityFetch.selectedPortal, setPortalCopyStatus);
+    copySelectedPortalGuidHelper(entityFetch.selectedPortal, setPortalCopyStatus);
   };
 
   const copySelectedPortalTitle = (): void => {
-    copySelectedPortalTitleCommand(entityFetch.selectedPortal, setPortalCopyStatus);
+    copySelectedPortalTitleHelper(entityFetch.selectedPortal, setPortalCopyStatus);
   };
 
 
@@ -432,11 +432,11 @@ function App(): h.JSX.Element {
   }, [activeSheet, isPanelVisible, closeSheetToMap]);
 
   const refreshScores = (): void => {
-    refreshScoresCommand(postIitcMessage);
+    postIitcMessage(createRequestScoresMessage());
   };
 
   const refreshInventory = (): void => {
-    refreshInventoryCommand(postIitcMessage);
+    postIitcMessage(createRequestInventoryMessage());
   };
 
   const openSelectedPortalMissions = (): void => {
@@ -446,11 +446,11 @@ function App(): h.JSX.Element {
   };
 
   const redeemPasscode = (): void => {
-    redeemPasscodeCommand(passcodeState, passcodeDraft, setPasscodeDraft, postIitcMessage);
+    redeemPasscodeAction(passcodeState, passcodeDraft, setPasscodeDraft, postIitcMessage);
   };
 
   const openIntelLogin = (): void => {
-    openIntelLoginCommand(
+    performIntelLoginRedirect(
       LOGIN_BYPASS_STORAGE_KEY,
       LOGIN_BYPASS_MS,
       document.getElementById('iitc-iris-root'),
@@ -459,7 +459,7 @@ function App(): h.JSX.Element {
   };
 
   const logoutIntel = (): void => {
-    logoutIntelCommand(
+    performIntelLogoutRedirect(
       LOGIN_BYPASS_STORAGE_KEY,
       document.getElementById('iitc-iris-root'),
       window.location
@@ -480,7 +480,7 @@ function App(): h.JSX.Element {
       passcodeDraft,
       passcodeState,
       retryPasscode: (passcode): void => {
-        redeemPasscodeCommand(passcodeState, passcode, setPasscodeDraft, postIitcMessage);
+        redeemPasscodeAction(passcodeState, passcode, setPasscodeDraft, postIitcMessage);
       },
       retryMapFetch: (): void => {
         postIitcMessage(buildDataSourceSettingsMessage(dataSource));
@@ -496,7 +496,7 @@ function App(): h.JSX.Element {
   );
 
   const setMapView = useCallback((lat: number, lng: number, zoom = camera.zoom): void => {
-    setMapViewCommand(lat, lng, zoom, postIitcMessage);
+    postIitcMessage(buildSetViewMessage(lat, lng, zoom));
   }, [camera.zoom, postIitcMessage]);
 
   const {viewInput, setViewInput, viewInputStatus, geolocationStatus,
@@ -545,11 +545,11 @@ function App(): h.JSX.Element {
   });
 
   const setPortalSectionOpen = (section: PortalSectionId, open: boolean): void => {
-    setPortalSectionOpenCommand(portalSections, section, open, setPortalSections);
+    setPortalSectionOpenAction(portalSections, section, open, setPortalSections);
   };
 
   const zoomToAndShowPortal = (portalGuid?: string, latE6?: number, lngE6?: number, zoom = Math.max(camera.zoom, 15)): void => {
-    zoomToAndShowPortalCommand(portalGuid, latE6, lngE6, zoom, postIitcMessage);
+    zoomToAndShowPortalAction(portalGuid, latE6, lngE6, zoom, postIitcMessage);
   };
 
   const selectMapContextAnchor = (anchor: IitcIrisMapContextPortalAnchor): void => {
@@ -557,7 +557,7 @@ function App(): h.JSX.Element {
   };
 
   const selectPortalByLatLng = (latE6?: number, lngE6?: number, portalGuid?: string): void => {
-    selectPortalByLatLngCommand(latE6, lngE6, portalGuid, camera.zoom, postIitcMessage);
+    selectPortalByLatLngAction(latE6, lngE6, portalGuid, camera.zoom, postIitcMessage);
   };
 
   const selectCommPortal = (latE6?: number, lngE6?: number, portalGuid?: string): void => {
@@ -565,7 +565,7 @@ function App(): h.JSX.Element {
   };
 
   const panMap = useCallback((direction: IitcIrisPanDirection): void => {
-    panMapCommand(direction, IITC_PAN_CONTROL_OFFSET_PX, postIitcMessage);
+    postIitcMessage(buildPanByMessage(direction, IITC_PAN_CONTROL_OFFSET_PX));
   }, [postIitcMessage]);
 
   const zoomMap = useCallback((delta: number): void => {
@@ -573,7 +573,7 @@ function App(): h.JSX.Element {
   }, [camera.lat, camera.lng, camera.zoom, setMapView]);
 
   const clearPortalSelection = (): void => {
-    clearPortalSelectionCommand(postIitcMessage);
+    clearPortalSelectionAction(postIitcMessage);
   };
 
   const closeSheets = useCallback((): void => {
@@ -587,7 +587,7 @@ function App(): h.JSX.Element {
     requestSearch, clearSearch, previewSearchResult, selectSearchResult} = search;
 
   const focusSelectedPortal = (): void => {
-    focusSelectedPortalCommand(entityFetch.selectedPortal, camera.zoom, mapFocusMode, setMapView, closeSheets);
+    focusSelectedPortalAction(entityFetch.selectedPortal, camera.zoom, mapFocusMode, setMapView, closeSheets);
   };
 
   const canPan = camera.bounds !== null;
@@ -750,7 +750,7 @@ function App(): h.JSX.Element {
     closePortalImage: () => setPortalImageOpen(false), closeSheets,
     clearSelection: () => {
       setMapContext(null);
-      clearPortalSelectionCommand(postIitcMessage);
+      clearPortalSelectionAction(postIitcMessage);
     },
   }), [activeSheet, closeSheets, hasSelectedObject, portalImageOpen, postIitcMessage]);
 
