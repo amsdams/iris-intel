@@ -47,6 +47,14 @@ with scroll effects after Missions/Search, preserving message/effect ordering. A
 bridge/auth composition and navigation; COMM transport stays in its runtime. Draw Tools and Portal Analysis retain
 their existing workflows. Avoid a broad app hook or global store that hides this wiring.
 
+`messages.ts` owns bridge constants and envelope composition and preserves existing type imports through explicit
+exports. `messages/entities.ts` owns portal/render models: `IitcIrisPortalSummary` shares common selected/rendered portal
+fields while each keeps its own required/optional decorations, history and topology. `messages/map.ts` owns map settings
+and diagnostic payloads; named COMM, Agent, Inventory, Scores, Passcode, Missions, Search and Draw Tools modules own
+their feature payload types. Inventory uses Agent's subscription state through a type-only import. These declarations
+must not depend back on the bridge or introduce runtime imports. This organization does not validate incoming JSON;
+message source/contract validation remains at its runtime boundary.
+
 ## CSS And Component Contract
 
 1. **Dependencies point toward shared UI.** Features compose shared primitives. Shared primitives must not import

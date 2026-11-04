@@ -1,6 +1,6 @@
 # Architecture Maintenance Plan
 
-Status: in progress. ARCH-09, ARCH-01, ARCH-03, ARCH-04 and ARCH-05 implemented; remaining items are pending.
+Status: in progress. ARCH-09, ARCH-01, ARCH-03, ARCH-04, ARCH-05 and ARCH-06a/b implemented; ARCH-02/07/08 are pending.
 
 This is the implementation tracker for the validated parts of the [architecture review](arch-review.md).
 The [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes the work; this file owns scope,
@@ -46,7 +46,8 @@ and remaining responsibilities in the completion log; do not improve one file's 
 ## Progress
 
 ARCH-09 and ARCH-01 are committed as `64cdfb2`; ARCH-03 is committed as `db6ac6b` after user COMM smoke.
-ARCH-04 is committed as `3820481` after user portal smoke; ARCH-05 is implemented in the working tree.
+ARCH-04 is committed as `3820481` after user portal smoke; ARCH-05 is committed as `d457c62` after user map/portal smoke.
+ARCH-06a and ARCH-06b are implemented together in the working tree.
 Complete one bounded item at a time; record the change/PR, validation and remaining
 device checks in the completion log below. Do not treat a partial move as completion of the entire hotspot.
 
@@ -58,7 +59,7 @@ device checks in the completion log below. Do not treat a partial move as comple
 | [x] | ARCH-03 | Extract COMM UI workflow from `content.tsx` | Drafts, send acknowledgments and scroll/history coordination have a cohesive owner without moving transport or changing effect ordering. |
 | [x] | ARCH-04 | Extract portal styling from `map-renderer.ts` | Styling/radius calculations take explicit inputs and can be tested without initializing Leaflet; appearance and zoom thresholds match. |
 | [x] | ARCH-05 | Extract map-response adaptation from `map-request.ts` | Conversion/type guards have explicit clock/history dependencies; queue/cache/generation/cancellation behavior stays with the scheduler. |
-| [ ] | ARCH-06 | Share portal types and organize message payload types | Common fields have one definition; required/optional distinctions, existing imports and wire contracts remain compatible. |
+| [x] | ARCH-06 | Share portal types and organize message payload types | Common fields have one definition; required/optional distinctions, existing imports and wire contracts remain compatible. |
 | [ ] | ARCH-07 | Consolidate storage I/O handling | Small read/write helpers retain feature parsers, legacy migrations, defaults, remove-item behavior and exact stored formats. |
 | [ ] | ARCH-08 | Move remaining domain aggregation to core | List summarization has a core owner and equivalent results; presentation, filtering tied to UI choices, and SVG geometry stay in the app. |
 
@@ -178,6 +179,7 @@ Target module map for ARCH-06b:
 | `messages/map.ts` | Map command/status and rendering payload types. |
 | `messages/comm.ts` | COMM requests/status/send and portal-activity payload types. |
 | `messages/agent.ts`, `messages/missions.ts`, `messages/search.ts`, `messages/draw-tools.ts` | Existing feature-domain payload types, separated by their owners rather than one miscellaneous features file. |
+| `messages/scores.ts`, `messages/inventory.ts`, `messages/passcode.ts` | Other panel payloads; Inventory imports the shared subscription model from Agent using a type-only dependency. |
 | `messages.ts` | Compatible public exports, bridge constants and envelope composition during incremental migration. |
 
 Keep type-only dependencies explicit. Confirm which genuinely shared settings/status types need a common owner during
@@ -345,5 +347,35 @@ edge/history scenarios and seven artifact result shapes, including resulting cac
 port-6969 downloads match the archives. APK unchanged. The user reports a quick test confirms portals and the map still work; general map/portal smoke
 is accepted without claiming exhaustive paths or platform coverage.
 
-ARCH-05 remains uncommitted for review. Next: ARCH-06a shared portal identity/summary types; ARCH-06 remains incomplete
-until its separately bounded payload-module organization slice (ARCH-06b) also finishes.
+Committed as `d457c62` after the map/portal smoke above. Continued with ARCH-06a/b below.
+
+### 2026-11-04 — ARCH-06a/b: shared portal fields and feature payload types
+
+Both planned type slices are implemented together, sharing final validation and packaging. ARCH-06a introduces
+`IitcIrisPortalSummary` in `messages/entities.ts`: the twelve common identity/summary fields have one definition.
+Rendered portals retain optional ornaments/artifacts/history. Selected portals retain required ornament/artifact
+arrays and link/field topology; they do not acquire render-only history. Core models and decoding stay in core.
+
+ARCH-06b moves entity/portal models to `messages/entities.ts`; settings, map status/queue/render/timing/transport and
+tracker diagnostics to `messages/map.ts`; and feature payload types to `comm.ts`, `agent.ts`, `inventory.ts`, `scores.ts`,
+`passcode.ts`, `missions.ts`, `search.ts` and `draw-tools.ts` within `messages/`. Agent owns the subscription state shared
+with Inventory. These modules contain declarations and type-only imports; Inventory → Agent is the sole sibling
+module dependency. They do not import the bridge. `messages.ts` retains the bridge constants, message type/envelope
+and explicit compatible type exports, so current consumer imports still work. The envelope remains broad and optional;
+file organization does not add runtime validation or justify a discriminated-union migration here.
+
+Bridge entry: 813 → 230 LOC (-583). Ten payload modules total 621 LOC (17–214 each); the entity owner is 115 LOC.
+Whole production source: 24,616 → 24,654 (+38), covering module/import/export seams after removing duplicated portal
+fields. A feature payload change can now be read at its named owner; message wiring stays at the bridge entry.
+
+Validation: a temporary TypeScript compatibility probe compares all 55 existing exported type contracts against the
+pre-change definitions, including keys/requiredness and selected/rendered portal distinctions. All match. Bridge
+constant and envelope declarations match exactly; every new module contains only types and has no dependency back
+to the bridge. All 23 rebuilt shipped assets are byte-identical to ARCH-05. No implementation-mirroring tests or new
+test dependencies were added. `npm run check` passes with 716 app/core tests, 6 release checks, 18 build guards,
+lint/types, CSS and workbench build; all 65 Chrome cases pass (50.4 seconds). XPI/ZIP `2026-11-04T19-36-10` reuse
+the verified build; archive contents match dist and port-6969 downloads match the archives. APK unchanged. The prior
+map/portal smoke covers identical shipped runtime assets; no separate ARCH-06 device test is claimed.
+
+ARCH-06a/b remain uncommitted for review. Next: ARCH-02, removing genuine command forwarding wrappers while retaining
+navigation, cancellation and ordering at explicit owners. ARCH-07 storage and ARCH-08 aggregation follow afterward.
