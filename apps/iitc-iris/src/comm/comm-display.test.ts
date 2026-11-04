@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {formatCommActor, formatCommBounds, formatCommContextTitle, getCommDisplayParts, getCommTeamClass} from './comm-display';
+import {formatCommActor, formatCommBounds, formatCommContextTitle, formatCommTimestamp, getCommDisplayParts, getCommTeamClass} from './comm-display';
 import type {IitcIrisCommMessage} from '../messages';
 
 const message: IitcIrisCommMessage = {
@@ -8,6 +8,12 @@ const message: IitcIrisCommMessage = {
 };
 
 describe('IITC IRIS COMM display', () => {
+  it('provides safe presentation for invalid dates without creating an ISO value', () => {
+    for (const time of [NaN, Infinity, 8_640_000_000_000_001]) {
+      expect(formatCommTimestamp(time)).toEqual({date: 'Unknown date', time: '-', full: 'Invalid timestamp'});
+    }
+    expect(formatCommTimestamp(0).iso).toBe('1970-01-01T00:00:00.000Z');
+  });
   it('removes the actor from message parts and normalizes leading text', () => {
     expect(formatCommActor(message)).toBe('Ada');
     expect(getCommDisplayParts(message)).toEqual([{type: 'text', text: 'hello world '}]);

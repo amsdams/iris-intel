@@ -173,11 +173,15 @@ function cloneMarkup(markup: [string, IitcCommMarkupValue][]): [string, IitcComm
   return markup.map(([type, value]) => [type, {...value}]);
 }
 
+export function isIitcCommTimestamp(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && Number.isFinite(new Date(value).getTime());
+}
+
 export function parseMsgData(data: unknown): IitcCommMessage | null {
   if (!Array.isArray(data)) return null;
   const [guid, time, rawData] = data as RawCommData;
   const plext = rawData?.plext;
-  if (typeof guid !== 'string' || typeof time !== 'number' || !plext) return null;
+  if (typeof guid !== 'string' || !isIitcCommTimestamp(time) || !plext) return null;
 
   const categories = typeof plext.categories === 'number' ? plext.categories : 0;
   const isPublic = (categories & COMM_PUBLIC) === COMM_PUBLIC;
@@ -243,6 +247,20 @@ export function validateIitcCommResponse(response: unknown): void {
   if (!Array.isArray(rows) || rows.some(row => parseMsgData(row) === null)) {
     throw new Error('getPlexts returned malformed messages');
   }
+}
+
+/** Require an affirmative acknowledgment; unfamiliar replies do not establish delivery. */
+export function validateIitcCommSendResponse(response: unknown): void {
+  const value = response && typeof response === 'object' && !Array.isArray(response)
+    ? response as {error?: unknown; result?: unknown} : undefined;
+  if (value?.error) {
+    const error = value.error;
+    const message = typeof error === 'object' ? (error as {message?: unknown}).message : error;
+    throw new Error(typeof message === 'string' && message ? message : 'sendPlext was rejected');
+  }
+  // Keep boolean fixture compatibility and explicit success-token acknowledgments.
+  if (value?.result === true || value?.result === 'success' || value?.result === 'SUCCESS') return;
+  throw new Error('Delivery was not confirmed. Check COMM before retrying.');
 }
 
 export function getIitcChatPortalName(markup: IitcCommMarkupValue): string {

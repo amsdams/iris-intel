@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useState} from 'preact/hooks';
 import {copyIitcIrisText} from '../../shell/feedback';
+import {useCopyFeedbackStatus} from '../../shell/use-copy-feedback';
 import {getDrawToolsTargetFromContext} from '../map-context';
 import {
   filterAndSerializeDrawToolsItems,
@@ -123,7 +124,7 @@ export function useDrawToolsWorkflow(params: UseDrawToolsWorkflowParams): UseDra
   const [drawToolsLinkStart, setDrawToolsLinkStart] = useState<IitcIrisDrawToolsLatLng | null>(null);
   const [drawToolsImportText, setDrawToolsImportText] = useState('');
   const [drawToolsImportMerge, setDrawToolsImportMerge] = useState(true);
-  const [drawToolsImportStatus, setDrawToolsImportStatus] = useState('');
+  const [drawToolsImportStatus, setDrawToolsImportStatus] = useCopyFeedbackStatus();
   const [drawToolsClearConfirm, setDrawToolsClearConfirm] = useState<'polyline' | 'marker' | null>(null);
   const [drawToolsMarkerLabel, setDrawToolsMarkerLabel] = useState('');
   const [editingDrawToolsMarkerIndex, setEditingDrawToolsMarkerIndex] = useState<number | null>(null);
@@ -203,11 +204,11 @@ export function useDrawToolsWorkflow(params: UseDrawToolsWorkflowParams): UseDra
       successTimeoutMs: 1400,
       failureTimeoutMs: 1800,
     });
-  }, [drawToolsItems]);
+  }, [drawToolsItems, setDrawToolsImportStatus]);
 
   const importDrawToolsItems = useCallback((): void => {
     importDrawToolsItemsAction(drawToolsImportText, drawToolsImportMerge, setDrawToolsClearConfirm, postDrawToolsAction, setDrawToolsImportStatus);
-  }, [drawToolsImportMerge, drawToolsImportText]);
+  }, [drawToolsImportMerge, drawToolsImportText, setDrawToolsImportStatus]);
 
   return {
     drawToolsLinkStart,

@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {completeIitcCommNickname, DEFAULT_IITC_COMM_FILTERS, getIitcCommAction, matchesIitcCommFilters,
   matchesIitcCommPortal, normalizeIitcCommFilters, splitIitcCommTextLinks, type IitcCommViewMessage} from './comm-views';
-import {validateIitcCommResponse} from './comm';
+import {isIitcCommTimestamp, parseMsgData, validateIitcCommResponse, validateIitcCommSendResponse} from './comm';
 
 const message: IitcCommViewMessage = {auto: true, text: 'Agent captured Fountain', team: 'R', player: 'Agent',
   players: ['Agent'], parts: [{type: 'text', text: ' captured '}, {type: 'portal', text: 'Fountain'}],
@@ -11,6 +11,23 @@ describe('COMM display views', () => {
   it('rejects malformed payloads while accepting a legitimate empty response', () => {
     for (const value of [null, {}, {result: false}, {result: [[]]}]) expect(() => validateIitcCommResponse(value)).toThrow('malformed');
     expect(() => validateIitcCommResponse({result: []})).not.toThrow();
+  });
+  it('rejects invalid timestamps before messages can change cursors, including finite Date overflow', () => {
+    for (const time of [NaN, Infinity, -Infinity, 8_640_000_000_000_001, -8_640_000_000_000_001, null, '2000']) {
+      const row = ['bad', time, {plext: {text: 'bad', markup: []}}];
+      expect(isIitcCommTimestamp(time)).toBe(false);
+      expect(parseMsgData(row)).toBeNull();
+      expect(() => validateIitcCommResponse({result: [row]})).toThrow('malformed');
+    }
+    for (const time of [0, 2000, -8_640_000_000_000_000, 8_640_000_000_000_000]) expect(isIitcCommTimestamp(time)).toBe(true);
+  });
+  it('requires explicit positive send acknowledgments and gives errors precedence', () => {
+    for (const result of [true, 'success', 'SUCCESS']) expect(() => validateIitcCommSendResponse({result, error: null})).not.toThrow();
+    for (const response of [null, {}, [], {result: false}, {result: null}, {result: []}, {result: 'unknown'}]) {
+      expect(() => validateIitcCommSendResponse(response)).toThrow('Delivery was not confirmed');
+    }
+    for (const error of ['denied', {message: 'denied'}]) expect(() => validateIitcCommSendResponse({result: true, error})).toThrow('denied');
+    expect(() => validateIitcCommSendResponse({error: true})).toThrow('rejected');
   });
   it('classifies action text without mistaking chat or player names for system actions', () => {
     expect(getIitcCommAction({...message, player: 'Destroyed'})).toBe('capture');

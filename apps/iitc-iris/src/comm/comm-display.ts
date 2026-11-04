@@ -1,4 +1,5 @@
 import type {IitcIrisCommMessage, IitcIrisCommState} from '../messages';
+import {isIitcCommTimestamp} from '@iris/iitc-core';
 
 export function formatCommActor(message: IitcIrisCommMessage): string {
   return message.player || message.players[0] || (message.auto ? 'system' : 'unknown');
@@ -28,8 +29,13 @@ export function formatCommContextTitle(message: IitcIrisCommMessage): string {
 }
 
 export function formatCommTime(time: number): string {
-  if (!Number.isFinite(time)) return '-';
-  return new Date(time).toLocaleTimeString();
+  return formatCommTimestamp(time).time;
+}
+
+export function formatCommTimestamp(time: number): {iso?: string; date: string; time: string; full: string} {
+  if (!isIitcCommTimestamp(time)) return {date: 'Unknown date', time: '-', full: 'Invalid timestamp'};
+  const date = new Date(time);
+  return {iso: date.toISOString(), date: date.toLocaleDateString(), time: date.toLocaleTimeString(), full: date.toLocaleString()};
 }
 
 export function formatCommBounds(bounds: IitcIrisCommState['bounds']): string {

@@ -31,6 +31,17 @@ named local views; and a selected-portal public-system timeline (most recent 100
 activity subscription follows selection/map readiness and reads loaded data only. Unit/browser coverage and remaining
 live-device checks are recorded in the review and roadmap.
 
+ARCH-09 follow-up: send errors now include structured/truthy error envelopes, matching the reference's error precedence.
+An affirmative `result` of `true`, `"success"` or `"SUCCESS"` is accepted; other replies report unconfirmed delivery and
+preserve the draft. Boolean success is covered by repository fixtures; success tokens are explicit compatibility
+acknowledgments, not a claim that the current Intel endpoint has only these response forms. The reviewed IITC/stock
+client callbacks do not provide an exhaustive success schema; live acknowledgment smoke remains pending. Requiring an
+affirmative acknowledgment is a deliberate draft-preserving difference from treating absence of an error as success.
+Phone send feedback (`out of date`) exposed a missing transport `v` field; sendPlext now supplies the extracted Intel
+version as the reference postAjax wrapper does, with regression coverage rejecting versionless sends.
+COMM parsing now rejects non-finite/out-of-Date-range timestamps before buffer/cursor mutation; display helpers also
+fall back safely for malformed internal bridge timestamps. No polling cadence, resend behavior or stored key changes.
+
 ### COMM and map freshness parity pass — 2026-11-04
 
 The user authorized the three fixes in [the investigation](plans/comm-map-refresh-investigation.md). Reopen map

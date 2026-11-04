@@ -150,6 +150,10 @@ malformed refresh retention, dates/links/own mentions/sender focus/Tab completio
 independent raw tracker input, and selected-portal activity updates/selection changes excluding faction history.
 Expanded filters, including More filters/Saved views, are checked in light/dark phone and short landscape layouts.
 Tests also check saved-view feedback, keyboard expansion of portal events and absence of a nested timeline scrollbar.
+Send regressions cover structured errors, unconfirmed replies, explicit success acknowledgments and retained drafts;
+invalid timestamp replies preserve history/cursors, and invalid bridge dates use a safe display fallback. Copy feedback
+checks use a controlled clock and held clipboard Promise to protect newer status from old timers/late completions.
+The portal fixture retains authoritative portal rows across map fetches to avoid selection-removal races.
 All send responses are simulated. The [UI/testing follow-up](../../docs/iitc-iris/plans/comm-ui-testing.md) records
 coverage limits and the proposed faster-feedback workflow.
 

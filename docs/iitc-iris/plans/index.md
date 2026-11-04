@@ -15,10 +15,15 @@ The retained ownership rules and known limits are in [Application Architecture](
 ## Next Session Handoff
 
 **Architecture maintenance planning (2026-11-04):** the user requested a trackable plan after reviewing architectural
-hotspots. [Architecture maintenance](architecture-maintenance.md) owns ARCH-01–08, acceptance and completion evidence;
-the [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes it. Implementation has not started.
-Prioritize confirmed copy-feedback correctness and genuine wrapper cleanup; first structural candidates are COMM UI
-ownership and pure portal styling. Keep existing runtime/state-machine coordination and avoid arbitrary LOC targets.
+hotspots. [Architecture maintenance](architecture-maintenance.md) owns ARCH-01–09, acceptance and completion evidence;
+the [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes it. ARCH-09 and ARCH-01 are now
+implemented: COMM errors/uncertain replies retain drafts, invalid timestamps preserve history/cursors and render safely,
+and scoped copy-feedback owners handle late results/timer cleanup. Checks pass: 700 app/core tests and 64 Chrome cases,
+plus repeated focused cases; the user confirmed COMM sending succeeds after the missing-version fix. Copy smoke remains pending. No commit, push or new APK. Next: ARCH-03 COMM UI workflow.
+The plan now includes the fresh review's COMM response/acknowledgment hardening, an actual ranked production inventory,
+and explicit target modules for the four largest files. Prioritize correctness, then COMM UI ownership, portal styling,
+response adaptation and shared/message types; roughly ten slices, with larger overlay splits separately scoped.
+Keep existing runtime/state-machine coordination and use LOC/context size to track ownership improvements.
 
 **Faster testing (2026-11-04):** user authorized the testing workflow improvements. Repeated 61-case benchmarks passed
 at 89.51 seconds with one worker and 48.80/47.83 seconds with two; local default is now two, CI retains one. A baseline

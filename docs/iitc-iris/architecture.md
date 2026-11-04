@@ -100,7 +100,7 @@ checks theme persistence, shared field/action styling, and Jump submission behav
 | Boundary | Current owner / decision |
 | --- | --- |
 | Bundled asset URLs | `platform/assets.ts`; shared by UI callers, using extension URLs or an explicit host-provided asset base. Android serves bundled assets under a reserved Intel HTTPS path. The injected page runtime derives its own asset base from its script URL because it runs outside the extension context. |
-| Clipboard | `shell/feedback.ts`; the feedback helper already accepts an injected copy operation. Keep that seam for a future Android implementation. |
+| Clipboard | `shell/feedback.ts` owns per-area operation/timer guards; `shell/use-copy-feedback.ts` binds status and disposal to component lifetime. Clipboard and scheduling remain injectable. |
 | Geolocation | `map/location-workflow.ts` supplies browser capability to `map/location-actions.ts`; the action already accepts an injected position callback. |
 | Storage | `shell/storage-settings.ts` and `map/map-view.ts` retain UI/page browser access. `map/map-view-settings.ts` shares the map-view key, defaults, types, validation and parsing; `map/layers/base-layer-settings.ts` owns the base-layer key and normalization. Domain caches retain their feature lifetimes. |
 | Injection, auth, transport | `content.tsx` injects the page script and bridges messages. The page runtime reads Intel cookies/version and performs authenticated requests. Keep those page-context assumptions explicit for the Android spike. |
@@ -151,7 +151,9 @@ or a separate poll timer. Local public/faction buffers and request cursors are t
 material changes reset them and reject old-area replies, while alerts and tracker history retain their own lifetimes.
 `IITC_IRIS_COMM_VISIBILITY` explicitly synchronizes panel interest on navigation and page readiness, including switches
 between side panels. Automatic deadlines are retained across foreground/history completion. Malformed endpoint
-responses are rejected before changing history/cursors. Existing request/status payloads and stored keys remain
+responses, including unsupported timestamps, are rejected before changing history/cursors. Shared COMM timestamp
+presentation also tolerates invalid internal data without throwing. Send responses require an affirmative acknowledgment;
+structured errors and unfamiliar replies retain the draft and report failure/uncertainty without automatic resend. Existing request/status payloads and stored keys remain
 compatible; send metadata adds a channel-local ID and original text. UI COMM state/scroll coordination and in-memory
 per-channel drafts in `content.tsx` remain separate. Only confirmed delivery clears matching text; a late completion
 preserves newer text and the selected channel. Pending sends survive panel closure; retries are explicit.

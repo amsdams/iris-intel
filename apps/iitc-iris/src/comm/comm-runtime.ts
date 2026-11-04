@@ -18,6 +18,7 @@ import {
   type IitcCommChannelData,
   type IitcCommMessage,
   validateIitcCommResponse,
+  validateIitcCommSendResponse,
   matchesIitcCommPortal,
 } from '@iris/iitc-core';
 
@@ -218,6 +219,8 @@ export function createCommRuntime({getMap, getLifetime, getMapCenterE6, fetchIit
   async function postSendPlext(payload: NonNullable<ReturnType<typeof genIitcCommSendPlextPostData>>, signal?: AbortSignal): Promise<unknown> {
     const csrfToken = getCsrfToken();
     if (!csrfToken) throw new Error('sendPlext missing csrftoken');
+    const version = extractVersion();
+    if (!version) throw new Error('sendPlext missing Intel version');
 
     const {response, text} = await fetchIitcEndpointText('sendPlext', {
       method: 'POST',
@@ -229,7 +232,7 @@ export function createCommRuntime({getMap, getLifetime, getMapCenterE6, fetchIit
         'X-CSRFToken': csrfToken,
         'X-Requested-With': 'XMLHttpRequest',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({...payload, v: version}),
     }, `comm-send-${payload.tab}`);
 
     if (looksLikeHtml(text)) {
@@ -244,8 +247,7 @@ export function createCommRuntime({getMap, getLifetime, getMapCenterE6, fetchIit
       throw error;
     }
     if (!response.ok) throw new Error(`sendPlext HTTP ${response.status}`);
-    const error = parsed && typeof parsed === 'object' ? (parsed as {error?: unknown}).error : undefined;
-    if (typeof error === 'string' && error) throw new Error(error);
+    validateIitcCommSendResponse(parsed);
     return parsed;
   }
 

@@ -222,5 +222,5 @@ test('COMM channels, older history and sending use the shared authenticated runt
   const requests = await page.evaluate(() => window.panelFixture.commRequests);
   expect(requests.find(r => r.payload.maxTimestampMs > 0).payload).toMatchObject({tab: 'all', maxTimestampMs: 2000,
     plextContinuationGuid: 'all-new'});
-  expect(requests.find(r => r.endpoint === 'sendPlext').payload).toMatchObject({tab: 'faction', message: 'fixture send'});
+  expect(requests.find(r => r.endpoint === 'sendPlext').payload).toMatchObject({tab: 'faction', message: 'fixture send', v: 'smoke-test'});
 });

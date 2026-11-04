@@ -28,7 +28,8 @@ describe('COMM runtime ownership', () => {
     stored = vi.fn().mockReturnValue('faction');
     vi.stubGlobal('window', {postMessage: vi.fn(), localStorage: {getItem: stored}, niantic_params: params});
     vi.stubGlobal('document', {cookie: 'csrftoken=token', querySelectorAll: () => []});
-    fetchText = vi.fn<Options['fetchIitcEndpointText']>().mockResolvedValue(reply({result: [message()]}));
+    fetchText = vi.fn<Options['fetchIitcEndpointText']>().mockImplementation(async (endpoint) =>
+      reply({result: endpoint === 'sendPlext' ? true : [message()]}));
     options = {getMap: (): ReturnType<Options['getMap']> => ({getBounds: (): LatLngBounds => ({getSouth: (): number => 51, getWest: (): number => 3,
       getNorth: (): number => 53, getEast: (): number => 5}) as LatLngBounds}) as ReturnType<Options['getMap']>,
       getLifetime: (): ReturnType<Options['getLifetime']> => ({signal: lifetime.signal,
@@ -346,7 +347,7 @@ describe('COMM runtime ownership', () => {
     await runtime.sendComm('faction', ' hello ');
     expect(fetchText.mock.calls.map(([endpoint]) => endpoint)).toEqual(['sendPlext', 'getPlexts']);
     expect(JSON.parse(String(fetchText.mock.calls[0][1].body)) as unknown).toMatchObject({
-      tab: 'faction', message: 'hello', latE6: 52000000, lngE6: 4000000});
+      tab: 'faction', message: 'hello', latE6: 52000000, lngE6: 4000000, v: 'version'});
     expect(fetchText.mock.calls[0][2]).toBe('comm-send-faction');
     expect(runtime.getState()).toMatchObject({status: 'ready', tab: 'faction'});
     const states = vi.mocked(window.postMessage).mock.calls.map(([value]) => (value as {comm: {sendStatus?: string}}).comm);
@@ -365,11 +366,36 @@ describe('COMM runtime ownership', () => {
     expect(fetchText).toHaveBeenCalledOnce();
     expect(runtime.getState()).toMatchObject({sendStatus: 'error', sendText: 'hello'});
   });
+  it('preserves the draft and requires a version before attempting a send', async () => {
+    params.CURRENT_VERSION = '';
+    await runtime.sendComm('all', 'keep this');
+    expect(fetchText).not.toHaveBeenCalled();
+    expect(runtime.getState()).toMatchObject({sendStatus: 'auth', sendText: 'keep this', sendError: 'sendPlext missing Intel version'});
+  });
 
   it('preserves send errors and does not refresh on failure', async () => {
     fetchText.mockResolvedValueOnce(reply({error: 'not allowed'}));
     await runtime.sendComm('all', 'hello');
     expect(runtime.getState()).toMatchObject({sendStatus: 'error', sendError: 'not allowed'});
     expect(fetchText).toHaveBeenCalledOnce();
+  });
+  it('retains drafts and does not refresh or retry after structured errors or unconfirmed delivery', async () => {
+    for (const response of [null, {result: false}, {error: {message: 'denied'}}, {result: true, error: true}]) {
+      fetchText.mockClear().mockResolvedValueOnce(reply(response));
+      await runtime.sendComm('all', 'keep me');
+      expect(runtime.getState()).toMatchObject({sendStatus: 'error', sendText: 'keep me'});
+      expect(fetchText).toHaveBeenCalledOnce();
+      expect(fetchText.mock.calls[0][0]).toBe('sendPlext');
+    }
+  });
+  it('preserves history and its cursor when a numeric timestamp cannot be rendered as a Date', async () => {
+    await runtime.refreshComm('all');
+    fetchText.mockResolvedValueOnce(reply({result: [message('invalid', 8_640_000_000_000_001)]}));
+    await runtime.refreshComm('all');
+    expect(runtime.getState()).toMatchObject({status: 'error', messages: 1, newestTimestamp: 2000});
+    expect(options.onPublicMessages).toHaveBeenCalledOnce();
+    fetchText.mockResolvedValueOnce(reply({result: []}));
+    await runtime.refreshComm('all');
+    expect(JSON.parse(String(fetchText.mock.lastCall?.[1].body)) as unknown).toMatchObject({minTimestampMs: 2000});
   });
 });

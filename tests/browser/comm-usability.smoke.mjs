@@ -17,8 +17,11 @@ test.beforeEach(async ({page}) => {
   await expect(page.locator('.iitc-iris-sheet-tabbar')).toBeVisible();
   await page.evaluate(() => {
     const original = window.fetch;
-    window.commReviewFixture = {calls: [], sendMode: 'fail'};
+    window.commReviewFixture = {calls: [], sendMode: 'fail', sendRequests: 0};
     const state = window.commReviewFixture;
+    window.addEventListener('message', ({data}) => {
+      if (data.type === 'IITC_IRIS_COMM_STATUS') state.lastComm = data.comm;
+    });
     const now = Date.now();
     const activity = (id, time, player, team, action, guid, name, latE6 = 52000000) => [id, time, {plext: {
       text: `${player} ${action} ${name}`, categories: 1, team, plextType: 'SYSTEM_BROADCAST', markup: [
@@ -42,11 +45,18 @@ test.beforeEach(async ({page}) => {
         const payload = JSON.parse(init.body);
         state.calls.push(payload);
         if (state.malformed) return Response.json({unexpected: true});
+        if (state.invalidTime !== undefined) {
+          const row = structuredClone(state.rows[0]); row[0] = 'invalid'; row[1] = state.invalidTime;
+          return Response.json({result: [row]});
+        }
         const rows = (payload.tab === 'faction' ? state.privateRows : state.rows).filter(row => row[1] >= payload.minTimestampMs && (payload.maxTimestampMs < 0 || row[1] <= payload.maxTimestampMs));
         rows.sort((a, b) => payload.ascendingTimestampOrder ? a[1] - b[1] : b[1] - a[1]);
         return Response.json({result: rows});
       }
       if (endpoint === 'sendPlext') {
+        state.sendRequests += 1;
+        if (JSON.parse(init.body).v !== 'smoke-test') return Response.json({error: 'out of date'});
+        if (Object.hasOwn(state, 'sendReply')) return Response.json(state.sendReply);
         if (state.sendMode === 'hold') return new Promise(resolve => {state.finishSend = value => resolve(Response.json(value));});
         return Response.json(state.sendMode === 'fail' ? {error: 'delivery failed'} : {result: true});
       }
@@ -153,8 +163,11 @@ test('malformed refresh preserves loaded messages and portal timeline excludes u
   await panel.getByRole('tab', {name: 'Faction', exact: true}).click();
   await expect(panel).toContainText('PrivateAgent');
   await panel.getByRole('tab', {name: 'All', exact: true}).click();
-  // Stop the fixture's empty live map retries before supplying selectable portal data.
-  await page.route('**/comm-review-map.json', route => route.fulfill({json: {result: {map: {}}}}));
+  // The authoritative fixture must retain the selected portals if movement triggers another map fetch.
+  await page.route('**/comm-review-map.json', route => route.fulfill({json: {result: {map: {'review-tile': {gameEntities: [
+    ['p', 1000, ['p', 'R', 52000000, 4000000, 1, 100, 8, '', 'Fountain', [], false, false, null, 1000]],
+    ['other', 1000, ['p', 'E', 52001000, 4000000, 1, 100, 8, '', 'Statue', [], false, false, null, 1000]],
+  ]}}}}}));
   await page.evaluate(() => new Promise(resolve => {
     const settled = ({data}) => {
       if (data.type !== 'IITC_IRIS_ENTITY_STATUS' || data.status !== 'fixture COMM review') return;
@@ -168,9 +181,6 @@ test('malformed refresh preserves loaded messages and portal timeline excludes u
   }));
   await page.evaluate(() => {
     window.commReviewFixture.malformed = false;
-    window.postMessage({type: 'IITC_IRIS_RENDER_ENTITIES', entities: {generation: 900, portals: [
-      {guid: 'p', title: 'Fountain', team: 'R', latE6: 52000000, lngE6: 4000000, isPlaceholder: false},
-    ], links: [], fields: []}}, '*');
     window.postMessage({type: 'IITC_IRIS_ZOOM_TO_AND_SHOW_PORTAL', portalGuid: 'p', portalLat: 52, portalLng: 4, zoom: 16}, '*');
   });
   // Portal selection is separate from opening its panel.
@@ -209,9 +219,6 @@ test('malformed refresh preserves loaded messages and portal timeline excludes u
   expect(await page.evaluate(() => window.commReviewFixture.calls.length)).toBe(calls + 1);
   // Changing selection replaces the subscription and discards the previous portal's view.
   await page.evaluate(() => {
-    window.postMessage({type: 'IITC_IRIS_RENDER_ENTITIES', entities: {generation: 901, portals: [
-      {guid: 'other', title: 'Statue', team: 'E', latE6: 52001000, lngE6: 4000000, isPlaceholder: false},
-    ], links: [], fields: []}}, '*');
     window.postMessage({type: 'IITC_IRIS_ZOOM_TO_AND_SHOW_PORTAL', portalGuid: 'other', portalLat: 52.001, portalLng: 4, zoom: 16}, '*');
   });
   await expect(timeline).toContainText('1 of 1 loaded events');
@@ -253,4 +260,79 @@ test('expanded filters stay reachable in light/dark phone and landscape layouts'
       await testInfo.attach(`comm-filters-${theme}-${viewport.width}`, {body: await page.screenshot(), contentType: 'image/png'});
     }
   }
+});
+
+
+test('structured errors and ambiguous send replies preserve drafts without retrying; success tokens clear them', async ({page}) => {
+  const panel = await openComm(page);
+  const draft = panel.locator('.iitc-iris-comm-send-form input');
+  const replies = [null, {result: false}, {error: {message: 'delivery denied'}}, {result: true, error: true}];
+  for (const [index, reply] of replies.entries()) {
+    await page.evaluate(reply => {window.commReviewFixture.sendReply = reply;}, reply);
+    await draft.fill('keep this draft');
+    await panel.getByRole('button', {name: 'Send', exact: true}).click();
+    await expect.poll(() => page.evaluate(() => ({id: window.commReviewFixture.lastComm?.sendId,
+      status: window.commReviewFixture.lastComm?.sendStatus}))).toEqual({id: index + 1, status: 'error'});
+    await expect(draft).toHaveValue('keep this draft');
+    expect(await page.evaluate(() => window.commReviewFixture.sendRequests)).toBe(index + 1);
+  }
+  await page.evaluate(() => {window.commReviewFixture.sendReply = {result: 'SUCCESS'};});
+  await panel.getByRole('button', {name: 'Send', exact: true}).click();
+  await expect(draft).toHaveValue('');
+  expect(await page.evaluate(() => window.commReviewFixture.sendRequests)).toBe(5);
+});
+
+test('out-of-range timestamps preserve loaded history and cursor; presentation also tolerates invalid bridge data', async ({page}) => {
+  const panel = await openComm(page);
+  await expect(panel.locator('.iitc-iris-comm-row')).toHaveCount(3);
+  const cursor = await page.evaluate(() => window.commReviewFixture.lastComm.newestTimestamp);
+  await page.evaluate(() => {window.commReviewFixture.invalidTime = 8640000000000001;});
+  await panel.getByRole('button', {name: 'Refresh', exact: true}).click();
+  await expect(panel).toContainText('getPlexts returned malformed messages');
+  await expect(panel.locator('.iitc-iris-comm-row')).toHaveCount(3);
+  expect(await page.evaluate(() => window.commReviewFixture.lastComm.newestTimestamp)).toBe(cursor);
+  await page.evaluate(() => {delete window.commReviewFixture.invalidTime;});
+  await panel.getByRole('button', {name: 'Refresh', exact: true}).click();
+  await expect.poll(() => page.evaluate(() => window.commReviewFixture.lastComm.status)).toBe('ready');
+  expect(await page.evaluate(() => window.commReviewFixture.calls.at(-1).minTimestampMs)).toBe(cursor);
+  // A malformed internal bridge message must not throw in date presentation either.
+  await page.evaluate(() => {
+    const comm = window.commReviewFixture.lastComm;
+    window.postMessage({type: 'IITC_IRIS_COMM_STATUS', comm: {...comm, oldestTimestamp: -1, recent: [
+      {...comm.recent[0], id: 'bad-bridge-date', time: 8640000000000001},
+    ]}}, '*');
+  });
+  await expect(panel).toContainText('Unknown date');
+  await expect(panel.locator('.iitc-iris-comm-row time')).not.toHaveAttribute('datetime');
+});
+
+test('copy feedback preserves newer messages through old timers and late clipboard completion', async ({page}) => {
+  await page.clock.install();
+  await page.evaluate(() => {
+    window.copyFixture = {};
+    Object.defineProperty(navigator, 'clipboard', {configurable: true, value: {writeText: text => {
+      if (window.copyFixture.holdJson && text.startsWith('{')) return new Promise(resolve => {window.copyFixture.finish = resolve;});
+      return Promise.resolve();
+    }}});
+  });
+  await page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: 'System', exact: true}).click();
+  await page.locator('.iitc-iris-sheet-tabbar-secondary').getByRole('button', {name: 'Diagnostics', exact: true}).click();
+  const panel = page.locator('aside:visible');
+  await panel.getByRole('button', {name: 'JSON', exact: true}).click();
+  await expect(panel).toContainText('json copied');
+  await page.clock.fastForward(1000);
+  await panel.getByRole('button', {name: 'URL', exact: true}).click();
+  await expect(panel).toContainText('url copied');
+  await page.clock.fastForward(300);
+  await expect(panel).toContainText('url copied');
+  await page.clock.fastForward(1000);
+  await expect(panel).not.toContainText('url copied');
+  await page.evaluate(() => {window.copyFixture.holdJson = true;});
+  await panel.getByRole('button', {name: 'JSON', exact: true}).click();
+  await expect.poll(() => page.evaluate(() => Boolean(window.copyFixture.finish))).toBe(true);
+  await panel.getByRole('button', {name: 'URL', exact: true}).click();
+  await expect(panel).toContainText('url copied');
+  await page.evaluate(() => window.copyFixture.finish());
+  await expect(panel).toContainText('url copied');
+  await expect(panel).not.toContainText('json copied');
 });

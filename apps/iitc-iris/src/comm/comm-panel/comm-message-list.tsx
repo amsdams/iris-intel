@@ -2,7 +2,7 @@ import {h, type RefObject} from 'preact';
 import './comm.css';
 import '../../ui/shared/scroll-region.css';
 import '../../ui/shared/list-item.css';
-import {formatCommActor, formatCommContextTitle, formatCommTime, getCommDisplayParts, getCommTeamClass} from '../comm-display';
+import {formatCommActor, formatCommContextTitle, formatCommTimestamp, getCommDisplayParts, getCommTeamClass} from '../comm-display';
 import type {IitcIrisCommMessage, IitcIrisCommState} from '../../messages';
 import {splitIitcCommTextLinks} from '@iris/iitc-core';
 
@@ -15,12 +15,12 @@ export interface IitcIrisCommMessageListProps {
   ownNickname?: string;
 }
 
-function IitcIrisCommMessageRow({message, addNickname, selectPortal, ownNickname}: {message: IitcIrisCommMessage; addNickname: (nickname: string) => void; selectPortal: (latE6?: number, lngE6?: number, portalGuid?: string) => void; ownNickname?: string}): h.JSX.Element {
+function IitcIrisCommMessageRow({message, timestamp, addNickname, selectPortal, ownNickname}: {message: IitcIrisCommMessage; timestamp: ReturnType<typeof formatCommTimestamp>; addNickname: (nickname: string) => void; selectPortal: (latE6?: number, lngE6?: number, portalGuid?: string) => void; ownNickname?: string}): h.JSX.Element {
   const displayParts = getCommDisplayParts(message);
   const own = Boolean(ownNickname && message.player?.toLowerCase() === ownNickname.toLowerCase());
   const mentioned = Boolean(ownNickname && message.parts.some(part => part.at && part.text.replace(/^@/, '').toLowerCase() === ownNickname.toLowerCase()));
   return <div className={`iitc-iris-list-item iitc-iris-comm-row ${message.alert ? 'is-alert' : ''} ${message.narrowcast ? 'is-direct' : ''} ${own ? 'is-own' : ''} ${mentioned ? 'is-mention' : ''}`} title={formatCommContextTitle(message)}>
-    <span className={`iitc-iris-comm-meta ${getCommTeamClass(message.team)}`}><time dateTime={new Date(message.time).toISOString()} title={new Date(message.time).toLocaleString()}>{formatCommTime(message.time)}</time><span className="iitc-iris-comm-tags">{own && <small>you</small>}{mentioned && <small>mentions you</small>}{message.auto && <small>system</small>}{message.alert && <small>alert</small>}{message.narrowcast && <small>direct</small>}</span></span>
+    <span className={`iitc-iris-comm-meta ${getCommTeamClass(message.team)}`}><time dateTime={timestamp.iso} title={timestamp.full}>{timestamp.time}</time><span className="iitc-iris-comm-tags">{own && <small>you</small>}{mentioned && <small>mentions you</small>}{message.auto && <small>system</small>}{message.alert && <small>alert</small>}{message.narrowcast && <small>direct</small>}</span></span>
     <span className={`iitc-iris-comm-text ${message.narrowcast ? 'is-narrowcast' : ''}`}>
       {message.player ? <button type="button" className={`iitc-iris-comm-actor ${getCommTeamClass(message.playerTeam || message.team)}`} onClick={() => addNickname(message.player ?? '')} title={`Mention ${message.player}`}>{formatCommActor(message)}</button>
         : <span className="iitc-iris-comm-actor">{formatCommActor(message)}</span>}
@@ -39,14 +39,15 @@ function IitcIrisCommMessageRow({message, addNickname, selectPortal, ownNickname
 export function IitcIrisCommMessageList(props: IitcIrisCommMessageListProps): h.JSX.Element | null {
   const {commState} = props;
   if (!commState.recent?.length) return null;
+  const dated = commState.recent.map(message => ({message, timestamp: formatCommTimestamp(message.time)}));
   return <div className="iitc-iris-comm-list iitc-iris-scroll-region" ref={props.commListRef} onScroll={props.onScroll}>
     {commState.requestOlder && commState.status === 'loading' && <span className="iitc-iris-comm-divider">loading older messages</span>}
     {commState.requestOlder && commState.oldMessagesWereAdded && <span className="iitc-iris-comm-divider">older messages loaded</span>}
-    {commState.recent.map((message, index, messages) => {
-      const day = new Date(message.time).toLocaleDateString();
-      const showDay = index === 0 || day !== new Date(messages[index - 1].time).toLocaleDateString();
+    {dated.map(({message, timestamp}, index) => {
+      const day = timestamp.date;
+      const showDay = index === 0 || day !== dated[index - 1].timestamp.date;
       return <div key={message.id}>{showDay && <div className="iitc-iris-comm-divider">{day}</div>}
-        <IitcIrisCommMessageRow addNickname={props.addNickname} message={message} selectPortal={props.selectPortal} ownNickname={props.ownNickname} /></div>;
+        <IitcIrisCommMessageRow timestamp={timestamp} addNickname={props.addNickname} message={message} selectPortal={props.selectPortal} ownNickname={props.ownNickname} /></div>;
     })}
   </div>;
 }

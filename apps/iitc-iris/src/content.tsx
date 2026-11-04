@@ -64,6 +64,7 @@ import {
 } from './content-command-callbacks';
 import {handleIitcIrisContentKeyDown, type IitcIrisPanDirection} from './shell/keyboard-shortcuts';
 import {copyIitcIrisText} from './shell/feedback';
+import {useCopyFeedbackStatus} from './shell/use-copy-feedback';
 import {IitcIrisPortalDetailsPanel} from './portals/portal-details-panel';
 import {IitcIrisSearchPanel} from './map/search/search-panel';
 import {usePortalAnalysisWorkflow} from './map/portal-analysis/workflow';
@@ -182,9 +183,9 @@ function App(): h.JSX.Element {
   }, []);
 
   const [status, setStatus] = useState('booting');
-  const [systemCopyStatus, setSystemCopyStatus] = useState('');
-  const [contextCopyStatus, setContextCopyStatus] = useState('');
-  const [portalCopyStatus, setPortalCopyStatus] = useState('');
+  const [systemCopyStatus, setSystemCopyStatus] = useCopyFeedbackStatus();
+  const [contextCopyStatus, setContextCopyStatus] = useCopyFeedbackStatus();
+  const [portalCopyStatus, setPortalCopyStatus] = useCopyFeedbackStatus();
   const [portalImageOpen, setPortalImageOpen] = useState(false);
   const [portalSections, setPortalSections] = useState<Record<PortalSectionId, boolean>>(() => loadStoredPortalSections());
   const [shortcutsEnabled, setShortcutsEnabled] = useState(() => loadStoredBoolean(SHORTCUTS_ENABLED_STORAGE_KEY, true));

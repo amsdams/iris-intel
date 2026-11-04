@@ -7,7 +7,7 @@ import {ControlRow} from '../ui/control-row';
 import {StatusText} from '../ui/status-text';
 import {EmptyState} from '../ui/empty-state';
 import {Section} from '../ui/section';
-import {formatCommTime, getCommTeamClass} from './comm-display';
+import {formatCommTimestamp, getCommTeamClass} from './comm-display';
 import '../ui/shared/section-summary.css';
 import {getIitcCommAction} from '@iris/iitc-core';
 import './portal-activity.css';
@@ -51,24 +51,27 @@ export function PortalActivity({portal, openPublicComm, selectPortal}: {
       </ControlRow>
       {!current ? <p><StatusText role="status">Reading loaded activity…</StatusText></p>
         : !current.recent.length ? <EmptyState>No activity for this portal in loaded public COMM.</EmptyState>
-        : <ol className="iitc-iris-portal-activity-list">{current.recent.map(message => <li key={message.id}>
-          <details className="iitc-iris-portal-activity-event">
-            <summary>
-              <time dateTime={new Date(message.time).toISOString()} title={new Date(message.time).toLocaleString()}>
-                <span>{new Date(message.time).toLocaleDateString()}</span><b>{formatCommTime(message.time)}</b>
-              </time>
-              <span className={`iitc-iris-portal-activity-agent ${getCommTeamClass(message.playerTeam || message.team)}`}>{message.player || 'System'}</span>
-              <Badge>{actionLabels[getIitcCommAction(message)]}</Badge>
-            </summary>
-            <div className="iitc-iris-portal-activity-event-body">
-              <p>{message.text || message.parts.map(part => part.text).join(' ')}</p>
-              <ControlRow>{message.portals.map((target, index) => <ActionButton key={index}
-                title={`View ${target.name || 'portal'} on the map`}
-                disabled={target.latE6 === undefined || target.lngE6 === undefined}
-                onClick={() => selectPortal(target.latE6, target.lngE6, target.guid)}>{target.name || 'View portal'}</ActionButton>)}</ControlRow>
-            </div>
-          </details>
-        </li>)}</ol>}
+        : <ol className="iitc-iris-portal-activity-list">{current.recent.map(message => {
+          const timestamp = formatCommTimestamp(message.time);
+          return <li key={message.id}>
+            <details className="iitc-iris-portal-activity-event">
+              <summary>
+                <time dateTime={timestamp.iso} title={timestamp.full}>
+                  <span>{timestamp.date}</span><b>{timestamp.time}</b>
+                </time>
+                <span className={`iitc-iris-portal-activity-agent ${getCommTeamClass(message.playerTeam || message.team)}`}>{message.player || 'System'}</span>
+                <Badge>{actionLabels[getIitcCommAction(message)]}</Badge>
+              </summary>
+              <div className="iitc-iris-portal-activity-event-body">
+                <p>{message.text || message.parts.map(part => part.text).join(' ')}</p>
+                <ControlRow>{message.portals.map((target, index) => <ActionButton key={index}
+                  title={`View ${target.name || 'portal'} on the map`}
+                  disabled={target.latE6 === undefined || target.lngE6 === undefined}
+                  onClick={() => selectPortal(target.latE6, target.lngE6, target.guid)}>{target.name || 'View portal'}</ActionButton>)}</ControlRow>
+              </div>
+            </details>
+          </li>;
+        })}</ol>}
     </Section>}
   </details>;
 }
