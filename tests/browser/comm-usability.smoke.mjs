@@ -336,3 +336,28 @@ test('copy feedback preserves newer messages through old timers and late clipboa
   await expect(panel).toContainText('url copied');
   await expect(panel).not.toContainText('json copied');
 });
+
+test('late delivery stays in its channel and drafts survive closing and reopening COMM', async ({page}) => {
+  const panel = await openComm(page);
+  const draft = panel.locator('.iitc-iris-comm-send-form input');
+  await draft.fill('pending All message');
+  await page.evaluate(() => {window.commReviewFixture.sendMode = 'hold';});
+  await panel.getByRole('button', {name: 'Send', exact: true}).click();
+  await expect(draft).toBeDisabled();
+  await panel.getByRole('tab', {name: 'Faction', exact: true}).click();
+  await draft.fill('private draft');
+  const publicRequests = await page.evaluate(() => window.commReviewFixture.calls.filter(call => call.tab === 'all').length);
+  await page.evaluate(() => window.commReviewFixture.finishSend({result: true}));
+  await expect.poll(() => page.evaluate(() => window.commReviewFixture.calls.filter(call => call.tab === 'all').length)).toBeGreaterThan(publicRequests);
+  await expect(panel.getByRole('tab', {name: 'Faction', exact: true})).toHaveAttribute('aria-selected', 'true');
+  await expect(draft).toHaveValue('private draft');
+  await panel.getByRole('tab', {name: 'All', exact: true}).click();
+  await expect(draft).toHaveValue('');
+  await draft.fill('next public draft');
+  await page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: 'COMM', exact: true}).click();
+  await expect(panel).toBeHidden();
+  await openComm(page);
+  await expect(draft).toHaveValue('next public draft');
+  await panel.getByRole('tab', {name: 'Faction', exact: true}).click();
+  await expect(draft).toHaveValue('private draft');
+});

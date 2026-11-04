@@ -1,6 +1,6 @@
 # Architecture Maintenance Plan
 
-Status: in progress. ARCH-09 and ARCH-01 implemented on 2026-11-04; remaining items are pending.
+Status: in progress. ARCH-09, ARCH-01 and ARCH-03 implemented; remaining items are pending.
 
 This is the implementation tracker for the validated parts of the [architecture review](arch-review.md).
 The [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes the work; this file owns scope,
@@ -45,7 +45,7 @@ and remaining responsibilities in the completion log; do not improve one file's 
 
 ## Progress
 
-ARCH-09 and ARCH-01 are complete in the working tree. Complete one bounded item at a time; record the change/PR, validation and remaining
+ARCH-09 and ARCH-01 are committed as `64cdfb2`; ARCH-03 is complete in the working tree. Complete one bounded item at a time; record the change/PR, validation and remaining
 device checks in the completion log below. Do not treat a partial move as completion of the entire hotspot.
 
 | Done | ID | Work item | Acceptance |
@@ -53,7 +53,7 @@ device checks in the completion log below. Do not treat a partial move as comple
 | [x] | ARCH-09 | Harden COMM response/acknowledgment boundaries | Recognized failures and unconfirmed replies preserve drafts; supported acknowledgments are evidence-based; invalid timestamps cannot alter buffers/cursors or throw in rendering. |
 | [x] | ARCH-01 | Copy-feedback correctness and ownership | Older timers/late clipboard results cannot clear or overwrite newer feedback; each feedback area remains independent; cleanup has an owner. |
 | [ ] | ARCH-02 | Remove genuine command forwarding wrappers | Direct delegation disappears; navigation/cancellation/ordering behavior and its meaningful tests remain at an explicit owner. |
-| [ ] | ARCH-03 | Extract COMM UI workflow from `content.tsx` | Drafts, send acknowledgments and scroll/history coordination have a cohesive owner without moving transport or changing effect ordering. |
+| [x] | ARCH-03 | Extract COMM UI workflow from `content.tsx` | Drafts, send acknowledgments and scroll/history coordination have a cohesive owner without moving transport or changing effect ordering. |
 | [ ] | ARCH-04 | Extract portal styling from `map-renderer.ts` | Styling/radius calculations take explicit inputs and can be tested without initializing Leaflet; appearance and zoom thresholds match. |
 | [ ] | ARCH-05 | Extract map-response adaptation from `map-request.ts` | Conversion/type guards have explicit clock/history dependencies; queue/cache/generation/cancellation behavior stays with the scheduler. |
 | [ ] | ARCH-06 | Share portal types and organize message payload types | Common fields have one definition; required/optional distinctions, existing imports and wire contracts remain compatible. |
@@ -193,7 +193,7 @@ implementation; do not introduce a runtime registry or abstraction solely to sup
 
 The [current-state review](architecture-current-state-review.md) rechecks this plan at `6a8c9a4` and records two
 additional COMM response/acknowledgment gaps. These are now included in ARCH-09 before ARCH-03. Its browser-CI
-finding stays in the testing plan. ARCH-09 and ARCH-01 are implemented; the structural items remain pending.
+finding stays in the testing plan. ARCH-09/01/03 are implemented; the remaining items are pending.
 
 - `content-command-callbacks.ts` contains real sheet/menu coordination as well as pass-throughs. Do not delete its
   entire test suite or promise the review's estimated 1,200-line saving. Keep behavioral tests at their new owner.
@@ -257,3 +257,31 @@ run exposed an existing timeline-fixture race: an empty authoritative response c
 portal. The fixture now retains the portal entities; no production selection behavior was changed to satisfy it.
 Final focused UI, type/lint and whitespace checks pass. No commit/push or signed APK was requested. An XPI was subsequently rebuilt for user testing. User smoke confirms COMM sending succeeds after the version-field fix. Dedicated copy/Android smoke remains pending.
 Next slice: ARCH-03.
+
+
+### 2026-11-04 — ARCH-03: COMM UI workflow
+
+`comm/use-comm-ui-state.ts` owns per-channel drafts, matching send acknowledgments, list/older-history scroll refs,
+stick-to-bottom/new-message UI state, send/mention/history actions and their effect implementations. App retains the
+received COMM state for bridge/auth composition, navigation and panel assembly; channel buffers/transport/polling stay
+in `comm-runtime.ts`. The feature now calls its existing panel actions directly, rather than importing generic root
+forwarders; full command-wrapper cleanup remains ARCH-02.
+
+The workflow registers no effects during its construction. `useCommRequestEffects` stays at the former
+acknowledgment → automatic request/retry → visibility position, after the content message subscription and before
+Scores/Inventory effects. `useCommScrollEffects` stays after Missions/Search effects, with the same scroll invalidation
+signals and frame scheduling. This preserves ordering while moving ownership. Hook extraction does not claim render
+isolation or a performance gain.
+
+App entry: 1,162 → 1,036 LOC (-126). New feature owner: 148 LOC. Whole production source: 24,536 → 24,558 (+22).
+The small net addition consists of the typed UI contract and explicit effect-registration seams; the navigation task
+now reads the App assembly while COMM draft/scroll work reads its feature owner, rather than both sharing the large
+App body. Styling, payload/storage contracts and user-visible behavior are unchanged by intent.
+
+Validation: `npm run check` passes (701 app/core tests, release/build gates, CSS and workbench); all 65 Chrome cases
+pass. Existing tests cover history/scroll, channel isolation, failed drafts, late-send edit protection, visibility,
+shared polling and versioned sends. A new browser regression covers a send completing while Faction is active and
+retains independent drafts across COMM close/reopen. No hook-implementation mirror tests or new test dependencies.
+The earlier correctness work is committed; this extraction remains uncommitted for review. An XPI is prepared for
+user smoke; APK unchanged. The user reports a quick test confirms COMM still works; general COMM smoke is accepted,
+without claiming exhaustive individual paths or platform coverage. Next: ARCH-04 portal styling; reassess after that fourth slice.

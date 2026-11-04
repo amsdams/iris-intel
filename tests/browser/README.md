@@ -154,7 +154,8 @@ Send regressions cover structured errors, unconfirmed replies, explicit success 
 invalid timestamp replies preserve history/cursors, and invalid bridge dates use a safe display fallback. Copy feedback
 checks use a controlled clock and held clipboard Promise to protect newer status from old timers/late completions.
 The portal fixture retains authoritative portal rows across map fetches to avoid selection-removal races.
-All send responses are simulated. The [UI/testing follow-up](../../docs/iitc-iris/plans/comm-ui-testing.md) records
+COMM workflow coverage also checks late delivery while another channel is selected and independent drafts across
+panel close/reopen. All send responses are simulated. The [UI/testing follow-up](../../docs/iitc-iris/plans/comm-ui-testing.md) records
 coverage limits and the proposed faster-feedback workflow.
 
 `node tests/browser/investigate-comm-map.mjs` is a standalone diagnostic for the

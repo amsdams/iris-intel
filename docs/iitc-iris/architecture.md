@@ -41,9 +41,11 @@ notices into the shared `licenses/` assets used by extensions and Android.
 
 `content.tsx` assembles the app, bridges page messages, and coordinates shared camera/entity/auth/navigation state.
 Search, Layers, Missions, and location controls own their feature workflows. Their effect calls retain deliberate
-registration order. COMM state and scroll/request coordination remain in app composition; revisit them for a concrete
-COMM change. Draw Tools and Portal Analysis retain their existing workflows. Avoid a broad app hook or global store
-that hides this wiring.
+registration order. `comm/use-comm-ui-state.ts` owns per-channel drafts, send acknowledgment bookkeeping and
+scroll/history UI actions/state. Its request/visibility and scroll effect groups register at the former App positions,
+with scroll effects after Missions/Search, preserving message/effect ordering. App retains received COMM state for
+bridge/auth composition and navigation; COMM transport stays in its runtime. Draw Tools and Portal Analysis retain
+their existing workflows. Avoid a broad app hook or global store that hides this wiring.
 
 ## CSS And Component Contract
 
@@ -155,7 +157,7 @@ responses, including unsupported timestamps, are rejected before changing histor
 presentation also tolerates invalid internal data without throwing. Send responses require an affirmative acknowledgment;
 structured errors and unfamiliar replies retain the draft and report failure/uncertainty without automatic resend. Existing request/status payloads and stored keys remain
 compatible; send metadata adds a channel-local ID and original text. UI COMM state/scroll coordination and in-memory
-per-channel drafts in `content.tsx` remain separate. Only confirmed delivery clears matching text; a late completion
+per-channel drafts in `comm/use-comm-ui-state.ts` remain separate; App owns the received bridge/auth state. Only confirmed delivery clears matching text; a late completion
 preserves newer text and the selected channel. Pending sends survive panel closure; retries are explicit.
 
 `comm/comm-panel/comm-filters.tsx` owns local active filters and up to eight named views in

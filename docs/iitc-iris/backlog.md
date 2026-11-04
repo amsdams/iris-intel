@@ -5,13 +5,12 @@ Unprioritized product/parity gaps and dated comparison evidence. The [roadmap](p
 
 ### Architecture Maintenance (planned 2026-11-04)
 
-The [architecture maintenance plan](plans/architecture-maintenance.md) tracks validated review findings as ARCH-01–09,
-with a ranked production hotspot inventory, concrete module destinations and acceptance checks. ARCH-09 COMM boundary hardening and ARCH-01 copy-feedback
-ownership are implemented; the plan records verification and remaining live checks. Next prioritize
-COMM UI workflow, portal styling, map-response adaptation and message/entity type organization in the four largest
-files. Genuine wrapper cleanup remains a separate bounded item. Request adaptation, shared message/entity types, storage I/O and remaining core
-aggregation are later bounded items. Broad renderer/AppShell/state-machine rewrites and unmeasured listener changes
-are not automatic scope. Keep progress/completion evidence in the plan rather than duplicating checklists here.
+The [architecture maintenance plan](plans/architecture-maintenance.md) tracks ARCH-01–09 with a ranked production
+inventory, concrete module destinations and acceptance checks. ARCH-09 COMM boundary hardening, ARCH-01 copy-feedback
+ownership and ARCH-03 COMM UI workflow extraction are implemented. Next: ARCH-04 portal styling; later items cover
+response adaptation, message/entity types, wrapper cleanup, storage I/O and remaining core aggregation. Broad
+renderer/AppShell/state-machine rewrites and unmeasured listener changes are not automatic scope. Keep progress and
+completion evidence in the plan rather than duplicating checklists here.
 
 ### COMM Review Follow-ups (implemented 2026-11-04, live acceptance pending)
 

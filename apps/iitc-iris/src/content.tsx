@@ -8,9 +8,8 @@ import {getExtensionUrl} from './platform/assets';
 import {installIitcIrisHostBack} from './shell/host-navigation';
 import {Button} from './ui/button';
 import {h, render} from 'preact';
-import {IITC_IRIS_MESSAGES} from './messages';
 import './auth/auth.css';
-import {useCallback, useEffect, useMemo, useRef, useState} from 'preact/hooks';
+import {useCallback, useEffect, useMemo, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {PORTAL_HIGHLIGHTER_REGISTRY} from './map/layers/highlighter-registry';
 import {
@@ -30,7 +29,6 @@ import {
 } from './portals/selection-lifecycle';
 import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} from './shell/message-adapter';
 import {
-  addCommNicknameCommand,
   centerMapContextCommand,
   clearPortalSelectionCommand,
   copyMapContextGuidCommand,
@@ -47,7 +45,6 @@ import {
   refreshScoresCommand,
   selectMapContextAnchorCommand,
   selectPortalByLatLngCommand,
-  sendCommCommand,
   setMapViewCommand,
   setPortalSectionOpenCommand,
   zoomToAndShowPortalCommand,
@@ -100,7 +97,6 @@ import {
   SHORTCUTS_ENABLED_STORAGE_KEY,
   storeActiveSheet,
   storeBoolean,
-  storeCommTab,
   storeDataSourceId,
   storeDebugDockVisible,
   storeLifecycleSettings,
@@ -120,14 +116,8 @@ import {
   type IitcMapDataPlan,
 } from '@iris/iitc-core';
 import {useDrawToolsWorkflow} from './map/draw-tools/workflow';
+import {useCommUiState, useCommRequestEffects, useCommScrollEffects} from './comm/use-comm-ui-state';
 import {
-  handleCommScrollAction,
-  jumpCommToLatestAction,
-  requestCommAction,
-  requestOlderCommAction,
-} from './comm/panel-actions';
-import {
-  getCommAutoRequest,
   getInventoryAutoRequest,
   getScoresAutoRequest,
 } from './shell/side-panel-auto-requests';
@@ -190,8 +180,6 @@ function App(): h.JSX.Element {
   const [portalSections, setPortalSections] = useState<Record<PortalSectionId, boolean>>(() => loadStoredPortalSections());
   const [shortcutsEnabled, setShortcutsEnabled] = useState(() => loadStoredBoolean(SHORTCUTS_ENABLED_STORAGE_KEY, true));
   const [mapFocusMode, setMapFocusMode] = useState(() => loadStoredBoolean(MAP_FOCUS_MODE_STORAGE_KEY, false));
-  const [commUserAtBottom, setCommUserAtBottom] = useState(true);
-  const [commNewBelow, setCommNewBelow] = useState(false);
   const [mapContext, setMapContext] = useState<IitcIrisMapContextSelection | null>(null);
   const [drawToolsItems, setDrawToolsItems] = useState<IitcIrisDrawToolsItem[]>([]);
   const [debugDockVisible, setDebugDockVisible] = useState(() => loadStoredDebugDockVisible());
@@ -217,19 +205,10 @@ function App(): h.JSX.Element {
     capsules: 0,
     portalKeysForSelectedPortal: null,
   }));
-  const [commDrafts, setCommDrafts] = useState<Record<IitcIrisCommTab, string>>({all: '', faction: '', alerts: ''});
-  const commDraft = commDrafts[commState.tab];
-  const setCommDraft = (draft: string | ((current: string) => string)): void => {
-    const tab = commState.tab;
-    setCommDrafts(current => ({...current, [tab]: typeof draft === 'function' ? draft(current[tab]) : draft}));
-  };
-  const acknowledgedCommSends = useRef(new Set<number>());
+  const commUi = useCommUiState({commState, activeSidePanel, postMessage: postIitcMessage});
+  const {commDraft, setCommDraft, commListRef, commNewBelow, commUserAtBottom, refreshComm,
+    requestOlderComm, handleCommScroll, jumpCommToLatest, sendComm, addCommNickname} = commUi;
   const [passcodeDraft, setPasscodeDraft] = useState('');
-  const commListRef = useRef<HTMLDivElement | null>(null);
-  const commOlderScrollHeightRef = useRef<number | null>(null);
-  const commOlderRequestPendingRef = useRef(false);
-  const commStickToBottomRef = useRef(true);
-  const commLatestTimestampRef = useRef<number | undefined>(undefined);
   const layers = useLayerSettingsWorkflow(postIitcMessage);
   const {baseLayerId, baseLayerNotice, dismissBaseLayerNotice, handleBaseLayerStatus,
     layerSettings, highlighterSettings, setBaseLayerId, toggleLayerSetting, selectPortalHighlighter} = layers;
@@ -452,42 +431,6 @@ function App(): h.JSX.Element {
     if (!isPanelVisible(activeSheet)) closeSheetToMap();
   }, [activeSheet, isPanelVisible, closeSheetToMap]);
 
-  const refreshComm = useCallback((tab: IitcIrisCommTab = commState.tab, older = false): void => {
-    requestCommAction(tab, older);
-  }, [commState.tab]);
-
-  const requestOlderComm = (): void => {
-    requestOlderCommAction(
-      commState,
-      commListRef.current,
-      (h) => { commOlderScrollHeightRef.current = h; },
-      (p) => { commOlderRequestPendingRef.current = p; },
-      refreshComm
-    );
-  };
-
-  const handleCommScroll = (): void => {
-    handleCommScrollAction(
-      commListRef.current,
-      activeSidePanel,
-      commState,
-      commOlderRequestPendingRef.current,
-      (stick) => { commStickToBottomRef.current = stick; },
-      setCommUserAtBottom,
-      setCommNewBelow,
-      requestOlderComm
-    );
-  };
-
-  const jumpCommToLatest = (): void => {
-    jumpCommToLatestAction(
-      commListRef.current,
-      (stick) => { commStickToBottomRef.current = stick; },
-      setCommUserAtBottom,
-      setCommNewBelow
-    );
-  };
-
   const refreshScores = (): void => {
     refreshScoresCommand(postIitcMessage);
   };
@@ -504,17 +447,6 @@ function App(): h.JSX.Element {
 
   const redeemPasscode = (): void => {
     redeemPasscodeCommand(passcodeState, passcodeDraft, setPasscodeDraft, postIitcMessage);
-  };
-
-  const sendComm = (): void => {
-    if (commState.sendStatus === 'sending') return;
-    jumpCommToLatest();
-    sendCommCommand(commState.tab, commDraft, setCommDraft, postIitcMessage);
-  };
-
-  const addCommNickname = (nickname: string): void => {
-    setCommDraft((current) => addCommNicknameCommand(current, nickname));
-    window.requestAnimationFrame(() => document.querySelector<HTMLInputElement>('.iitc-iris-comm-send-form input')?.focus());
   };
 
   const openIntelLogin = (): void => {
@@ -767,30 +699,7 @@ function App(): h.JSX.Element {
     storeBoolean(MAP_FOCUS_MODE_STORAGE_KEY, mapFocusMode);
   }, [mapFocusMode]);
 
-  useEffect(() => {
-    const {sendId, sendStatus, sendText, tab} = commState;
-    if (sendId === undefined || sendStatus !== 'sent' || acknowledgedCommSends.current.has(sendId)) return;
-    acknowledgedCommSends.current.add(sendId);
-    setCommDrafts(current => current[tab].trim() === sendText ? {...current, [tab]: ''} : current);
-  }, [commState]);
-
-  useEffect(() => {
-    const autoRequest = getCommAutoRequest(activeSidePanel, commState.status, commState.tab);
-    if (!autoRequest) return;
-    const post = (): void => {
-      storeCommTab(commState.tab);
-      window.postMessage(autoRequest.message, '*');
-    };
-    post();
-    const retryTimers = autoRequest.retryDelaysMs.map((ms) => window.setTimeout(post, ms));
-    return (): void => {
-      retryTimers.forEach((timer) => window.clearTimeout(timer));
-    };
-  }, [activeSidePanel, commState.status, commState.tab]);
-
-  useEffect(() => {
-    postIitcMessage({type: IITC_IRIS_MESSAGES.commVisibility, commVisible: activeSidePanel === 'comm'});
-  }, [activeSidePanel, postIitcMessage]);
+  useCommRequestEffects(commUi);
 
   useEffect(() => {
     const autoRequest = getScoresAutoRequest(activeSidePanel, scoresState.status);
@@ -815,42 +724,7 @@ function App(): h.JSX.Element {
 
   useSearchEffects(search, activeSheet);
 
-  useEffect(() => {
-    if (activeSidePanel !== 'comm') return;
-    const list = commListRef.current;
-    if (!list) return;
-    window.requestAnimationFrame(() => {
-      if (commState.requestOlder) {
-        if (commState.status === 'loading') return;
-        const previousHeight = commOlderScrollHeightRef.current;
-        if (commState.oldMessagesWereAdded && previousHeight !== null) {
-          list.scrollTop = Math.max(0, list.scrollHeight - previousHeight);
-        }
-        commOlderScrollHeightRef.current = null;
-        commOlderRequestPendingRef.current = false;
-        return;
-      }
-      commOlderScrollHeightRef.current = null;
-      commOlderRequestPendingRef.current = false;
-      if (commStickToBottomRef.current) {
-        list.scrollTop = list.scrollHeight;
-        setCommUserAtBottom(true);
-      }
-    });
-  }, [activeSidePanel, commState.tab, commState.status, commState.newestTimestamp, commState.messages, commState.recent?.length, commState.requestOlder, commState.oldMessagesWereAdded, commState.sendStatus]);
-
-  useEffect(() => {
-    if (activeSidePanel !== 'comm') {
-      commLatestTimestampRef.current = commState.newestTimestamp;
-      return;
-    }
-    const previous = commLatestTimestampRef.current;
-    const current = commState.newestTimestamp;
-    if (previous !== undefined && current !== undefined && current > previous && !commStickToBottomRef.current) {
-      setCommNewBelow(true);
-    }
-    commLatestTimestampRef.current = current;
-  }, [activeSidePanel, commState.newestTimestamp]);
+  useCommScrollEffects(commUi, commState);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent): void => {
@@ -1071,7 +945,7 @@ function App(): h.JSX.Element {
           agentState={agentState}
           commState={commState}
           commDraft={commDraft}
-          commListRef={commListRef as import('preact').RefObject<HTMLDivElement>}
+          commListRef={commListRef}
           commNewBelow={commNewBelow}
           commUserAtBottom={commUserAtBottom}
           addCommNickname={addCommNickname}
