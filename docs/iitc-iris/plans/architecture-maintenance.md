@@ -49,7 +49,7 @@ and remaining responsibilities in the completion log; do not improve one file's 
 ARCH-09 and ARCH-01 are committed as `64cdfb2`; ARCH-03 is committed as `db6ac6b` after user COMM smoke.
 ARCH-04 is committed as `3820481` after user portal smoke; ARCH-05 is committed as `d457c62` after user map/portal smoke.
 ARCH-06a/b are committed as `455a0fd`; ARCH-02 is committed as `98eaf2e` after user acceptance of the checked change.
-ARCH-07 is committed as `248d409`. ARCH-08 is complete and accepted after the user's general IRIS smoke test.
+ARCH-07 is committed as `248d409`. ARCH-08 is committed as `f0fae7a` after the user's general IRIS smoke test.
 Complete one bounded item at a time; record the change/PR, validation and remaining
 device checks in the completion log below. Do not treat a partial move as completion of the entire hotspot.
 
@@ -469,7 +469,7 @@ XPI/ZIP `2026-11-04T19-51-47` reuse verified assets; all 23 archive files match 
 archives. APK unchanged. The user reports a quick IRIS smoke test passed; general smoke is accepted without
 claiming exhaustive portal-list paths or platform coverage.
 
-ARCH-08 is accepted for commit after the general IRIS smoke above. All selected plan items are complete; no further
+Committed as `f0fae7a` after the general IRIS smoke above. All selected plan items are complete; no further
 slice is automatically queued by this plan.
 
 ### Final implementation checkpoint — 2026-11-04
@@ -481,7 +481,7 @@ improves where responsibilities live rather than deleting functionality. Command
 441 → 157 and storage settings 387 → 307. Earlier completion-log measurements use each slice's immediate input,
 so the App extraction starts at 1,162 after the preceding correctness work.
 
-Current ranked production inventory (same source scope, excluding tests):
+Ranked production inventory at `f0fae7a` (same source scope, excluding tests):
 
 | Rank | File | LOC | Responsibilities retained / future boundary |
 | --- | --- | --- | --- |
@@ -502,3 +502,22 @@ Large files remain because this plan selected bounded ownership improvements, no
 decoration coordinators, request-diagnostic extraction or listener-lifetime changes need a new concrete task and their
 own behavior/lifetime evidence. Branch review/commit/merge and device testing remain separate from implementation
 completion; existing smoke acceptance and its limits are recorded per slice above.
+
+
+### Completed-branch review — 2026-11-04
+
+Reviewed the changed COMM validation/UI effect handoffs, copy-feedback lifetime, renderer/style precedence,
+response/history/clock adaptation, message type exports, optional storage boundaries and core list-summary callers
+against local main and the selected plan. No functional regression was identified in these reviewed boundaries.
+The type compatibility probe was rerun: all 55 prior type contracts, bridge constants and envelope still match;
+new payload modules remain type-only without imports back to the bridge.
+
+One minor check issue was found and fixed: the new marker-style module ended with an extra blank line, visible only
+when checking the whole branch against main. `git diff --check main` now passes. The cleanup changes no runtime code;
+the final slice's passing 704 app/core tests and 65 browser cases remain the validation evidence. No full suite or
+artifact rebuild was repeated for the blank-line/documentation cleanup. The production count is one line lower than
+the final implementation snapshot above.
+
+Known limits remain: Playwright is not yet invoked by GitHub Actions (already tracked in `comm-ui-testing.md`), and
+local Chrome/fixture checks plus the user's general smoke do not establish every Firefox/Android/live endpoint path.
+No new feature, CI workflow, merge or push was included in this review.

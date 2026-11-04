@@ -29,11 +29,12 @@ contracts and shipped runtime asset bytes match). ARCH-02 is committed as `98eaf
 twenty-one redundant command wrappers are removed; eleven navigation/context commands remain unchanged (441 → 157 LOC).
 ARCH-07 is committed as `248d409` after user acceptance: optional preference I/O is shared through
 `platform/storage.ts`, retaining feature parsers/migrations/formats/removal (shell settings 387 → 307 LOC).
-ARCH-08 is complete and user smoke accepted: portal-list summary type/reducer live in core; app filters, sorting,
+ARCH-08 is committed as `f0fae7a` and user smoke accepted: portal-list summary type/reducer live in core; app filters, sorting,
 formatting and SVG remain app-owned. All nine tracked architecture items (ten slices) are implemented. Validation,
 artifact handoff and the refreshed ranked inventory are in the plan's final checkpoint. Checks pass: 704 app/core tests
 and 65 Chrome cases. XPI/ZIP `2026-11-04T19-51-47` is served on port 6969; APK unchanged, no push. No further slice is queued;
-The user authorized the final slice commit after a quick IRIS smoke. Branch integration remains separate. Large-file follow-ups require a concrete maintenance
+The completed-branch review found no functional regression in the reviewed boundaries; one EOF whitespace issue
+was fixed and all 55 type contracts were rechecked. Branch integration remains separate. Large-file follow-ups require a concrete maintenance
 need and their own lifecycle/behavior evidence.
 
 **Faster testing (2026-11-04):** user authorized the testing workflow improvements. Repeated 61-case benchmarks passed

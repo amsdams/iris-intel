@@ -105,4 +105,3 @@ export function getPortalMarkerStyle(portal: PortalAppearance, renderPolicy: Fil
     dashArray: portal.isPlaceholder ? '1,2' : undefined,
   };
 }
-
