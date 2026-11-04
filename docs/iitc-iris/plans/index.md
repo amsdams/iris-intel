@@ -14,6 +14,20 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**Architecture maintenance planning (2026-11-04):** the user requested a trackable plan after reviewing architectural
+hotspots. [Architecture maintenance](architecture-maintenance.md) owns ARCH-01–08, acceptance and completion evidence;
+the [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes it. Implementation has not started.
+Prioritize confirmed copy-feedback correctness and genuine wrapper cleanup; first structural candidates are COMM UI
+ownership and pure portal styling. Keep existing runtime/state-machine coordination and avoid arbitrary LOC targets.
+
+**Faster testing (2026-11-04):** user authorized the testing workflow improvements. Repeated 61-case benchmarks passed
+at 89.51 seconds with one worker and 48.80/47.83 seconds with two; local default is now two, CI retains one. A baseline
+failure exposed a search-test synchronization race; repeated-submit keyboard assertions now wait for the ready reply.
+Explicit `test:browser:reuse` / `package:reuse` and Android `IRIS_REUSE_WEB_BUILD=1` verify source/config/lock/environment
+and full output fingerprints before reusing assets. Defaults retain normal builds. Build metadata is ignored and
+excluded from shipped assets. See [the testing plan](comm-ui-testing.md) for measurements, guard tests and remaining
+fixture/visual/CI gaps. Root SKILL and browser/Android guides document the faster workflow. No commit/push requested.
+
 **COMM UI and testing follow-up (2026-11-04):** UI first, per user request. Filters use progressive disclosure for
 advanced fields/saved views and reuse existing Section/ControlRow/StatusText/Badge components. Portal activity adopts
 the portal disclosure skin, event cards and one portal scrollbar; selects retain native dropdown indicators.

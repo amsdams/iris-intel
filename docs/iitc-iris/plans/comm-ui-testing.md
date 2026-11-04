@@ -1,7 +1,8 @@
 # COMM UI And Testing Follow-up — 2026-11-04
 
 The user requested UI consistency first, with a note on test quality, setup and faster feedback. This is a scoped
-follow-up to [the COMM implementation](comm-review.md); test-infrastructure work below is planned, not implemented.
+follow-up to [the COMM implementation](comm-review.md). The subsequent user-authorized testing pass implements
+worker benchmarking and verified build reuse; the remaining coverage/CI proposals below stay planned.
 
 ## UI Investigation And Changes
 
@@ -46,6 +47,23 @@ The setup does **not** establish visual correctness, Firefox/WebView parity or l
 | Permissive endpoint defaults can hide missing mocks | Unhandled `/r/` calls return `{result:false}` and external requests get empty HTTP 200 responses. | Make feature fixture endpoints explicit, log unexpected RPC calls and fail on unhandled feature requests. Keep intentional tile/provider suppression explicit. |
 | Platform evidence is narrower than shipped targets | Default browser project is installed Chrome; the workbench only auto-discovers `src/ui`, not composed COMM panels. | Run focused Firefox coverage for native control/disclosure changes and retain a real Android smoke checklist. Add composed panel fixtures when needed for fast design work, rather than extending generic workbench props arbitrarily. |
 
+## Measured Timing And Workflow Findings
+
+The recent local logs put the 132 core tests at 0.41 seconds and 557 app tests at 1.48 seconds (Vitest wall time;
+these numbers exclude lint/typecheck/workbench work). The 61-case Chrome run takes about 90 seconds with one worker.
+Its largest groups are map entities (21.8 seconds summed case time), base maps (18.8) and four viewport-wide panel
+sweeps (14.8). The five new COMM usability cases contribute 4.3 seconds of case time; the focused command including
+build/startup takes about 8–10 seconds. Test-count growth is not the main cause of slow UI iteration.
+
+Browser runs, extension packaging and Android asset preparation each invoke a web build. Recent Vite phases take
+about 0.3 + 1.7 seconds, so avoiding redundant builds helps but is secondary to avoiding repeated 90-second suites.
+Android asset preparation already declares Gradle inputs/outputs; retain that incremental behavior. The previous
+iteration also spent time in unnecessary broad verification/package cycles and manual investigation, not just tests.
+
+CI gap: current `.github/workflows` run workspace checks/build/package/native checks, but do not invoke Playwright.
+A separate browser smoke job with an explicitly installed supported browser belongs in the testing follow-up. Do not
+assume local browser results are already enforced in CI. No workflow or worker configuration was changed in this audit.
+
 ## Faster Feedback Plan
 
 1. During UI edits run the relevant COMM browser file (currently about 8 seconds including build), plus affected lint
@@ -55,16 +73,18 @@ The setup does **not** establish visual correctness, Firefox/WebView parity or l
    focus, scrolling, persistence integration, message lifetimes and host CSS interactions.
 3. Stabilize fixture time, locale and viewport for any visual baselines. Reuse a fixture installed before navigation
    so reload cases exercise the same data. Avoid long sleeps; wait on a particular state or response.
-4. If rebuild time becomes material, consider an explicit build-once/test-existing-assets mode with freshness checks.
-   The default must still rebuild, so a fast command cannot silently test stale scripts. Do not run packaging/Android
-   concurrently against those outputs.
-5. Measure before raising worker count. Independent UI files could use a small worker pool; timing/performance probes
-   should remain isolated. Split synthetic performance checks from functional smoke if contention proves significant.
+4. Verified build reuse is implemented via explicit `test:browser:reuse` / `package:reuse` commands and
+   `IRIS_REUSE_WEB_BUILD=1` for Android. Defaults still build normally. Reuse rejects stale/missing/modified output;
+   test-only changes do not invalidate it. Keep browser/package/Android commands sequential.
+5. Two local workers passed repeated full-suite benchmarks and are now the local default; CI retains one worker.
+   Continue measuring before increasing concurrency. Use `--workers=1` for isolated timing/performance work.
 6. Package/sign only after the final successful checks and compare bundled assets once. Repeated full suites and APK
    rebuilds during layout iteration were avoidable overhead in the preceding task.
 
-The UI pass does not change Playwright projects, worker count, fixture infrastructure or test dependencies. Broader
-testing improvements remain the next engineering task after UI acceptance.
+The initial UI pass left test infrastructure unchanged. The subsequent testing pass changes local concurrency and
+adds safe build reuse, without changing dependencies or browser projects. Broader fixture/coverage/CI work remains
+separate. The search keyboard test now waits for a repeated search's ready response before navigating replacement
+rows: the one-worker baseline exposed this test race before concurrency changed. No automatic retries were added.
 
 ## UI Validation
 
@@ -73,3 +93,36 @@ Chrome browser cases pass after the shared disclosure/UI changes; five focused C
 final explanatory-text styling adjustment. Final typecheck, CSS lint and whitespace checks pass. Screenshots were
 reviewed for compact filters and expanded portal activity. These are fixture results; phone/live Intel acceptance
 remains pending. Build details are recorded in the roadmap.
+
+## Implemented Build Reuse
+
+`scripts/web-build.mjs` records hashes of production sources/assets, package and installed-dependency locks, TypeScript
+and Vite configuration, copied notices, build scripts, Node/platform and relevant build environment. Environment values
+are hashed, not stored. A successful build starts from a clean dist and is certified only if its inputs stayed unchanged.
+The stamp lives outside shipped assets. Verification compares the complete output inventory and hashes, catching missing,
+modified and extra files. Failed builds invalidate prior certification. Node tests protect these rejection paths.
+
+Default browser/package/Android commands retain normal build behavior. Explicit reuse commands verify before proceeding;
+Android also verifies before Gradle so an up-to-date native task cannot bypass the freshness check. Gradle inputs now
+include previously omitted manifest/notices/configuration and the shared build helper. No signing changes or new APK
+are needed for this tooling-only change. CI browser execution remains a separate pending improvement.
+
+## Worker Benchmark Results
+
+On the same local machine, with the corrected search test and verified build reuse:
+
+| Workers | Full suite | Elapsed command time |
+| --- | --- | --- |
+| 1 | 61 passed | 89.51 s |
+| 2, first run | 61 passed | 48.80 s |
+| 2, second run | 61 passed | 47.83 s |
+
+Two workers saved about 46% here, with map timing/gesture cases still passing. They are the local default; CI remains
+at one worker until measured there. The earlier, discarded one-worker run took 99.41 s with 60 passing and the search
+keyboard failure; it is not used as the speedup baseline. No retries were enabled to obtain these results.
+
+Validation: `npm run check` passes (689 app/core tests plus release/build gates), and the final standalone build-guard
+suite passes all 18 cases. Full browser benchmark runs pass 61 cases; the final focused COMM/search reuse run passes
+11. Normal build/package and verified reuse packaging pass. A stale package attempt fails before touching existing
+archives. Android debug tests/lint/build pass with reuse and without invoking Vite. Packaged files match dist; all
+22 shared assets still match the existing signed APK, so it was not rebuilt. Changes remain uncommitted.

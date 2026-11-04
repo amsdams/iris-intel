@@ -4,7 +4,7 @@ import {dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const build = spawnSync('npm', ['run', 'build', '-w', 'apps/iitc-iris'], {cwd: root, stdio: 'inherit'});
+const build = spawnSync(process.execPath, ['scripts/web-build.mjs', process.env.IRIS_REUSE_WEB_BUILD === '1' ? 'verify' : 'build'], {cwd: root, stdio: 'inherit'});
 if (build.status !== 0) process.exit(build.status ?? 1);
 const source = join(root, 'apps/iitc-iris/dist');
 const output = join(root, 'apps/android-intel-spike/app/build/generated/iris-assets/iris');

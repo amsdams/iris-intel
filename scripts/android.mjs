@@ -1,4 +1,5 @@
 import {spawn, spawnSync} from 'node:child_process';
+import {verifyWebBuild} from './web-build.mjs';
 import {existsSync} from 'node:fs';
 import {homedir} from 'node:os';
 import {dirname, join, resolve} from 'node:path';
@@ -31,6 +32,7 @@ if (release) {
   buildEnv.IRIS_ANDROID_VERSION_CODE ||= String(1000 + Number(gitValue(['rev-list', '--count', 'HEAD'])));
   buildEnv.IRIS_ANDROID_BUILD_SHA ||= gitValue(['rev-parse', '--short=7', 'HEAD']);
 }
+if (process.env.IRIS_REUSE_WEB_BUILD === '1') verifyWebBuild(root);
 const child = spawn(join(project, 'gradlew'), ['--no-daemon', '--console=plain', ...args], {
   cwd: project, stdio: 'inherit',
   env: buildEnv,

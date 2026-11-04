@@ -54,7 +54,18 @@ def prepareIrisAssets = tasks.register('prepareIrisAssets', Exec) {
     inputs.files fileTree(new File(repositoryRoot, 'apps/iitc-iris/src'))
     inputs.files fileTree(new File(repositoryRoot, 'apps/iitc-iris/assets'))
     inputs.files fileTree(new File(repositoryRoot, 'packages/iitc-core/src'))
-    inputs.files new File(repositoryRoot, 'package-lock.json'),
+    inputs.property 'reuseWebBuild', System.getenv('IRIS_REUSE_WEB_BUILD') ?: '0'
+    inputs.files new File(repositoryRoot, 'package.json'),
+            new File(repositoryRoot, 'package-lock.json'),
+            new File(repositoryRoot, 'node_modules/.package-lock.json'),
+            new File(repositoryRoot, 'tsconfig.json'),
+            new File(repositoryRoot, 'apps/iitc-iris/tsconfig.json'),
+            new File(repositoryRoot, 'packages/iitc-core/tsconfig.json'),
+            new File(repositoryRoot, 'LICENSE'),
+            new File(repositoryRoot, 'CREDITS.md'),
+            new File(repositoryRoot, 'packages/iitc-core/package.json'),
+            new File(repositoryRoot, 'apps/iitc-iris/manifest.json'),
+            new File(repositoryRoot, 'scripts/web-build.mjs'),
             new File(repositoryRoot, 'apps/iitc-iris/package.json'),
             new File(repositoryRoot, 'apps/iitc-iris/vite.config.ts'),
             new File(repositoryRoot, 'apps/iitc-iris/vite.page-map.config.ts'),

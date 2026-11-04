@@ -10,6 +10,8 @@
 | [APK plan](iitc-iris/plans/android-apk-installable-plan.md) | Android feasibility proofs and implementation readiness. |
 | [Privacy policy source](../site/privacy/index.html) | Public policy for Android/extensions, hosted through the Pages workflow. |
 | [Facade pattern](iitc-iris/facade-pattern.md) | Selective extraction of pure IITC-shaped domain contracts. |
+| [Architecture review](iitc-iris/plans/arch-review.md) | High-LOC hotspots, maintainability findings, and domain separation review. |
+| [Architecture maintenance plan](iitc-iris/plans/architecture-maintenance.md) | Validated review follow-ups, extraction boundaries, acceptance checks, and progress. |
 | [Payload samples](iitc-iris/fixtures/README.md) | Retained reference samples and capture policy. |
 
 Feature notes under `iitc-iris/features/` retain implemented behavior, IITC source references, deliberate limitations,

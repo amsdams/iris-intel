@@ -15,6 +15,12 @@ async function expectView(page, lat, lng, zoom = 15) {
 }
 
 test.beforeEach(async ({page}) => {
+  await page.addInitScript(() => {
+    window.completedSearches = 0;
+    window.addEventListener('message', ({data}) => {
+      if (data.type === 'IITC_IRIS_SEARCH_STATUS' && data.search?.status === 'ready') window.completedSearches += 1;
+    });
+  });
   await page.route('**/*', route => {
     const url = new URL(route.request().url());
     if (url.origin === 'http://127.0.0.1:6973') return route.continue();
@@ -62,7 +68,11 @@ test('Enter submits even with local results; arrows focus rows and activation na
 
   // Shift no longer selects a different navigation action.
   await input.focus();
+  const completedSearches = await page.evaluate(() => window.completedSearches);
   await input.press('Shift+Enter');
+  // A repeat submit temporarily replaces online rows with local rows; navigate after its reply.
+  await expect.poll(() => page.evaluate(() => window.completedSearches)).toBeGreaterThan(completedSearches);
+  await expect(results(page)).toHaveCount(2);
   await expect(input).toBeFocused();
   await input.press('ArrowUp');
   await expect(results(page).last()).toBeFocused();

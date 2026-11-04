@@ -30,6 +30,10 @@ npm run serve
 Gradle builds the existing web bundles and packages their scripts, CSS, images, and licenses from generated output.
 Node 24 and `npm ci` are prerequisites; no generated web files are committed.
 For subsequent build-only runs, use `npm run android:build`.
+If a web build has already passed browser checks, `IRIS_REUSE_WEB_BUILD=1 npm run android:check` (or `android:release`
+with signing configured) verifies and copies those assets instead of rebuilding them. Stale/missing/modified web
+outputs fail with a rebuild instruction. Normal commands retain the existing Gradle incremental build behavior.
+Run browser tests, packaging and Android builds sequentially; see the root `SKILL.md`.
 
 The server prints a phone URL (port 6969 by default; set `PORT` to override). Connect the phone to the same Wi-Fi as the Mac, open that URL, download the APK, and
 allow installation from the browser when Android asks. If macOS asks about incoming connections, allow this local server.

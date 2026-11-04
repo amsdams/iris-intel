@@ -3,7 +3,8 @@ import {defineConfig} from '@playwright/test';
 export default defineConfig({
   testDir: './tests/browser',
   testMatch: '**/*.smoke.mjs',
-  workers: 1,
+  // Two local workers passed repeated full-suite benchmarks; CI remains conservative.
+  workers: process.env.CI ? 1 : 2,
   forbidOnly: Boolean(process.env.CI),
   reporter: [['list'], ['html', {open: 'never'}]],
   use: {
@@ -15,7 +16,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'npm run build -w apps/iitc-iris && node tests/browser/server.mjs',
+    command: `node scripts/web-build.mjs ${process.env.IRIS_REUSE_WEB_BUILD === '1' ? 'verify' : 'build'} && node tests/browser/server.mjs`,
     url: 'http://127.0.0.1:6973',
     timeout: 60_000,
     reuseExistingServer: false,

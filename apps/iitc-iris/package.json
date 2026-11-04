@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite build --watch",
     "dev:wb": "vite wb --open",
-    "build": "vite build && vite build --config vite.page-map.config.ts && node copy-assets.cjs",
+    "build": "node ../../scripts/web-build.mjs build",
     "package": "npm run build && node build-zip.cjs",
     "package:chrome": "npm run build && node build-zip.cjs chrome",
     "package:firefox": "npm run build && node build-zip.cjs firefox",
@@ -16,7 +16,8 @@
     "test": "vitest run --passWithNoTests",
     "lint": "eslint src wb",
     "lint:fix": "eslint src wb --fix",
-    "build:wb": "vite build wb"
+    "build:wb": "vite build wb",
+    "package:reuse": "node ../../scripts/web-build.mjs verify && node build-zip.cjs"
   },
   "dependencies": {
     "@iris/iitc-core": "*",

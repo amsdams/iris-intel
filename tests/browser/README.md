@@ -9,6 +9,30 @@ npm run test:browser:watch   # Visible browser, slowed down so you can follow al
 npm run test:browser:report  # Open the last HTML report, with steps and screenshots
 ```
 
+For focused iteration, pass the relevant file, for example:
+
+```sh
+npm run test:browser -- tests/browser/comm-usability.smoke.mjs
+```
+
+Local runs use two workers; CI uses one. Use `--workers=1` for an isolated timing investigation. Two local workers
+passed repeated 61-case runs at about 48 seconds, versus about 90 seconds with one (machine-specific measurements).
+
+After a normal browser run or `npm run build -w apps/iitc-iris`, reuse that build for subsequent runs and packaging:
+
+```sh
+npm run test:browser:reuse -- tests/browser/comm-usability.smoke.mjs
+npm run package:reuse
+```
+
+Reuse checks source/configuration/dependency-lock fingerprints and every output file, rejecting changed, missing or
+extra assets. A stale build fails with a rebuild instruction; it is never silently reused. Test-only edits do not
+invalidate compiled assets. The stamp lives in ignored `apps/iitc-iris/build/web-build.json`, outside shipped assets.
+Normal `test:browser` and `package` still build. Keep browser/package/Android commands sequential.
+
+Follow the [repository validation workflow](../../SKILL.md) for final checks and artifact builds. Measurements,
+remaining coverage gaps and CI follow-ups are in the [testing plan](../../docs/iitc-iris/plans/comm-ui-testing.md).
+
 For interactive stepping and rerunning individual tests, use `npm run test:browser -- --ui`.
 These are standard [Playwright commands](https://playwright.dev/docs/test-cli).
 
