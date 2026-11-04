@@ -19,6 +19,7 @@ export const IITC_IRIS_MESSAGES = {
   clearPortalSelection: 'IITC_IRIS_CLEAR_PORTAL_SELECTION',
   mapContext: 'IITC_IRIS_MAP_CONTEXT',
   requestComm: 'IITC_IRIS_REQUEST_COMM',
+  commVisibility: 'IITC_IRIS_COMM_VISIBILITY',
   cancelPanelRequests: 'IITC_IRIS_CANCEL_PANEL_REQUESTS',
   sendComm: 'IITC_IRIS_SEND_COMM',
   commStatus: 'IITC_IRIS_COMM_STATUS',
@@ -167,6 +168,7 @@ export interface IitcIrisMessage {
   userLng?: number;
   userAccuracy?: number;
   commTab?: IitcIrisCommTab;
+  commVisible?: boolean;
   commOlder?: boolean;
   commMessage?: string;
   passcodeText?: string;

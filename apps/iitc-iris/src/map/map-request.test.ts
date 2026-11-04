@@ -32,13 +32,13 @@ interface Harness {
   replaceMap: () => void;
 }
 
-function setup(iitcMovementDelay = false, span = .00001): Harness {
+function setup(iitcMovementDelay = false, span = .00001, zoom = 16, isIdle = (): boolean => false): Harness {
   let center = {lat: 52.3730796, lng: 4.8924534};
   let source: IitcIrisDataSourceSettings = {mode: 'live'};
   let entities: IitcIrisRenderEntities | undefined;
   const map = {
     on: vi.fn(), off: vi.fn(), remove: vi.fn(),
-    getCenter: (): {lat: number; lng: number} => center, getZoom: (): number => 16,
+    getCenter: (): {lat: number; lng: number} => center, getZoom: (): number => zoom,
     getBounds: (): {getSouth: () => number; getNorth: () => number; getWest: () => number; getEast: () => number} => ({getSouth: (): number => center.lat - span, getNorth: (): number => center.lat + span,
       getWest: (): number => center.lng - span, getEast: (): number => center.lng + span}),
   };
@@ -51,7 +51,7 @@ function setup(iitcMovementDelay = false, span = .00001): Harness {
   const runtime = createMapRequest({
     getMap: () => map as unknown as LeafletMap, getLifetime: () => lifetime,
     getDataSource: () => source, getLifecycleSettings: () => ({iitcMovementDelay}),
-    isAuthRecoveryActive: () => false, getEntities: () => entities, portalHistoryByGuid: new Map(),
+    isAuthRecoveryActive: () => false, isIdle, getEntities: () => entities, portalHistoryByGuid: new Map(),
     fetchIitcEndpointText: fetchEndpoint, renderEntities, renderTileDebug: vi.fn(), clearAllRenderedLayers: clearAll,
     postEntityStatus: postStatus, recordStaleGenerationCacheWarmTileKeys: vi.fn(),
   });
@@ -117,6 +117,49 @@ describe('map request coordination', () => {
     const delivered = new Set(batches.flatMap(batch => batch.tiles));
     expect(delivered.size).toBe(test.runtime.getSnapshot().plan?.tileKeys.length);
     expect(test.postStatus.mock.lastCall?.[0]).toBe('entities ready');
+  });
+
+  for (const [zoom, interval] of [[16, 300_000], [12, 900_000]]) {
+    it(`refreshes stationary zoom ${zoom} after ${interval} ms without losing the same-tile request`, async () => {
+      const test = setup(false, .00001, zoom);
+      await test.runtime.refreshEntities();
+      const before = test.entityCalls().length;
+      await vi.advanceTimersByTimeAsync(interval - 1);
+      expect(test.entityCalls()).toHaveLength(before);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(test.entityCalls().length).toBeGreaterThan(before);
+      test.lifetime().dispose();
+      expect(vi.getTimerCount()).toBe(0);
+    });
+  }
+
+  it('pauses periodic refresh while idle and resumes after the reference delay', async () => {
+    let idle = false;
+    const test = setup(false, .00001, 16, () => idle);
+    await test.runtime.refreshEntities();
+    idle = true;
+    await vi.advanceTimersByTimeAsync(300_000);
+    expect(test.entityCalls()).toHaveLength(1);
+    idle = false;
+    test.runtime.resumeRefresh();
+    await vi.advanceTimersByTimeAsync(4999);
+    expect(test.entityCalls()).toHaveLength(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(test.entityCalls()).toHaveLength(2);
+  });
+
+  it('cancels a periodic deadline during movement and does not refresh fixture data periodically', async () => {
+    const test = setup();
+    await test.runtime.refreshEntities();
+    test.runtime.mapMoveStart();
+    await vi.advanceTimersByTimeAsync(300_000);
+    expect(test.entityCalls()).toHaveLength(1);
+    test.setSource({mode: 'fixture', id: 'static', label: 'static', url: '/fixture.json'});
+    vi.spyOn(test.lifetime(), 'fetchText').mockResolvedValue(textResponse(success(['fixture'])));
+    test.runtime.mapMoveEnd();
+    await test.runtime.refreshEntities();
+    await vi.advanceTimersByTimeAsync(900_000);
+    expect(test.lifetime().fetchText).toHaveBeenCalledOnce();
   });
 
   it('retries TIMEOUT tiles immediately and preserves recovery diagnostics', async () => {

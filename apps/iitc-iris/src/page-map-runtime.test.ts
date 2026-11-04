@@ -84,6 +84,7 @@ describe('page runtime map replacement', () => {
     });
     vi.stubGlobal('window', page);
     vi.stubGlobal('document', {
+      addEventListener: vi.fn(), removeEventListener: vi.fn(), hidden: false,
       get cookie(): string { return 'csrftoken=test'; },
       set cookie(_value: string) { /* Browser cookie assignments retain the CSRF cookie. */ },
       currentScript: null,

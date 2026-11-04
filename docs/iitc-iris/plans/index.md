@@ -14,6 +14,26 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**Feature branch testing (2026-11-04):** the user requested `feat/comm-map-freshness`, commit/push of the changes,
+and the local download page for an extended APK test. Keep this work on the feature branch while gathering feedback;
+Play Store/closed testing remain deferred. The initial artifact checkpoint below predates the feature commit;
+the download page shows the version of any APK rebuilt after committing. Live phone/Intel acceptance remains pending.
+
+**COMM / Player Tracker freshness (2026-11-04):** implemented the three user-authorized parity fixes after reproducing
+the moving-agent/stale-portal report. Authoritative map tiles refresh at IITC's 5/15-minute minimum cadence (or twice
+fetch duration), independently of COMM. Local public/faction buffers reset after material area changes; late old-area
+responses are rejected. COMM now owns one interested-channel poller shared by the visible panel and Player Tracker,
+using IITC's 30-second base plus zoom adjustment and 10-second override floor. Existing tracker history is retained.
+An additive visibility message also stops panel polling when switching to another side panel and restores interest
+after map replacement. Hidden/15-minute-idle pages suspend automatic requests; activity resumes map work after 5 seconds.
+Five new browser cases cover stationary faction/link/field changes, shared/publication/channel polling, new-area history,
+scroll preservation, hidden panels and visibility resume. See the [investigation](comm-map-refresh-investigation.md)
+and [port checkpoint](../port-plan.md#comm-and-map-freshness-parity-pass--2026-11-04). Live Intel comparison and phone
+background/resume/COMM acceptance remain pending; synthetic browser evidence does not establish them.
+Validation passes: 677 app/core tests plus six release gates, all 56 Chrome cases, extension packaging and signed
+Android release tests/lint/build. All 22 bundled web assets match APK/XPI/ZIP; the APK signature matches the release pin.
+XPI/ZIP: `2026-11-04T14-42-10`; APK: `0.4.1-alpha+556bc58` (1858). Artifacts include the uncommitted working tree.
+
 **Search navigation (2026-11-04):** confirmed and fixed the search-during-zoom race. The latest selection waits for
 the active zoom to finish and then navigates on an animation frame; intermediate selections coalesce. Public Leaflet
 events are bound to each map lifetime, with queued selection cancellation on Clear or map disposal/replacement.

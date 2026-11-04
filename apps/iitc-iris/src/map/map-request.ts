@@ -17,6 +17,7 @@ import {
   getIitcRecoveredTileKeys,
   getIitcPortalArtifacts,
   IitcDataCache,
+  getIitcMapRefreshDelayMs,
   markIitcTileQueueComplete,
   markIitcTileQueueStale,
   markIitcTileRequestStarted,
@@ -85,6 +86,7 @@ interface MapRequestOptions {
   getDataSource: () => IitcIrisDataSourceSettings;
   getLifecycleSettings: () => IitcIrisLifecycleSettings;
   isAuthRecoveryActive: () => boolean;
+  isIdle?: () => boolean;
   getEntities: () => IitcIrisRenderEntities | undefined;
   portalHistoryByGuid: Map<string, NonNullable<IitcIrisRenderPortal['history']>>;
   fetchIitcEndpointText: IntelRequest['fetchIitcEndpointText'];
@@ -106,6 +108,7 @@ interface MapRequest {
   scheduleEntityRefresh: (delayMs?: number) => void;
   cancelActiveEntityFetch: () => void;
   cancelScheduledRefresh: () => void;
+  resumeRefresh: () => void;
   getMoveRefreshDelayMs: () => number;
   mapMoveStart: () => void;
   mapMoveEnd: () => void;
@@ -116,7 +119,7 @@ interface MapRequest {
 
 /** Coordinate existing IITC-shaped cache, tile/refill/render queues and generation ownership. */
 export function createMapRequest({
-  getMap, getLifetime, getDataSource, getLifecycleSettings, isAuthRecoveryActive, getEntities, portalHistoryByGuid,
+  getMap, getLifetime, getDataSource, getLifecycleSettings, isAuthRecoveryActive, isIdle = (): boolean => false, getEntities, portalHistoryByGuid,
   fetchIitcEndpointText, renderEntities, renderTileDebug, clearAllRenderedLayers, postEntityStatus,
   recordStaleGenerationCacheWarmTileKeys,
 }: MapRequestOptions): MapRequest {
@@ -128,6 +131,7 @@ export function createMapRequest({
   let activeMapDataRefreshBridge: ActiveMapDataRefreshBridge | undefined;
   const mapDataCache = new IitcDataCache<IitcMapTilePayload>();
   let refreshTimer: number | undefined;
+  let periodicTimer: number | undefined;
   let mapMoveInProgress = false;
   let currentFetchAbortController: AbortController | undefined;
   interface TileBatchResult {
@@ -491,6 +495,7 @@ export function createMapRequest({
   function scheduleEntityRefresh(delayMs = FAST_MOVE_REFRESH_DELAY_MS): void {
     const dataSource = getDataSource();
     getLifetime()?.cancelScheduled(refreshTimer);
+    getLifetime()?.cancelScheduled(periodicTimer);
     if (isAuthRecoveryActive() && dataSource.mode === 'live') return;
     refreshTimer = getLifetime()?.schedule(() => {
       void refreshEntities();
@@ -502,6 +507,7 @@ export function createMapRequest({
     const refreshStartTime = performance.now();
     let generation = latestFetchGeneration;
     let abortController: AbortController | undefined;
+    let authError = false;
     try {
       const plan = createPlanFromMap();
       if (!plan || plan.tileKeys.length === 0) return;
@@ -867,6 +873,7 @@ export function createMapRequest({
       if (activeMapDataRefreshBridge?.generation === generation) activeMapDataRefreshBridge = undefined;
       if (currentFetchAbortController === abortController) currentFetchAbortController = undefined;
     } catch (error) {
+      authError = isIitcAuthError(error);
       if (generation !== latestFetchGeneration || (error instanceof DOMException && error.name === 'AbortError')) {
         if (activeMapDataRefreshBridge?.generation === generation) activeMapDataRefreshBridge = undefined;
         if (currentFetchAbortController === abortController) currentFetchAbortController = undefined;
@@ -877,18 +884,39 @@ export function createMapRequest({
       latestRequestKey = '';
       clearAllRenderedLayers();
       postEntityStatus(error instanceof Error ? error.message : String(error));
+    } finally {
+      const lifetime = getLifetime();
+      if (generation === latestFetchGeneration && dataSource.mode === 'live' && !mapMoveInProgress && !currentFetchAbortController && !authError &&
+        lifetime && !lifetime.signal.aborted && !isAuthRecoveryActive()) {
+        lifetime.cancelScheduled(periodicTimer);
+        periodicTimer = lifetime.schedule(() => {
+          periodicTimer = undefined;
+          if (isIdle() || isAuthRecoveryActive() || mapMoveInProgress) return;
+          latestRequestKey = '';
+          void refreshEntities();
+        }, getIitcMapRefreshDelayMs(getMap()?.getZoom() ?? 11, performance.now() - refreshStartTime));
+      }
     }
   }
 
   return {
     refreshEntities, scheduleEntityRefresh, cancelActiveEntityFetch, getMoveRefreshDelayMs,
-    cancelScheduledRefresh: (): void => { getLifetime()?.cancelScheduled(refreshTimer); },
+    cancelScheduledRefresh: (): void => {
+      getLifetime()?.cancelScheduled(refreshTimer);
+      getLifetime()?.cancelScheduled(periodicTimer);
+    },
+    resumeRefresh: (): void => {
+      if (getDataSource().mode !== 'live' || isAuthRecoveryActive() || currentFetchAbortController) return;
+      latestRequestKey = '';
+      scheduleEntityRefresh(5000);
+    },
     mapMoveStart: (): void => {
       mapMoveInProgress = true;
       latestFetchGeneration += 1;
       latestRequestKey = '';
       latestWantedTileKeys = new Set();
       getLifetime()?.cancelScheduled(refreshTimer);
+      getLifetime()?.cancelScheduled(periodicTimer);
     },
     mapMoveEnd: (): void => {
       mapMoveInProgress = false;
@@ -896,17 +924,20 @@ export function createMapRequest({
       latestRequestKey = '';
     },
     resetForDataSourceChange: (): void => {
+      getLifetime()?.cancelScheduled(periodicTimer);
       latestFetchGeneration += 1;
       latestRequestKey = '';
       cancelActiveEntityFetch();
     },
     dispose: (): void => {
+      getLifetime()?.cancelScheduled(periodicTimer);
       cancelActiveEntityFetch();
       latestFetchGeneration += 1;
       latestRequestKey = '';
       latestWantedTileKeys.clear();
       activeMapDataRefreshBridge = undefined;
       refreshTimer = undefined;
+      periodicTimer = undefined;
       mapMoveInProgress = false;
       latestPlan = undefined;
       latestResponse = undefined;

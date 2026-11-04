@@ -115,6 +115,19 @@ response with wait guidance, HTTP failure feedback and retention of previously l
 The COMM case covers channel changes, older-history continuation, disabled Alerts input and simulated sending.
 All network responses are local fixtures; no live messages are sent.
 
+[comm-freshness.smoke.mjs](comm-freshness.smoke.mjs) advances controlled clocks through periodic authoritative map
+refresh, verifying changed portal faction and removed links/fields after a COMM-driven player move. It also covers
+new-area history older than the previous cursor, shared public panel/tracker polling, active faction/alerts polling,
+reader scroll retention, stopping hidden-panel interest and hidden-page resume. Fixtures use simulated responses
+through the real request path; these are not live Intel timing or Android background acceptance.
+
+`node tests/browser/investigate-comm-map.mjs` is a standalone diagnostic for the
+[2026-11-04 COMM/map freshness investigation](../../docs/iitc-iris/plans/comm-map-refresh-investigation.md).
+Build the app and start `node tests/browser/server.mjs` first, as for the performance probe above. It prints portal/
+link/field, player-marker, request-count and published COMM snapshots using simulated endpoints and advanced clocks.
+It asserts the initial/final authoritative fixture states and reports the intervening defects; it is not part of the
+regular suite and does not encode those defects as desired regression behavior.
+
 [map-features.smoke.mjs](map-features.smoke.mjs) checks live mission list/detail requests with simulated responses,
 persistent detail-cache reuse after map replacement, and COMM-driven grouped player markers: list/history/back navigation,
 faction filtering and history retention across replacement. It exercises real Leaflet markers and popup DOM.

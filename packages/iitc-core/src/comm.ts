@@ -64,6 +64,23 @@ export interface IitcCommBounds {
   maxLngE6: number;
 }
 
+/** IITC comm._genPostData: both padded boxes must contain the other box. */
+export function hasIitcCommBoundsChanged(previous: IitcCommBounds, next: IitcCommBounds): boolean {
+  const contains = (outer: IitcCommBounds, inner: IitcCommBounds): boolean => {
+    const latPad = (outer.maxLatE6 - outer.minLatE6) * 0.1;
+    const lngPad = (outer.maxLngE6 - outer.minLngE6) * 0.1;
+    return outer.minLatE6 - latPad <= inner.minLatE6 && outer.maxLatE6 + latPad >= inner.maxLatE6 &&
+      outer.minLngE6 - lngPad <= inner.minLngE6 && outer.maxLngE6 + lngPad >= inner.maxLngE6;
+  };
+  return !contains(previous, next) || !contains(next, previous);
+}
+
+/** IITC request_handling.js: REFRESH plus the zoom-level adjustment. */
+export function getIitcCommRefreshDelayMs(zoom: number): number {
+  return (30 + Math.max(0, 5 * (18 - zoom))) * 1000;
+}
+
+
 export interface IitcCommChannelData {
   data: Record<string, IitcCommMessage>;
   guids: string[];

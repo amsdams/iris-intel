@@ -133,7 +133,7 @@ CSRF/version/auth helpers, lifetime-bound endpoint transport and the shared JSON
 
 `map/missions/missions-runtime.ts` owns mission list/detail requests, status, persistent caches and cancellation,
 using `mission-overlay.ts` for geometry/navigation. `map/player-tracker/player-tracker-runtime.ts` owns player history/deduplication,
-marker/trace rendering, grouped popups and refresh scheduling/cancellation. Shared COMM channel data is owned by `comm/comm-runtime.ts`; authenticated
+marker/trace rendering and grouped popups. Shared COMM data, polling and cancellation are owned by `comm/comm-runtime.ts`; authenticated
 transport is supplied by the page coordinator. Both feature instances survive map replacement: mission caches/player history
 remain available while old requests, timers and markers are cleared.
 
@@ -145,10 +145,20 @@ Completed inventory/subscription state remains available across map replacement.
 and composition in `page-map-runtime.ts`; no generic plugin/controller framework is required.
 
 `comm/comm-runtime.ts` owns channel buffers, status/preview conversion, fetch/send requests and fetch cancellation.
-Player Tracker polls through its explicit public-channel request/response seam, sharing the same buffer without
-publishing panel status. Public panel refreshes still update Player Tracker. Channel buffers survive map replacement;
-fetch cancellation and map-lifetime send guards retain their existing behavior. UI COMM state/scroll coordination
-in `content.tsx` remains a separate concern.
+COMM owns interested-channel polling for the visible panel and enabled Player Tracker, using one shared public
+request and publishing accepted public responses to both consumers. Player Tracker owns history/markers, not transport
+or a separate poll timer. Local public/faction buffers and request cursors are tied to a mutually padded bounds area;
+material changes reset them and reject old-area replies, while alerts and tracker history retain their own lifetimes.
+`IITC_IRIS_COMM_VISIBILITY` explicitly synchronizes panel interest on navigation and page readiness, including switches
+between side panels. Existing request/status payloads and stored keys are preserved. UI COMM state/scroll coordination
+in `content.tsx` remains separate. Pending sends survive panel closure but cannot switch the selected channel on completion.
+
+Map requests schedule an authoritative refresh after completion: at least 5 minutes above zoom 12 and 15 minutes
+otherwise, or twice the fetch duration. Periodic refresh permits the same tile plan without bypassing the cache;
+movement/auth/disposal cancel its timer. `map/map-refresh-activity.ts` owns map-lifetime activity/visibility listeners:
+automatic map/COMM work pauses while hidden or after 15 minutes without input; resume schedules map work after 5 seconds.
+Immediate hidden-page suspension deliberately replaces IITC's short hidden idle grace period. Explicit user requests
+remain available. COMM does not reconstruct authoritative portal/link/field state.
 
 `map/map-selection-runtime.ts` owns selected portal/object state, selection overlays, portal-link navigation and
 pending selection resolution. `portals/portal-details-runtime.ts` owns detail fetching/status and its twelve-entry

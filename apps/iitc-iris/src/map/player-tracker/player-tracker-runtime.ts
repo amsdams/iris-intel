@@ -5,17 +5,12 @@ import {applyIitcPlayerTrackerCommMessages, getIitcPlayerTrackerDiagnostics, get
   IITC_PLAYER_TRACKER_LINE_COLOR, IITC_PLAYER_TRACKER_MAX_DISPLAY_EVENTS, IITC_PLAYER_TRACKER_MAX_TIME,
   IITC_PLAYER_TRACKER_MIN_ZOOM, type IitcCommMessage, type IitcPlayerTrackerDiagnostics, type IitcPlayerTrackerStored} from '@iris/iitc-core';
 import type {IitcIrisLayerSettings, IitcIrisRenderPortal} from '../../messages';
-import type {IitcIrisMapLifetime} from '../map-runtime-lifetime';
 import {createPlayerTrackerMarkers, type PlayerTrackerMarkerGroup} from './player-tracker-markers';
 import {createPlayerTrackerGroupPopup} from './player-tracker-group-popup';
 
 interface PlayerTrackerRuntimeOptions {
   getMap: () => LeafletMap | undefined;
-  getLifetime: () => IitcIrisMapLifetime | undefined;
   getLayerSettings: () => IitcIrisLayerSettings;
-  isAuthRecoveryActive: () => boolean;
-  getCommRequest: () => ((signal: AbortSignal) => Promise<unknown>) | undefined;
-  applyCommResponse: (response: unknown) => IitcCommMessage[];
   clearLayers: () => void;
   addLayer: (layer: LeafletLayer) => void;
   repostLatestEntityStatus: () => void;
@@ -28,14 +23,11 @@ interface PlayerTrackerRuntimeOptions {
 interface PlayerTrackerRuntime {
   renderPlayerTracker: () => void;
   processPlayerTrackerCommMessages: (messages: IitcCommMessage[]) => void;
-  schedulePlayerTrackerRefresh: (delayMs?: number) => void;
-  clearPlayerTrackerRefreshTimer: () => void;
   getDiagnostics: () => IitcPlayerTrackerDiagnostics;
   clearMarkers: () => void;
   dispose: () => void;
 }
 
-const PLAYER_TRACKER_COMM_REFRESH_MS = 120_000;
 const PLAYER_TRACKER_MARKER_ICON_OPTIONS = {
   iconSize: [25, 41] as [number, number],
   iconAnchor: [12, 41] as [number, number],
@@ -48,8 +40,6 @@ export function createPlayerTrackerRuntime(options: PlayerTrackerRuntimeOptions)
   let playerTrackerStored: IitcPlayerTrackerStored = {};
   let playerTrackerLatestCommTime: number | null = null;
   let playerTrackerDiagnostics: IitcPlayerTrackerDiagnostics = getIitcPlayerTrackerDiagnostics(playerTrackerStored);
-  let playerTrackerRefreshTimer: number | undefined;
-  let currentPlayerTrackerCommAbortController: AbortController | undefined;
   const playerTrackerProcessedCommGuids = new Set<string>();
   const playerTrackerMarkers = createPlayerTrackerMarkers({
     createMarker: (group, now) => {
@@ -263,32 +253,6 @@ export function createPlayerTrackerRuntime(options: PlayerTrackerRuntimeOptions)
     });
   }
 
-  function cancelActivePlayerTrackerFetch(): void {
-    currentPlayerTrackerCommAbortController?.abort();
-    currentPlayerTrackerCommAbortController = undefined;
-  }
-
-  function clearPlayerTrackerRefreshTimer(): void {
-    if (playerTrackerRefreshTimer !== undefined) {
-      options.getLifetime()?.cancelScheduled(playerTrackerRefreshTimer);
-      playerTrackerRefreshTimer = undefined;
-    }
-  }
-
-  function schedulePlayerTrackerRefresh(delayMs = 250): void {
-    clearPlayerTrackerRefreshTimer();
-    if (options.isAuthRecoveryActive()) return;
-    if (!isPlayerTrackerVisible()) {
-      cancelActivePlayerTrackerFetch();
-      renderPlayerTracker();
-      return;
-    }
-    playerTrackerRefreshTimer = options.getLifetime()?.schedule(() => {
-      playerTrackerRefreshTimer = undefined;
-      void refreshPlayerTrackerComm();
-    }, delayMs);
-  }
-
   function processPlayerTrackerCommMessages(messages: IitcCommMessage[]): void {
     const result = applyIitcPlayerTrackerCommMessages({
       messages,
@@ -302,46 +266,11 @@ export function createPlayerTrackerRuntime(options: PlayerTrackerRuntimeOptions)
     playerTrackerLatestCommTime = result.latestCommTime;
   }
 
-  async function refreshPlayerTrackerComm(): Promise<void> {
-    if (!isPlayerTrackerVisible()) {
-      renderPlayerTracker();
-      return;
-    }
-    cancelActivePlayerTrackerFetch();
-    const request = options.getCommRequest();
-    if (!request) {
-      renderPlayerTracker();
-      return;
-    }
-
-    const abortController = new AbortController();
-    currentPlayerTrackerCommAbortController = abortController;
-
-    try {
-      const response = await request(abortController.signal);
-      abortController.signal.throwIfAborted();
-      const messages = options.applyCommResponse(response);
-      processPlayerTrackerCommMessages(messages);
-      renderPlayerTracker();
-    } catch (error) {
-      if (!(error instanceof DOMException && error.name === 'AbortError')) {
-        renderPlayerTracker();
-      }
-    } finally {
-      if (currentPlayerTrackerCommAbortController === abortController) {
-        currentPlayerTrackerCommAbortController = undefined;
-        if (isPlayerTrackerVisible()) schedulePlayerTrackerRefresh(PLAYER_TRACKER_COMM_REFRESH_MS);
-      }
-    }
-  }
-
   return {
-    renderPlayerTracker, processPlayerTrackerCommMessages, schedulePlayerTrackerRefresh, clearPlayerTrackerRefreshTimer,
+    renderPlayerTracker, processPlayerTrackerCommMessages,
     getDiagnostics: () => playerTrackerDiagnostics,
     clearMarkers: () => playerTrackerMarkers.clear(),
     dispose: (): void => {
-      cancelActivePlayerTrackerFetch();
-      clearPlayerTrackerRefreshTimer();
       playerTrackerMarkers.clear();
     },
   };

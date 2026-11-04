@@ -4,11 +4,23 @@ Map lifecycle is the highest-risk part of the port. For request scheduling, tile
 timing, and map-data status, IITC-CE is the contract. IITC IRIS should port the `MapDataRequest` lifecycle directly
 enough that live behavior can be compared line-by-line with:
 
-- `reference/ingress-intel-total-conversion/core/code/map_data_request.js`
-- `reference/ingress-intel-total-conversion/core/code/data_cache.js`
-- `reference/ingress-intel-total-conversion/core/code/map_data_render.js`
-- `reference/ingress-intel-total-conversion/core/code/map_data_debug.js`
-- `reference/ingress-intel-total-conversion/core/code/map_data_calc_tools.js`
+- `reference/ingress-intel-total-conversion/core/code/map_request.js`
+- `reference/ingress-intel-total-conversion/core/code/map_cache.js`
+- `reference/ingress-intel-total-conversion/core/code/map_renderer.js`
+- `reference/ingress-intel-total-conversion/core/code/map_debug.js`
+- `reference/ingress-intel-total-conversion/core/code/map_tiles.js`
+
+Earlier entries below use the source names at their historical checkpoints. The current reference names above
+are the comparison targets for new changes.
+
+Stationary refresh parity (2026-11-04): `map/map-request.ts` now schedules the reference's minimum 5-minute (zoom >12)
+or 15-minute refresh after completion, extended to twice fetch duration when longer. The timer permits a new same-tile
+refresh while retaining tile-cache/queue behavior. Movement, auth recovery and disposal stop pending periodic work;
+fixtures do not poll. Automatic work pauses when hidden or after 15 minutes without input; resume schedules map
+refresh after 5 seconds. Immediate suspension while hidden is the documented difference from IITC's short idle grace.
+The previous lifecycle parking remains applicable to unrelated queue/cache/render rewrites. Synthetic unit/browser
+checks cover stationary capture/link/field changes, idle/resume, movement, auth and disposal; the live comparison
+runbook below remains pending. See [the COMM/map investigation](../plans/comm-map-refresh-investigation.md).
 
 Required map lifecycle rules:
 

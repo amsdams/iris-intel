@@ -3,6 +3,31 @@
 Unprioritized product/parity gaps and dated comparison evidence. The [roadmap](plans/index.md) owns current work;
 [architecture](architecture.md) owns implementation guidance. Completed refactors below are not prerequisites to repeat.
 
+### COMM / Player Tracker And Stale Map Entities (fixed 2026-11-04, live acceptance pending)
+
+The user reported player markers moving after COMM activity while a captured portal retained its old faction.
+The [investigation](plans/comm-map-refresh-investigation.md) reproduces this with real compiled runtime/Leaflet layers
+and simulated responses. COMM updates tracker history, while portals/links/fields require authoritative map tiles;
+the reviewed IITC-CE core uses the same separation. Three defects were confirmed and fixed:
+
+- **Stationary map freshness:** IRIS previously had no recurring map-data refresh, unlike IITC-CE's 5/15-minute minimum cadence.
+  A capture moved the agent while the portal stayed green and old link/field remained after another 16 simulated
+  stationary minutes. Movement after cache expiry fetched the blue portal and removed both old geometries. Cache
+  Periodic refresh now follows that cadence (or twice a long fetch), allowing same-tile refresh while retaining cache,
+  movement, generation and auth guards. Hidden/idle pages pause; activity resumes after 5 seconds.
+- **COMM area/cursor mismatch:** changing area retains the previous area's continuation timestamp/GUID. A valid
+  new-area event older than that cursor was excluded, so its agent was missed. Local public/faction buffers now reset
+  using the reference's mutual 10%-padded containment tolerance; old-area responses are rejected, while alerts and
+  independent tracker history are preserved.
+- **COMM panel publication:** background tracker polling advances the shared public buffer without publishing
+  updated COMM panel state. COMM now owns shared interested-channel polling and publishes updates to the selected
+  panel, including faction/alerts. Public panel/tracker interest shares one request. Additive visibility messages
+  stop hidden panel polling even on side-panel-to-side-panel switches; history/scroll/send behavior is covered.
+
+The saved diagnostic is `tests/browser/investigate-comm-map.mjs`; run instructions and reference sources are in the
+report. Browser regressions cover all three fixes plus scroll/visibility resume. Results use simulated time/data in
+Chrome; live Intel/Android/Firefox acceptance is not claimed. Direct COMM-to-entity mutation remains deferred.
+
 ### Smoke feedback: Inventory reliability, level labels and zoom limits (2026-10-27)
 
 The user reports the extraction still behaves as before, with three follow-ups:

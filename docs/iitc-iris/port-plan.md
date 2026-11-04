@@ -13,6 +13,27 @@ material, but they should not become the default naming source for IITC IRIS.
 
 ## Porting Doctrine
 
+### COMM and map freshness parity pass — 2026-11-04
+
+The user authorized the three fixes in [the investigation](plans/comm-map-refresh-investigation.md). Reopen map
+lifecycle narrowly for stationary refresh scheduling; retain the accepted tile queues, retries, renderer and cache
+semantics. Source contracts: `core/code/map_request.js` (5/15-minute minimum, twice fetch duration, idle/resume),
+`comm.js:_genPostData/_handleChannel` (bounds tolerance, channel cursors, publication), `request_handling.js` (shared
+interested-channel polling), `idle.js`, and `plugins/player-activity-tracker.js` (public activity consumption).
+
+Implemented scope: lifetime-owned map refresh, public/faction bounds reset with late-response guards, and one
+COMM polling owner serving visible channels and Player Tracker. Preserve tracker history, scroll/older-history,
+send semantics, channel isolation, storage and message shapes. Pure bounds/timing rules belong in core; timers,
+activity, transport, cancellation and publication belong in the app. No direct COMM-to-map entity mutation or public
+plugin API is introduced. An additive `IITC_IRIS_COMM_VISIBILITY` message synchronizes interested-panel lifetime
+through navigation and map replacement; existing request/status payloads and stored keys remain compatible.
+COMM uses the reference's 30-second base plus zoom adjustment and 10-second override floor; tracker no longer owns
+a separate 120-second poller. Unit/browser regressions cover the reproduced failures plus movement, disposal, auth,
+in-flight sharing, channel isolation, older history, scroll retention, hidden-panel cancellation and resume.
+The existing live map-lifecycle comparison checklist remains pending user/device access; simulated tests
+must not be described as live Intel acceptance. Immediate suspension while hidden is an intentional conservative
+difference from IITC's short hidden-page idle grace period.
+
 The goal is behavioral parity with IITC-CE without importing its incidental complexity. IITC IRIS should preserve IITC
 concepts and seams so comparison and debugging stay cheap, while using modern TypeScript boundaries, tests, and small
 modules to avoid carrying over hard-to-maintain structure.
@@ -496,7 +517,8 @@ Feature details have been split out of this entry point so the current truth is 
 
 ## Current High-Level Gaps
 
-- Map lifecycle is parked as acceptable for current UI/plugin parity work. Queue refill, old wanted-response bridging,
+- Stationary map refresh parity was implemented on 2026-11-04; broader map lifecycle rewrites remain parked.
+  Queue refill, old wanted-response bridging,
   IITC comparison timing, incremental core rendering, cache-fresh rendering, and retry recovery have live validation.
   True stale-cache retry exhaustion is still wired/diagnosed but needs a live case that proves cached stale tiles render
   exactly like IITC.

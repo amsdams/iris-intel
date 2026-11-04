@@ -196,6 +196,8 @@ export function handleIitcIrisContentMessage(
   }
   if (message.type === IITC_IRIS_MESSAGES.pageReady) {
     actions.setStatus('leaflet ready');
+    window.postMessage({type: IITC_IRIS_MESSAGES.commVisibility,
+      commVisible: context.activeSidePanel === 'comm'} satisfies IitcIrisMessage, '*');
     window.postMessage({
       type: IITC_IRIS_MESSAGES.layerSettings,
       sentAt: performance.now(),

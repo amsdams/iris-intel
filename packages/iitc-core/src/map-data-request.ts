@@ -1,3 +1,8 @@
+/** IITC map.Request: REFRESH_CLOSE/FAR and FETCH_TO_REFRESH_FACTOR. */
+export function getIitcMapRefreshDelayMs(zoom: number, fetchDurationMs: number): number {
+  return Math.max(zoom > 12 ? 300_000 : 900_000, fetchDurationMs * 2);
+}
+
 import {getIitcDataZoomForMapZoom, getIitcMapZoomTileParameters, type IitcTileParams} from './tile-params';
 import type {IitcGetEntitiesResponse, IitcMapTilePayload} from './entity-decode';
 

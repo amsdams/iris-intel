@@ -22,6 +22,7 @@ describe('COMM runtime ownership', () => {
   let params: {CURRENT_VERSION: string};
   let stored: ReturnType<typeof vi.fn>;
   beforeEach(() => {
+    vi.useFakeTimers();
     lifetime = new AbortController();
     params = {CURRENT_VERSION: 'version'};
     stored = vi.fn().mockReturnValue('faction');
@@ -30,12 +31,13 @@ describe('COMM runtime ownership', () => {
     fetchText = vi.fn<Options['fetchIitcEndpointText']>().mockResolvedValue(reply({result: [message()]}));
     options = {getMap: (): ReturnType<Options['getMap']> => ({getBounds: (): LatLngBounds => ({getSouth: (): number => 51, getWest: (): number => 3,
       getNorth: (): number => 53, getEast: (): number => 5}) as LatLngBounds}) as ReturnType<Options['getMap']>,
-      getLifetime: (): ReturnType<Options['getLifetime']> => lifetime, getMapCenterE6: (): ReturnType<Options['getMapCenterE6']> => ({latE6: 52000000, lngE6: 4000000}),
+      getLifetime: (): ReturnType<Options['getLifetime']> => ({signal: lifetime.signal,
+        schedule: (callback, delay) => Number(setTimeout(callback, delay)), cancelScheduled: timer => clearTimeout(timer)}), getMapCenterE6: (): ReturnType<Options['getMapCenterE6']> => ({latE6: 52000000, lngE6: 4000000}),
       fetchIitcEndpointText: fetchText, getIitcRequestDiagnostics: (): IitcIrisRequestDiagnostics => ({}) as IitcIrisRequestDiagnostics,
       onPublicMessages: vi.fn()};
     runtime = createCommRuntime(options);
   });
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
   it('retains the stored tab and tolerates unavailable storage', () => {
     expect(runtime.getState()).toMatchObject({status: 'idle', tab: 'faction'});
@@ -58,18 +60,17 @@ describe('COMM runtime ownership', () => {
     expect(options.onPublicMessages).toHaveBeenCalledOnce();
   });
 
-  it('shares public continuation data with Player Tracker without posting panel state', async () => {
-    runtime.applyPlayerTrackerCommResponse({result: [message()]});
-    expect(window.postMessage).not.toHaveBeenCalled();
-    const request = runtime.getPlayerTrackerCommRequest();
-    await request?.(new AbortController().signal);
-    expect(JSON.parse(String(fetchText.mock.calls[0][1].body)) as unknown).toMatchObject({
-      tab: 'all', minTimestampMs: 2000, plextContinuationGuid: 'new', ascendingTimestampOrder: true});
+  it('uses one public request for the panel and tracker and publishes its buffer', async () => {
+    options.isPublicChannelInterested = (): boolean => true;
+    runtime = createCommRuntime(options);
+    runtime.scheduleRefresh(0);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetchText).toHaveBeenCalledOnce();
+    expect(runtime.getState().messages).toBe(0); // The stored panel tab is faction.
     await runtime.refreshComm('all');
     expect(runtime.getState().messages).toBe(1);
-    await runtime.refreshComm('faction');
-    expect(JSON.parse(String(fetchText.mock.calls[2][1].body)) as unknown).toMatchObject({tab: 'faction', minTimestampMs: -1});
-    expect(options.onPublicMessages).toHaveBeenCalledOnce();
+    expect(JSON.parse(String(fetchText.mock.calls[1][1].body)) as unknown).toMatchObject({
+      tab: 'all', minTimestampMs: 2000, plextContinuationGuid: 'new', ascendingTimestampOrder: true});
   });
 
   it('requests older history using the existing oldest timestamp and preserves deduplication', async () => {
@@ -79,6 +80,138 @@ describe('COMM runtime ownership', () => {
     expect(JSON.parse(String(fetchText.mock.calls[1][1].body)) as unknown).toMatchObject({
       maxTimestampMs: 2000, plextContinuationGuid: 'new'});
     expect(runtime.getState()).toMatchObject({messages: 2, requestOlder: true, oldMessagesWereAdded: true});
+  });
+
+  it('publishes background public updates and polls faction alongside an interested tracker', async () => {
+    let interested = true;
+    options.isPublicChannelInterested = (): boolean => interested;
+    runtime = createCommRuntime(options);
+    await runtime.refreshComm('all');
+    fetchText.mockResolvedValue(reply({result: [message('later', 3000)]}));
+    await vi.advanceTimersByTimeAsync(40_000);
+    expect(runtime.getState()).toMatchObject({tab: 'all', messages: 2});
+    expect(options.onPublicMessages).toHaveBeenCalledTimes(2);
+    await runtime.refreshComm('faction');
+    const before = fetchText.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(40_000);
+    const tabs = fetchText.mock.calls.slice(before).map(([, init]) => (JSON.parse(String(init.body)) as {tab: string}).tab);
+    expect(tabs.sort()).toEqual(['all', 'faction']);
+    expect(runtime.getState().tab).toBe('faction');
+    runtime.cancelActiveCommFetch();
+    interested = false;
+    runtime.scheduleRefresh();
+    await vi.advanceTimersByTimeAsync(80_000);
+    expect(fetchText.mock.calls.length).toBe(before + 2);
+  });
+
+  it('shares an in-flight public fetch and preserves an older-history request during a polling tick', async () => {
+    options.isPublicChannelInterested = (): boolean => true;
+    runtime = createCommRuntime(options);
+    let finish!: (value: Awaited<ReturnType<Options['fetchIitcEndpointText']>>) => void;
+    fetchText.mockReturnValueOnce(new Promise(resolve => {finish = resolve;}));
+    runtime.scheduleRefresh(0);
+    await vi.advanceTimersByTimeAsync(0);
+    const foreground = runtime.refreshComm('all');
+    expect(fetchText).toHaveBeenCalledOnce();
+    finish(reply({result: [message()]}));
+    await foreground;
+    expect(runtime.getState().messages).toBe(1);
+    fetchText.mockReturnValueOnce(new Promise(resolve => {finish = resolve;}));
+    const older = runtime.refreshComm('all', true);
+    runtime.scheduleRefresh(0);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetchText).toHaveBeenCalledTimes(2);
+    finish(reply({result: [message('old', 1000)]}));
+    await older;
+    expect(runtime.getState()).toMatchObject({messages: 2, requestOlder: true, oldMessagesWereAdded: true});
+  });
+
+  it('drops late old-area responses, preserves alerts, and requests initial public/faction data in a new area', async () => {
+    let bounds = {south: 51, west: 3, north: 53, east: 5};
+    options.getMap = (): ReturnType<Options['getMap']> => ({getBounds: (): LatLngBounds => ({getSouth: () => bounds.south, getWest: () => bounds.west,
+      getNorth: () => bounds.north, getEast: () => bounds.east}) as LatLngBounds});
+    runtime = createCommRuntime(options);
+    await runtime.refreshComm('faction');
+    await runtime.refreshComm('alerts');
+    let finish!: (value: Awaited<ReturnType<Options['fetchIitcEndpointText']>>) => void;
+    fetchText.mockReturnValueOnce(new Promise(resolve => {finish = resolve;}));
+    const old = runtime.refreshComm('all');
+    bounds = {south: 40, west: 1, north: 42, east: 3};
+    runtime.mapMoved();
+    finish(reply({result: [message('stale')]}));
+    await old;
+    expect(options.onPublicMessages).not.toHaveBeenCalled();
+    await runtime.refreshComm('all');
+    await runtime.refreshComm('faction');
+    await runtime.refreshComm('alerts');
+    const payloads = fetchText.mock.calls.slice(-3).map(([, init]) => JSON.parse(String(init.body)) as {minTimestampMs: number; plextContinuationGuid?: string});
+    expect(payloads[0]).toMatchObject({minTimestampMs: -1});
+    expect(payloads[0].plextContinuationGuid).toBeUndefined();
+    expect(payloads[1]).toMatchObject({minTimestampMs: -1});
+    expect(payloads[2]).toMatchObject({minTimestampMs: 2000});
+  });
+
+  it('stops hidden-panel polling while retaining tracker interest and cancels it when the tracker is disabled', async () => {
+    let interested = true;
+    options.isPublicChannelInterested = (): boolean => interested;
+    runtime = createCommRuntime(options);
+    await runtime.refreshComm('faction');
+    runtime.setPanelVisibility(false);
+    const before = fetchText.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(40_000);
+    expect(fetchText.mock.calls.slice(before).map(([, init]) => (JSON.parse(String(init.body)) as {tab: string}).tab)).toEqual(['all']);
+    let finish!: (value: Awaited<ReturnType<Options['fetchIitcEndpointText']>>) => void;
+    fetchText.mockReturnValueOnce(new Promise(resolve => {finish = resolve;}));
+    await vi.advanceTimersByTimeAsync(40_000);
+    const signal = fetchText.mock.lastCall?.[1].signal;
+    interested = false;
+    runtime.scheduleRefresh();
+    expect(signal?.aborted).toBe(true);
+    finish(reply({result: [message('disabled')]}));
+    await vi.advanceTimersByTimeAsync(40_000);
+    expect(options.onPublicMessages).toHaveBeenCalledOnce();
+  });
+
+  it('keeps a late send from reactivating a closed panel or switching the current channel', async () => {
+    await runtime.refreshComm('all');
+    let finish!: (value: Awaited<ReturnType<Options['fetchIitcEndpointText']>>) => void;
+    fetchText.mockReturnValueOnce(new Promise(resolve => {finish = resolve;}));
+    const sending = runtime.sendComm('all', 'hello');
+    await runtime.refreshComm('faction');
+    finish(reply({result: true}));
+    await sending;
+    expect(runtime.getState().tab).toBe('faction');
+    runtime.setPanelVisibility(false);
+    const before = fetchText.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(80_000);
+    expect(fetchText).toHaveBeenCalledTimes(before);
+  });
+
+  it('stops during idle, auth and map disposal, and never applies a late old-map response', async () => {
+    let idle = true;
+    options.isIdle = (): boolean => idle;
+    options.isPublicChannelInterested = (): boolean => true;
+    runtime = createCommRuntime(options);
+    runtime.scheduleRefresh(0);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetchText).not.toHaveBeenCalled();
+    idle = false;
+    let finish!: (value: Awaited<ReturnType<Options['fetchIitcEndpointText']>>) => void;
+    fetchText.mockReturnValueOnce(new Promise(resolve => {finish = resolve;}));
+    const pending = runtime.refreshComm('all');
+    lifetime.abort();
+    runtime.dispose();
+    finish(reply({result: [message()]}));
+    await pending;
+    expect(options.onPublicMessages).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(80_000);
+    expect(fetchText).toHaveBeenCalledOnce();
+    lifetime = new AbortController();
+    fetchText.mockResolvedValue(reply('<html>login'));
+    fetchText.mockResolvedValueOnce({response: new Response('<html>login'), text: '<html>login'});
+    await runtime.refreshComm('all');
+    await vi.advanceTimersByTimeAsync(80_000);
+    expect(fetchText).toHaveBeenCalledTimes(2);
   });
 
   it('ignores superseded responses and cancels panel fetching', async () => {
@@ -97,21 +230,21 @@ describe('COMM runtime ownership', () => {
     finish(reply({result: []}));
     await cancelled;
     expect(fetchText.mock.calls[2][1].signal?.aborted).toBe(true);
-    expect(runtime.getState().status).toBe('loading');
+    expect(runtime.getState().status).not.toBe('loading');
   });
 
-  it('reads current map bounds while retaining channel history across replacement', async () => {
+  it('resets local history when map replacement changes the area', async () => {
     let currentMap = options.getMap();
     runtime = createCommRuntime({...options, getMap: () => currentMap});
     await runtime.refreshComm('all');
     currentMap = undefined;
-    expect(runtime.getPlayerTrackerCommRequest()).toBeUndefined();
+    runtime.mapMoved();
     currentMap = {getBounds: (): LatLngBounds => ({getSouth: (): number => 50, getWest: (): number => 2,
       getNorth: (): number => 54, getEast: (): number => 6}) as LatLngBounds} as ReturnType<Options['getMap']>;
     lifetime.abort();
     lifetime = new AbortController();
     await runtime.refreshComm('all');
-    expect(JSON.parse(String(fetchText.mock.calls[1][1].body)) as unknown).toMatchObject({minTimestampMs: 2000, minLatE6: 50000000, maxLngE6: 6000000});
+    expect(JSON.parse(String(fetchText.mock.calls[1][1].body)) as unknown).toMatchObject({minTimestampMs: -1, minLatE6: 50000000, maxLngE6: 6000000});
   });
 
   it('reports missing version and CSRF as authentication failures', async () => {

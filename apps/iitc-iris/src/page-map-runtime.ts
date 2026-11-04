@@ -23,6 +23,8 @@ import {createMissionOverlay} from './map/missions/mission-overlay';
 import {createBaseLayerController} from './map/layers/base-layer-controller';
 import {DEFAULT_BASE_LAYER_ID, normalizeBaseLayerId} from './map/layers/base-layer-settings';
 import {createIitcIrisMapLifetime, type IitcIrisMapLifetime} from './map/map-runtime-lifetime';
+import {createMapRefreshActivity} from './map/map-refresh-activity';
+import {isIitcPlayerTrackerVisibleForZoom} from '@iris/iitc-core';
 import {IitcIrisCanvasMap} from './map/map-canvas';
 import L, {type Layer as LeafletLayer, type Map as LeafletMap} from 'leaflet';
 import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisLifecycleSettings, type IitcIrisMessage, type IitcIrisRenderEntities, type IitcIrisRenderPortal} from './messages';
@@ -34,6 +36,7 @@ const IITC_IRIS_ASSET_BASE_URL = ((): string => {
 })();
 let mapLifetime: IitcIrisMapLifetime | undefined;
 let bootRetryTimer: number | undefined;
+let refreshActivity: ReturnType<typeof createMapRefreshActivity> | undefined;
 
 let latestEntities: IitcIrisRenderEntities | undefined;
 
@@ -53,7 +56,7 @@ const mapSettings = createMapSettingsRuntime({
   renderLatestTileDebug,
   renderIitcDrawTools: () => renderIitcDrawTools(),
   renderPlayerTracker: () => renderPlayerTracker(),
-  schedulePlayerTrackerRefresh: () => schedulePlayerTrackerRefresh(),
+  schedulePlayerTrackerRefresh: () => comm.scheduleRefresh(250),
   recordInteractionUpdateDiagnostics: (...args) => diagnostics.recordInteractionUpdateDiagnostics(...args),
   recordLayerUpdateTiming: (...args) => diagnostics.recordLayerUpdateTiming(...args),
   scheduleInteractionFrameDiagnostics: (...args) => diagnostics.scheduleInteractionFrameDiagnostics(...args),
@@ -195,6 +198,9 @@ const comm = createCommRuntime({
   getMap: () => window.__iitcIrisMap,
   getLifetime: () => mapLifetime,
   getMapCenterE6, fetchIitcEndpointText, getIitcRequestDiagnostics,
+  isIdle: () => refreshActivity?.isIdle() ?? false,
+  isAuthRecoveryActive: () => authRecoveryActive,
+  isPublicChannelInterested: () => isIitcPlayerTrackerVisibleForZoom(mapSettings.getLayerSettings(), window.__iitcIrisMap?.getZoom()),
   onPublicMessages: (messages) => {
     processPlayerTrackerCommMessages(messages);
     renderPlayerTracker();
@@ -204,11 +210,7 @@ const {refreshComm, sendComm, cancelActiveCommFetch} = comm;
 
 const playerTracker = createPlayerTrackerRuntime({
   getMap: () => window.__iitcIrisMap,
-  getLifetime: () => mapLifetime,
   getLayerSettings: mapSettings.getLayerSettings,
-  isAuthRecoveryActive: () => authRecoveryActive && dataSource.mode === 'live',
-  getCommRequest: comm.getPlayerTrackerCommRequest,
-  applyCommResponse: comm.applyPlayerTrackerCommResponse,
   clearLayers: () => clearRenderedLayers(ensureLayers().playerTracker),
   addLayer: (layer) => addRenderedLayer(ensureLayers().playerTracker, layer),
   repostLatestEntityStatus, zoomToAndShowPortal,
@@ -216,7 +218,7 @@ const playerTracker = createPlayerTrackerRuntime({
   assetBaseUrl: IITC_IRIS_ASSET_BASE_URL,
   pane: getLayerPane('playerTracker'),
 });
-const {renderPlayerTracker, processPlayerTrackerCommMessages, schedulePlayerTrackerRefresh, clearPlayerTrackerRefreshTimer} = playerTracker;
+const {renderPlayerTracker, processPlayerTrackerCommMessages} = playerTracker;
 
 const mapRequests = createMapRequest({
   getMap: () => window.__iitcIrisMap,
@@ -224,6 +226,7 @@ const mapRequests = createMapRequest({
   getDataSource: () => dataSource,
   getLifecycleSettings: () => lifecycleSettings,
   isAuthRecoveryActive: () => authRecoveryActive,
+  isIdle: () => refreshActivity?.isIdle() ?? false,
   getEntities: () => latestEntities,
   portalHistoryByGuid, fetchIitcEndpointText, renderEntities, renderTileDebug, clearAllRenderedLayers,
   postEntityStatus, recordStaleGenerationCacheWarmTileKeys,
@@ -271,7 +274,7 @@ function postMapMoved(): void {
     },
   }, '*');
   scheduleEntityRefresh(getMoveRefreshDelayMs());
-  schedulePlayerTrackerRefresh();
+  comm.mapMoved();
 }
 
 declare global {
@@ -448,6 +451,9 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   if (event.data?.type === IITC_IRIS_MESSAGES.requestComm) {
     void refreshComm(normalizeCommTab(event.data.commTab), event.data.commOlder === true);
   }
+  if (event.data?.type === IITC_IRIS_MESSAGES.commVisibility) {
+    comm.setPanelVisibility(event.data.commVisible === true);
+  }
   if (event.data?.type === IITC_IRIS_MESSAGES.sendComm) {
     void sendComm(normalizeCommTab(event.data.commTab), event.data.commMessage);
   }
@@ -512,7 +518,7 @@ function setAuthRecoveryActive(active: boolean): void {
   authRecoveryActive = active;
   if (active) {
     mapRequests.cancelScheduledRefresh();
-    clearPlayerTrackerRefreshTimer();
+    comm.dispose();
   }
 }
 
@@ -555,6 +561,8 @@ function boot(): void {
     cancelActiveEntityFetch();
     cancelActivePanelRequests();
     playerTracker.dispose();
+    comm.dispose();
+    refreshActivity = undefined;
     inventory.dispose();
     mapRequests.dispose();
     invalidateSearch();
@@ -570,6 +578,10 @@ function boot(): void {
   });
   window.__iitcIrisMapContainer = container;
   bindSearchMap(map);
+  refreshActivity = createMapRefreshActivity(mapLifetime.signal, () => {
+    mapRequests.resumeRefresh();
+    comm.scheduleRefresh(1000);
+  });
   createIitcIrisPanes(map);
 
   baseLayerController = createBaseLayerController(map, IITC_IRIS_ASSET_BASE_URL, (status) => {
@@ -589,7 +601,7 @@ function boot(): void {
   map.on('zoomend', () => {
     renderIitcDrawTools();
     renderPlayerTracker();
-    schedulePlayerTrackerRefresh();
+    comm.mapMoved();
   });
   mapLifetime.schedule(() => {
     map.invalidateSize();

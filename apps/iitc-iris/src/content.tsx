@@ -8,6 +8,7 @@ import {getExtensionUrl} from './platform/assets';
 import {installIitcIrisHostBack} from './shell/host-navigation';
 import {Button} from './ui/button';
 import {h, render} from 'preact';
+import {IITC_IRIS_MESSAGES} from './messages';
 import './auth/auth.css';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'preact/hooks';
 import './iitc-iris.css';
@@ -769,6 +770,10 @@ function App(): h.JSX.Element {
       retryTimers.forEach((timer) => window.clearTimeout(timer));
     };
   }, [activeSidePanel, commState.status, commState.tab]);
+
+  useEffect(() => {
+    postIitcMessage({type: IITC_IRIS_MESSAGES.commVisibility, commVisible: activeSidePanel === 'comm'});
+  }, [activeSidePanel, postIitcMessage]);
 
   useEffect(() => {
     const autoRequest = getScoresAutoRequest(activeSidePanel, scoresState.status);
