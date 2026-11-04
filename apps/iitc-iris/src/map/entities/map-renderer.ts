@@ -5,7 +5,9 @@ import type {
   IitcIrisRenderEntities, IitcIrisRenderField, IitcIrisRenderLink,
   IitcIrisRenderMutationDiagnostics, IitcIrisRenderMutationLayerDiagnostics, IitcIrisRenderPolicy, IitcIrisRenderPortal,
 } from '../../messages';
-import {IITC_LEVEL_COLORS, IITC_TEAM_COLORS} from '../../iitc-colors';
+import {IITC_TEAM_COLORS} from '../../iitc-colors';
+import {getPortalLevel, getPortalMarkerScale, getPortalRadius as getPortalRadiusForZoom,
+  getPortalMarkerStyle as getPortalBaseMarkerStyle} from './portal-marker-style';
 import {createPortalKeyCountCanvas, createPortalKeyCountLabel, createPortalLevelCanvas, createPortalLevelLabel} from './portal-label-canvas';
 import {createPortalImage, createPortalImageCanvas, type PortalImage} from './portal-image-canvas';
 import {IitcIrisCanvas} from '../map-canvas';
@@ -89,18 +91,6 @@ export function createMapRenderer({
   const getTeamColor = (team: keyof typeof TEAM_COLORS): string => TEAM_COLORS[team] ?? TEAM_COLORS.N;
   const roundTimingMs = (value: number): number => Math.round(value * 10) / 10;
 
-  const HEALTH_COLORS = {
-    cond85: '#ffff00',
-    cond70: '#ffa500',
-    cond60: '#ff8c00',
-    cond45: '#ff0000',
-    cond30: '#ff0000',
-    cond15: '#ff0000',
-    cond0: '#ff00ff',
-  } as const;
-  const LEVEL_COLORS = IITC_LEVEL_COLORS;
-  const LEVEL_TO_WEIGHT = [2, 2, 2, 2, 2, 3, 3, 4, 4] as const;
-  const LEVEL_TO_RADIUS = [7, 7, 7, 7, 8, 8, 9, 10, 11] as const;
   interface KeyBadge {guid: string; latE6: number; lngE6: number; count: number; radius: number}
   const keyLabelIndex: IitcIrisEntityLayerIndex = new Map();
   let previousKeyBadges: KeyBadge[] = [];
@@ -124,64 +114,8 @@ export function createMapRenderer({
     previousLevelLabelPortals = [];
   }
 
-  function getPortalMarkerScale(zoom: number): number {
-    return zoom >= 14 ? 1 : zoom >= 11 ? 0.8 : zoom >= 8 ? 0.65 : 0.5;
-  }
-
-  function getPortalLevel(level: number | undefined, isPlaceholder: boolean): number {
-    if (isPlaceholder) return 0;
-    return Math.max(0, Math.min(8, Math.floor(level ?? 0)));
-  }
-
   function getPortalRadius(level: number | undefined, isPlaceholder: boolean): number {
-    const scale = getPortalMarkerScale(getMap()?.getZoom() ?? defaultZoom);
-    return LEVEL_TO_RADIUS[getPortalLevel(level, isPlaceholder)] * scale;
-  }
-
-  function getPortalWeight(level: number | undefined, isPlaceholder: boolean): number {
-    if (isPlaceholder) return 1;
-    const scale = getPortalMarkerScale(getMap()?.getZoom() ?? defaultZoom);
-    return LEVEL_TO_WEIGHT[getPortalLevel(level, isPlaceholder)] * Math.sqrt(scale);
-  }
-
-  function getPortalFillOpacity(renderPolicy: IitcIrisRenderPolicy, _health: number | undefined, _level: number | undefined, _team: keyof typeof TEAM_COLORS, _isPlaceholder: boolean): number {
-    if (getPortalHealthFillColor(renderPolicy, _health, _team)) return getPortalHealthFillOpacity(_health ?? 100);
-    if (getPortalLevelFillColor(renderPolicy, _level, _team, _isPlaceholder)) return 0.6;
-    return 0.5;
-  }
-
-  function getPortalFillColor(renderPolicy: IitcIrisRenderPolicy, team: keyof typeof TEAM_COLORS, level: number | undefined, isPlaceholder: boolean, health: number | undefined): string {
-    const healthColor = getPortalHealthFillColor(renderPolicy, health, team);
-    if (healthColor) return healthColor;
-    const levelColor = getPortalLevelFillColor(renderPolicy, level, team, isPlaceholder);
-    if (levelColor) return levelColor;
-    return getTeamColor(team);
-  }
-
-  function getPortalLevelFillColor(renderPolicy: IitcIrisRenderPolicy, level: number | undefined, team: keyof typeof TEAM_COLORS, isPlaceholder: boolean): string | null {
-    if (!renderPolicy.levelFill || isPlaceholder || level === undefined) return null;
-    return LEVEL_COLORS[getPortalLevel(level, false)] ?? null;
-  }
-
-  function getPortalHealthFillColor(renderPolicy: IitcIrisRenderPolicy, health: number | undefined, team: keyof typeof TEAM_COLORS): string | null {
-    if (!renderPolicy.healthFill || team === 'N' || health === undefined || health >= 100) return null;
-    if (health > 85) return HEALTH_COLORS.cond85;
-    if (health > 70) return HEALTH_COLORS.cond70;
-    if (health > 60) return HEALTH_COLORS.cond60;
-    if (health > 45) return HEALTH_COLORS.cond45;
-    if (health > 30) return HEALTH_COLORS.cond30;
-    if (health > 15) return HEALTH_COLORS.cond15;
-    return HEALTH_COLORS.cond0;
-  }
-
-  function getPortalHealthFillOpacity(health: number): number {
-    if (health > 85) return 0.5;
-    if (health > 70) return 0.5;
-    if (health > 60) return 0.5;
-    if (health > 45) return 0.4;
-    if (health > 30) return 0.6;
-    if (health > 15) return 0.8;
-    return 1;
+    return getPortalRadiusForZoom(level, isPlaceholder, getMap()?.getZoom() ?? defaultZoom);
   }
 
   function getPortalDataOverlayStyle(portal: IitcIrisRenderPortal, renderPolicy: IitcIrisRenderPolicy): Partial<L.CircleMarkerOptions> {
@@ -697,20 +631,9 @@ export function createMapRenderer({
   }
 
   function getPortalMarkerStyle(portal: IitcIrisRenderPortal, renderPolicy: IitcIrisRenderPolicy): L.CircleMarkerOptions {
-    const color = getTeamColor(portal.team);
     const dataOverlayStyle = getPortalDataOverlayStyle(portal, renderPolicy);
     return {
-      radius: getPortalRadius(portal.level, portal.isPlaceholder),
-      color,
-      fillColor: renderPolicy.healthFill || renderPolicy.levelFill
-        ? getPortalFillColor(renderPolicy, portal.team, portal.level, portal.isPlaceholder, portal.health)
-        : getTeamColor(portal.team),
-      fillOpacity: renderPolicy.healthFill || renderPolicy.levelFill
-        ? getPortalFillOpacity(renderPolicy, portal.health, portal.level, portal.team, portal.isPlaceholder)
-        : 0.5,
-      opacity: portal.isPlaceholder ? 0.6 : 1,
-      weight: getPortalWeight(portal.level, portal.isPlaceholder),
-      dashArray: portal.isPlaceholder ? '1,2' : undefined,
+      ...getPortalBaseMarkerStyle(portal, renderPolicy, getMap()?.getZoom() ?? defaultZoom),
       ...dataOverlayStyle,
     };
   }

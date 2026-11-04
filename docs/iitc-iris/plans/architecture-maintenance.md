@@ -1,6 +1,6 @@
 # Architecture Maintenance Plan
 
-Status: in progress. ARCH-09, ARCH-01 and ARCH-03 implemented; remaining items are pending.
+Status: in progress. ARCH-09, ARCH-01, ARCH-03 and ARCH-04 implemented; remaining items are pending.
 
 This is the implementation tracker for the validated parts of the [architecture review](arch-review.md).
 The [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes the work; this file owns scope,
@@ -45,7 +45,8 @@ and remaining responsibilities in the completion log; do not improve one file's 
 
 ## Progress
 
-ARCH-09 and ARCH-01 are committed as `64cdfb2`; ARCH-03 is complete in the working tree. Complete one bounded item at a time; record the change/PR, validation and remaining
+ARCH-09 and ARCH-01 are committed as `64cdfb2`; ARCH-03 is committed as `db6ac6b` after user COMM smoke.
+ARCH-04 is implemented in the working tree. Complete one bounded item at a time; record the change/PR, validation and remaining
 device checks in the completion log below. Do not treat a partial move as completion of the entire hotspot.
 
 | Done | ID | Work item | Acceptance |
@@ -54,7 +55,7 @@ device checks in the completion log below. Do not treat a partial move as comple
 | [x] | ARCH-01 | Copy-feedback correctness and ownership | Older timers/late clipboard results cannot clear or overwrite newer feedback; each feedback area remains independent; cleanup has an owner. |
 | [ ] | ARCH-02 | Remove genuine command forwarding wrappers | Direct delegation disappears; navigation/cancellation/ordering behavior and its meaningful tests remain at an explicit owner. |
 | [x] | ARCH-03 | Extract COMM UI workflow from `content.tsx` | Drafts, send acknowledgments and scroll/history coordination have a cohesive owner without moving transport or changing effect ordering. |
-| [ ] | ARCH-04 | Extract portal styling from `map-renderer.ts` | Styling/radius calculations take explicit inputs and can be tested without initializing Leaflet; appearance and zoom thresholds match. |
+| [x] | ARCH-04 | Extract portal styling from `map-renderer.ts` | Styling/radius calculations take explicit inputs and can be tested without initializing Leaflet; appearance and zoom thresholds match. |
 | [ ] | ARCH-05 | Extract map-response adaptation from `map-request.ts` | Conversion/type guards have explicit clock/history dependencies; queue/cache/generation/cancellation behavior stays with the scheduler. |
 | [ ] | ARCH-06 | Share portal types and organize message payload types | Common fields have one definition; required/optional distinctions, existing imports and wire contracts remain compatible. |
 | [ ] | ARCH-07 | Consolidate storage I/O handling | Small read/write helpers retain feature parsers, legacy migrations, defaults, remove-item behavior and exact stored formats. |
@@ -282,6 +283,35 @@ Validation: `npm run check` passes (701 app/core tests, release/build gates, CSS
 pass. Existing tests cover history/scroll, channel isolation, failed drafts, late-send edit protection, visibility,
 shared polling and versioned sends. A new browser regression covers a send completing while Faction is active and
 retains independent drafts across COMM close/reopen. No hook-implementation mirror tests or new test dependencies.
-The earlier correctness work is committed; this extraction remains uncommitted for review. An XPI is prepared for
-user smoke; APK unchanged. The user reports a quick test confirms COMM still works; general COMM smoke is accepted,
-without claiming exhaustive individual paths or platform coverage. Next: ARCH-04 portal styling; reassess after that fourth slice.
+Committed as `db6ac6b` after the user reports a quick test confirms COMM still works. General COMM smoke is accepted,
+without claiming exhaustive individual paths or platform coverage. The extraction XPI was prepared for this smoke;
+APK unchanged. Continued with ARCH-04 portal styling below.
+
+### 2026-11-04 — ARCH-04: portal marker styling
+
+`map/entities/portal-marker-style.ts` owns base marker scale, level normalization, radius, stroke weight, faction/level/
+health fill and opacity, and placeholder appearance. It receives portal appearance fields, fill policy and zoom
+explicitly, with no Leaflet runtime or map dependency. The renderer supplies current/default zoom, applies highlighter
+overrides last and retains its radius adapter for selection, ornaments and key badges. Leaflet allocation, incremental
+entity diffing, indexes, label/image caches, visibility, rendering order and disposal remain in the renderer.
+
+Renderer: 1,644 → 1,567 LOC (-77). New styling owner: 108 LOC. Whole production source: 24,558 → 24,589 (+31).
+The extra lines are the explicit input/output contract and module boundary. Appearance calculations can now be read
+and tested independently; the extraction does not claim a rendering performance gain or finish the renderer hotspot.
+
+Validation: seven focused unit tests cover zoom/level boundaries, faction palette, strict health thresholds and opacity,
+fill priority, placeholder appearance and complete reset values. A temporary comparison against the pre-extraction
+implementation matched all 23,520 combinations of faction, level, health, zoom, placeholder and fill settings. The
+existing real-Leaflet browser case now checks complete base marker dimensions/styles and restoration after a highlighter
+change while retaining marker identity. `npm run check` passes: 708 app/core tests, 6 release checks, 18 build-guard
+checks, lint/types, CSS and workbench build. All 65 Chrome browser cases pass (50.6 seconds).
+
+ARCH-04 remains uncommitted for review. Verified web assets were reused to package XPI/ZIP
+`2026-11-04T19-20-12`, served on port 6969; APK unchanged. The user reports a quick test confirms portals still work; general portal smoke is accepted,
+without claiming exhaustive styling paths or platform coverage.
+
+Checkpoint after the first four slices: keep ARCH-05 next. Reinspection confirms response adaptation still reads/writes
+portal history and artifact conversion still obtains a fallback timestamp from `Date.now()`. The planned explicit
+history updates and clock boundary remain useful; queue/cache/generation/retry/cancellation ownership must stay with
+`map-request.ts`. Do not expand this into label/decorations extraction: those later candidates still require a concrete
+maintenance need and their own map-lifetime/disposal contract. ARCH-06a/b and the remaining order stay unchanged.

@@ -157,14 +157,17 @@ test('overlay, faction and level filters restore layers; highlighters restyle ex
   await expect.poll(() => counts(page)).toEqual([3, 1, 1]);
   const marker = () => page.evaluate(() => {
     const current = window.__iitcIrisLayers.entityLayerIndex.portals.get('res')[0];
-    return {same: current === window.entityFixture.original.portals.get('res')[0], fill: current.options.fillColor};
+    const {radius, weight, color, fillOpacity, opacity, dashArray} = current.options;
+    return {same: current === window.entityFixture.original.portals.get('res')[0], fill: current.options.fillColor,
+      radius, weight, color, fillOpacity, opacity, dashArray};
   });
-  expect((await marker()).same).toBe(true);
-  const originalFill = (await marker()).fill;
+  const originalStyle = await marker();
+  expect(originalStyle).toEqual({same: true, radius: 11, weight: 4, color: '#0088ff', fill: '#0088ff',
+    fillOpacity: 0.5, opacity: 1, dashArray: undefined});
   await page.evaluate(() => window.postMessage({type: 'IITC_IRIS_LAYER_SETTINGS', highlighterSettings: {active: 'history-visited'}}, '*'));
-  await expect.poll(marker).toEqual({same: true, fill: 'yellow'});
+  await expect.poll(marker).toMatchObject({same: true, fill: 'yellow'});
   await page.evaluate(() => window.postMessage({type: 'IITC_IRIS_LAYER_SETTINGS', highlighterSettings: {active: 'none'}}, '*'));
-  await expect.poll(marker).toEqual({same: true, fill: originalFill});
+  await expect.poll(marker).toEqual(originalStyle);
 });
 
 test('level labels retain layers and their shared canvas through refreshes, update changed levels and obey collisions and filters', async ({page}) => {

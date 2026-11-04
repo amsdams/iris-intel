@@ -16,13 +16,15 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 **Architecture maintenance (2026-11-04):** [the plan](architecture-maintenance.md) owns ARCH-01–09, module boundaries,
 acceptance and completion evidence; the [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes it.
-ARCH-09/01 are committed as `64cdfb2`. The user confirmed COMM sending succeeds after the missing-version fix;
-dedicated copy/Android smoke remains pending. ARCH-03 is implemented in the working tree: COMM draft, scroll and
-acknowledgment ownership now live in `comm/use-comm-ui-state.ts`, with effect registration positions preserved.
-App is 1,036 LOC (was 1,162); checks pass with 701 app/core tests and 65 Chrome cases. An XPI is prepared for smoke;
-the extraction is uncommitted, with no push or new APK. Next: ARCH-04 portal styling, followed by the planned
-checkpoint reassessment. Keep runtime/state-machine coordination explicit; use LOC/context size to track ownership
-improvements rather than treating file size as the sole completion criterion.
+ARCH-09/01 are committed as `64cdfb2`; ARCH-03 is committed as `db6ac6b` after the user's quick COMM smoke.
+Dedicated copy/Android checks remain pending. COMM draft/scroll/acknowledgment ownership lives in
+`comm/use-comm-ui-state.ts`; App is 1,036 LOC (was 1,162), with effect registration positions preserved.
+ARCH-04 is implemented in the working tree: pure `map/entities/portal-marker-style.ts` owns base marker appearance,
+while the renderer retains Leaflet/highlighter/layer lifetime ownership (1,644 → 1,567 LOC). Checks pass: 708 app/core
+tests and 65 Chrome cases. XPI/ZIP `2026-11-04T19-20-12` is served on port 6969 for appearance smoke. No push or new APK. The first-four-slice checkpoint retains ARCH-05 response
+adaptation next, with explicit history/clock dependencies and scheduling kept in the coordinator. Keep runtime/state-machine
+coordination explicit; use LOC/context size to track ownership improvements rather than treating file size as the sole
+completion criterion.
 
 **Faster testing (2026-11-04):** user authorized the testing workflow improvements. Repeated 61-case benchmarks passed
 at 89.51 seconds with one worker and 48.80/47.83 seconds with two; local default is now two, CI retains one. A baseline

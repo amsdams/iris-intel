@@ -124,8 +124,11 @@ current map/entities/settings through explicit callbacks; they do not capture a 
 Search invalidation remains in map disposal; its requests use the existing map lifetime.
 
 `map/entities/map-renderer.ts` owns portal/link/field layers, visibility filters, incremental synchronization,
-highlighter style refresh, portal overlays and render diagnostics. `map/map-layers.ts` names the shared layer/pane types;
-map creation still owns their allocation. Selection and portal details have their own owners below.
+highlighter style refresh, portal overlays and render diagnostics. `map/entities/portal-marker-style.ts` calculates
+base marker appearance from explicit portal, fill-policy and zoom inputs without Leaflet. The renderer supplies
+current/default zoom, retains the radius adapter for overlays and selection, and applies highlighter overrides last.
+`map/map-layers.ts` names the shared layer/pane types; map creation still owns their allocation. Selection and portal
+details have their own owners below.
 Renderer callbacks read the current state; disposal invalidates its render context and map-keyed resources stay separate.
 `map/map-request.ts` owns map refresh generations, tile/cache/refill/render queues, fixture/live fetching, artifact
 injection and map-request diagnostics. The existing pure planning, decoding and queue/cache algorithms stay in
