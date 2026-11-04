@@ -1,6 +1,6 @@
 # Architecture Maintenance Plan
 
-Status: in progress. ARCH-09, ARCH-01, ARCH-03 and ARCH-04 implemented; remaining items are pending.
+Status: in progress. ARCH-09, ARCH-01, ARCH-03, ARCH-04 and ARCH-05 implemented; remaining items are pending.
 
 This is the implementation tracker for the validated parts of the [architecture review](arch-review.md).
 The [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes the work; this file owns scope,
@@ -46,7 +46,8 @@ and remaining responsibilities in the completion log; do not improve one file's 
 ## Progress
 
 ARCH-09 and ARCH-01 are committed as `64cdfb2`; ARCH-03 is committed as `db6ac6b` after user COMM smoke.
-ARCH-04 is implemented in the working tree. Complete one bounded item at a time; record the change/PR, validation and remaining
+ARCH-04 is committed as `3820481` after user portal smoke; ARCH-05 is implemented in the working tree.
+Complete one bounded item at a time; record the change/PR, validation and remaining
 device checks in the completion log below. Do not treat a partial move as completion of the entire hotspot.
 
 | Done | ID | Work item | Acceptance |
@@ -56,7 +57,7 @@ device checks in the completion log below. Do not treat a partial move as comple
 | [ ] | ARCH-02 | Remove genuine command forwarding wrappers | Direct delegation disappears; navigation/cancellation/ordering behavior and its meaningful tests remain at an explicit owner. |
 | [x] | ARCH-03 | Extract COMM UI workflow from `content.tsx` | Drafts, send acknowledgments and scroll/history coordination have a cohesive owner without moving transport or changing effect ordering. |
 | [x] | ARCH-04 | Extract portal styling from `map-renderer.ts` | Styling/radius calculations take explicit inputs and can be tested without initializing Leaflet; appearance and zoom thresholds match. |
-| [ ] | ARCH-05 | Extract map-response adaptation from `map-request.ts` | Conversion/type guards have explicit clock/history dependencies; queue/cache/generation/cancellation behavior stays with the scheduler. |
+| [x] | ARCH-05 | Extract map-response adaptation from `map-request.ts` | Conversion/type guards have explicit clock/history dependencies; queue/cache/generation/cancellation behavior stays with the scheduler. |
 | [ ] | ARCH-06 | Share portal types and organize message payload types | Common fields have one definition; required/optional distinctions, existing imports and wire contracts remain compatible. |
 | [ ] | ARCH-07 | Consolidate storage I/O handling | Small read/write helpers retain feature parsers, legacy migrations, defaults, remove-item behavior and exact stored formats. |
 | [ ] | ARCH-08 | Move remaining domain aggregation to core | List summarization has a core owner and equivalent results; presentation, filtering tied to UI choices, and SVG geometry stay in the app. |
@@ -306,7 +307,7 @@ existing real-Leaflet browser case now checks complete base marker dimensions/st
 change while retaining marker identity. `npm run check` passes: 708 app/core tests, 6 release checks, 18 build-guard
 checks, lint/types, CSS and workbench build. All 65 Chrome browser cases pass (50.6 seconds).
 
-ARCH-04 remains uncommitted for review. Verified web assets were reused to package XPI/ZIP
+Committed as `3820481` after the portal smoke below. Verified web assets were reused to package XPI/ZIP
 `2026-11-04T19-20-12`, served on port 6969; APK unchanged. The user reports a quick test confirms portals still work; general portal smoke is accepted,
 without claiming exhaustive styling paths or platform coverage.
 
@@ -315,3 +316,34 @@ portal history and artifact conversion still obtains a fallback timestamp from `
 history updates and clock boundary remain useful; queue/cache/generation/retry/cancellation ownership must stay with
 `map-request.ts`. Do not expand this into label/decorations extraction: those later candidates still require a concrete
 maintenance need and their own map-lifetime/disposal contract. ARCH-06a/b and the remaining order stay unchanged.
+
+
+### 2026-11-04 — ARCH-05: map-response adaptation
+
+`map/map-entity-adapter.ts` owns raw/decoded response-to-render projection, artifact result shape guards and tuple
+conversion, and artifact-type projection for diagnostics. `adaptMapEntities` receives response, generation, read-only
+cached portal history and optional artifact entities; it returns render entities plus explicit history updates without
+mutating the cache. The coordinator's `prepareRenderEntities` applies these updates at the existing fixture, fresh-cache,
+batch-progress and final-render points, before publishing entities. This small wrapper owns a state change rather than
+merely forwarding arguments. `adaptArtifactPortalEntities` receives its fallback clock explicitly; the transport passes
+`Date.now`, called once per summary lacking a finite timestamp, as before.
+
+Request coordinator: 947 → 859 LOC (-88). New adapter: 115 LOC. Whole production source: 24,589 → 24,616 (+27).
+Queue/cache/generation/retry/refill/cancellation, stale-response bridging, transport/envelope handling, artifact error
+isolation and diagnostic publication remain in the coordinator. Core decoding remains in core. Artifact portal override
+priority, history fallback (including explicit zero), payload shapes and property/iteration ordering are preserved;
+there is no intentional behavior change or performance claim. Diagnostics extraction remains a later candidate.
+
+Validation: seven adapter tests cover render projection/placeholders, read-only history plus explicit updates, artifact
+overrides and metadata, empty results, supported artifact shapes, lazy fallback-clock calls and sorted unique types.
+A coordinator regression checks history application before publication and summary fallback after explicit zero;
+the existing old-map rejection case now also checks that late history cannot enter the page cache. All 25 focused
+adapter/coordinator tests pass. A temporary comparison against the prior implementation matched 21 captured-fixture/
+edge/history scenarios and seven artifact result shapes, including resulting cache updates. `npm run check` passes:
+716 app/core tests, 6 release checks, 18 build guards, lint/types, CSS and workbench build. All 65 Chrome cases pass
+(50.3 seconds). XPI/ZIP `2026-11-04T19-26-28` reuse the verified web build; all 23 archive files match dist and the
+port-6969 downloads match the archives. APK unchanged. The user reports a quick test confirms portals and the map still work; general map/portal smoke
+is accepted without claiming exhaustive paths or platform coverage.
+
+ARCH-05 remains uncommitted for review. Next: ARCH-06a shared portal identity/summary types; ARCH-06 remains incomplete
+until its separately bounded payload-module organization slice (ARCH-06b) also finishes.

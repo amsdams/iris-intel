@@ -10,12 +10,9 @@ import {
   drainIitcRenderQueueBatch,
   createIitcRenderQueueState,
   createIitcMapDataPlan,
-  decodeIitcGameEntities,
-  decodeIitcGetEntitiesResponse,
   getIitcRequestQueueDelayMs,
   getIitcTileQueueRefillDecision,
   getIitcRecoveredTileKeys,
-  getIitcPortalArtifacts,
   IitcDataCache,
   getIitcMapRefreshDelayMs,
   markIitcTileQueueComplete,
@@ -24,17 +21,17 @@ import {
   mergeIitcGetEntitiesResponses,
   pushIitcRenderQueueTile,
   type IitcMapTilePayload,
-  type IitcPortalArtifact,
   type IitcRawGameEntity,
   type IitcRenderQueueTileStatus,
   type IitcGetEntitiesResponse, type IitcMapDataPlan,
 } from '@iris/iitc-core';
 import type {
   IitcIrisDataSourceSettings, IitcIrisEntitySource, IitcIrisLifecycleSettings, IitcIrisMapTimingDiagnostics,
-  IitcIrisQueueDiagnostics, IitcIrisRenderArtifact, IitcIrisRenderEntities, IitcIrisRenderPortal, IitcIrisRenderQueueDiagnostics,
+  IitcIrisQueueDiagnostics, IitcIrisRenderEntities, IitcIrisRenderPortal, IitcIrisRenderQueueDiagnostics,
 } from '../messages';
 import {createIitcAuthError, createMissingIntelVersionError, extractVersion, getCsrfToken, isIitcAuthError, looksLikeHtml, type IntelRequest} from '../intel/intel-request';
 import type {IitcIrisMapLifetime} from './map-runtime-lifetime';
+import {adaptArtifactPortalEntities, adaptMapEntities, getArtifactTypes} from './map-entity-adapter';
 
 const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
 const FAST_MOVE_REFRESH_DELAY_MS = 250;
@@ -203,21 +200,6 @@ export function createMapRequest({
     };
   }
 
-  function toRenderArtifacts(artifacts: IitcPortalArtifact[]): IitcIrisRenderArtifact[] | undefined {
-    return artifacts.length > 0 ? artifacts : undefined;
-  }
-
-  function isRawGameEntity(value: unknown): value is IitcRawGameEntity {
-    return Array.isArray(value) &&
-      typeof value[0] === 'string' &&
-      typeof value[1] === 'number' &&
-      Array.isArray(value[2]);
-  }
-
-  function isPortalSummary(value: unknown): value is unknown[] {
-    return Array.isArray(value) && value[0] === 'p';
-  }
-
   function createPlanFromMap(): IitcMapDataPlan | null {
     const map = getMap();
     if (!map) return null;
@@ -234,52 +216,10 @@ export function createMapRequest({
     });
   }
 
-  function toRenderEntities(response: IitcGetEntitiesResponse, generation: number, artifactEntities: IitcRawGameEntity[] = []): IitcIrisRenderEntities {
-    const decoded = decodeIitcGetEntitiesResponse(response);
-    if (artifactEntities.length > 0) {
-      const artifactDecoded = decodeIitcGameEntities(artifactEntities);
-      Object.assign(decoded.portals, artifactDecoded.portals);
-    }
-
-    return {
-      generation,
-      portals: Object.values(decoded.portals).map((portal) => {
-        const history = portal.history ?? portalHistoryByGuid.get(portal.guid);
-        if (portal.history) portalHistoryByGuid.set(portal.guid, portal.history);
-        return {
-          guid: portal.guid,
-          title: portal.title,
-          image: portal.image,
-          team: portal.team,
-          latE6: portal.latE6,
-          lngE6: portal.lngE6,
-          level: portal.level,
-          health: portal.health,
-          resCount: portal.resCount,
-          mission: portal.mission,
-          mission50plus: portal.mission50plus,
-          ornaments: portal.ornaments,
-          artifacts: toRenderArtifacts(getIitcPortalArtifacts(portal.artifactBrief)),
-          history,
-          isPlaceholder: portal.isPlaceholder,
-        };
-      }),
-      links: Object.values(decoded.links).map((link) => ({
-        guid: link.guid,
-        team: link.team,
-        oGuid: link.oGuid,
-        oLatE6: link.oLatE6,
-        oLngE6: link.oLngE6,
-        dGuid: link.dGuid,
-        dLatE6: link.dLatE6,
-        dLngE6: link.dLngE6,
-      })),
-      fields: Object.values(decoded.fields).map((field) => ({
-        guid: field.guid,
-        team: field.team,
-        points: field.points.map((point) => ({guid: point.guid, latE6: point.latE6, lngE6: point.lngE6})),
-      })),
-    };
+  function prepareRenderEntities(response: IitcGetEntitiesResponse, generation: number, artifactEntities: IitcRawGameEntity[] = []): IitcIrisRenderEntities {
+    const {entities, historyUpdates} = adaptMapEntities(response, generation, portalHistoryByGuid, artifactEntities);
+    for (const [guid, history] of historyUpdates) portalHistoryByGuid.set(guid, history);
+    return entities;
   }
 
   async function fetchEntityBatch(tileKeys: string[], version: string, signal?: AbortSignal): Promise<IitcGetEntitiesResponse> {
@@ -320,38 +260,12 @@ export function createMapRequest({
     return JSON.parse(text) as IitcGetEntitiesResponse;
   }
 
-  function getArtifactTypes(entities: IitcRawGameEntity[]): string[] {
-    const types = new Set<string>();
-    for (const portal of Object.values(decodeIitcGameEntities(entities).portals)) {
-      for (const artifact of getIitcPortalArtifacts(portal.artifactBrief)) types.add(artifact.type);
-    }
-    return [...types].sort();
-  }
-
   function resetArtifactDiagnostics(status = 'disabled'): void {
     latestArtifactDiagnostics = {
       status,
       portalCount: 0,
       types: [],
     };
-  }
-
-  function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null && !Array.isArray(value);
-  }
-
-  function getArtifactPortalResultEntries(result: unknown): [string, unknown][] {
-    if (!isRecord(result)) return [];
-    const nestedPortals = result.portals;
-    if (isRecord(nestedPortals)) return Object.entries(nestedPortals);
-    return Object.entries(result);
-  }
-
-  function toArtifactRawGameEntity(guid: string, value: unknown): IitcRawGameEntity | null {
-    if (isRawGameEntity(value)) return value;
-    if (!isPortalSummary(value)) return null;
-    const timestamp = typeof value[13] === 'number' && Number.isFinite(value[13]) ? value[13] : Date.now();
-    return [guid, timestamp, value];
   }
 
   async function fetchArtifactPortals(version: string, signal?: AbortSignal): Promise<IitcRawGameEntity[]> {
@@ -379,9 +293,7 @@ export function createMapRequest({
 
     const parsed = JSON.parse(text) as ArtifactPortalsResponse;
     if (parsed.error || !parsed.result) return [];
-    return getArtifactPortalResultEntries(parsed.result)
-      .map(([guid, value]) => toArtifactRawGameEntity(guid, value))
-      .filter((entity): entity is IitcRawGameEntity => entity !== null);
+    return adaptArtifactPortalEntities(parsed.result, Date.now);
   }
 
   function isAuthLikeError(error: unknown): boolean {
@@ -541,7 +453,7 @@ export function createMapRequest({
         });
         const fixtureResponse = await fetchFixtureResponse(dataSource);
         if (generation !== latestFetchGeneration) return;
-        const entities = toRenderEntities(fixtureResponse, generation);
+        const entities = prepareRenderEntities(fixtureResponse, generation);
         const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyIitcTileDiagnostics(fixtureResponse, plan.tileKeys);
         latestPlan = plan;
         latestResponse = fixtureResponse;
@@ -631,7 +543,7 @@ export function createMapRequest({
       let progressEntities: IitcIrisRenderEntities | undefined;
       if (freshCachedTileKeys.length > 0) {
         const cachedResponse = drainRenderQueue();
-        const entities = toRenderEntities(cachedResponse, generation);
+        const entities = prepareRenderEntities(cachedResponse, generation);
         latestPlan = plan;
         progressResponse = cachedResponse;
         progressEntities = entities;
@@ -712,7 +624,7 @@ export function createMapRequest({
           responses.push(filterIitcGetEntitiesResponseToTiles(result.response, renderedTileKeys));
         }
         mergedResponse = drainRenderQueue();
-        const entities = toRenderEntities(mergedResponse, generation);
+        const entities = prepareRenderEntities(mergedResponse, generation);
         const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyIitcTileDiagnostics(mergedResponse, plan.tileKeys);
         initialRequestCount += 1;
         const recoveredTileKeys = getIitcRecoveredTileKeys([...retriedTileKeys], nonEmptyTileKeys);
@@ -838,7 +750,7 @@ export function createMapRequest({
         if (activeMapDataRefreshBridge?.generation === generation) activeMapDataRefreshBridge = undefined;
         return;
       }
-      const entities = toRenderEntities(mergedResponse, generation, artifactEntities);
+      const entities = prepareRenderEntities(mergedResponse, generation, artifactEntities);
       const {returnedTiles, nonEmptyTiles, emptyTileKeys, nonEmptyTileKeys, unaccountedTileKeys} = classifyIitcTileDiagnostics(mergedResponse, plan.tileKeys);
       const recoveredTileKeys = getIitcRecoveredTileKeys([...retriedTileKeys], nonEmptyTileKeys);
       queueState = markIitcTileQueueComplete(queueState);

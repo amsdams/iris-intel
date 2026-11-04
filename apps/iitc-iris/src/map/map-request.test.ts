@@ -25,6 +25,7 @@ interface Harness {
   renderEntities: ReturnType<typeof vi.fn<Options['renderEntities']>>;
   postStatus: ReturnType<typeof vi.fn<Options['postEntityStatus']>>;
   clearAll: ReturnType<typeof vi.fn>;
+  history: Options['portalHistoryByGuid'];
   entityCalls: () => Parameters<Options['fetchIitcEndpointText']>[];
   move: (lng?: number) => void;
   setSource: (next: IitcIrisDataSourceSettings) => void;
@@ -48,14 +49,15 @@ function setup(iitcMovementDelay = false, span = .00001, zoom = 16, isIdle = ():
   const renderEntities = vi.fn<Options['renderEntities']>(value => { entities = value; });
   const postStatus = vi.fn<Options['postEntityStatus']>();
   const clearAll = vi.fn();
+  const history: Options['portalHistoryByGuid'] = new Map();
   const runtime = createMapRequest({
     getMap: () => map as unknown as LeafletMap, getLifetime: () => lifetime,
     getDataSource: () => source, getLifecycleSettings: () => ({iitcMovementDelay}),
-    isAuthRecoveryActive: () => false, isIdle, getEntities: () => entities, portalHistoryByGuid: new Map(),
+    isAuthRecoveryActive: () => false, isIdle, getEntities: () => entities, portalHistoryByGuid: history,
     fetchIitcEndpointText: fetchEndpoint, renderEntities, renderTileDebug: vi.fn(), clearAllRenderedLayers: clearAll,
     postEntityStatus: postStatus, recordStaleGenerationCacheWarmTileKeys: vi.fn(),
   });
-  return {runtime, fetchEndpoint, renderEntities, postStatus, clearAll,
+  return {runtime, fetchEndpoint, renderEntities, postStatus, clearAll, history,
     entityCalls: () => fetchEndpoint.mock.calls.filter(([endpoint]) => endpoint === 'getEntities'),
     move: (lng?: number): void => {
       runtime.mapMoveStart();
@@ -231,9 +233,12 @@ describe('map request coordination', () => {
     const oldCall = test.entityCalls()[0];
     test.replaceMap();
     expect(oldCall[1].signal?.aborted).toBe(true);
-    old.resolve(textResponse(success(requestTiles(oldCall[1]), 'old-map')));
+    const oldResponse = success(requestTiles(oldCall[1]), 'old-map');
+    for (const tile of Object.values(oldResponse.result?.map ?? {})) tile.gameEntities?.[0][2].push([], [], 'owner', null, 7);
+    old.resolve(textResponse(oldResponse));
     await previous;
     expect(test.renderEntities).not.toHaveBeenCalled();
+    expect(test.history.size).toBe(0);
     await test.runtime.refreshEntities();
     expect(test.entityCalls()).toHaveLength(2);
     expect(test.renderEntities.mock.lastCall?.[0].portals[0].guid).toBe('portal');
@@ -286,6 +291,30 @@ describe('map request coordination', () => {
     expect(test.renderEntities.mock.lastCall?.[0].portals[0].guid).toBe('current-fixture');
     expect(test.postStatus.mock.lastCall?.[0]).toBe('fixture current');
     expect(test.fetchEndpoint).not.toHaveBeenCalled();
+  });
+
+  it('applies fixture history before publication and reuses it for later summaries, including explicit zero', async () => {
+    const test = setup();
+    const known = {raw: 3, visited: true, captured: true, scoutControlled: false};
+    const zero = {raw: 0, visited: false, captured: false, scoutControlled: false};
+    const load = async (id: string, bits?: number): Promise<void> => {
+      const value = success(['fixture']);
+      if (bits !== undefined) value.result?.map?.fixture.gameEntities?.[0][2].push([], [], 'owner', null, bits);
+      test.setSource({mode: 'fixture', id, label: id, url: '/fixture.json'});
+      vi.spyOn(test.lifetime(), 'fetchText').mockResolvedValue(textResponse(value));
+      await test.runtime.refreshEntities();
+    };
+    test.renderEntities.mockImplementationOnce(value => {
+      expect(test.history.get('portal')).toEqual(known);
+      expect(value.portals[0].history).toEqual(known);
+    });
+    await load('detail', 3);
+    await load('summary');
+    expect(test.renderEntities.mock.lastCall?.[0].portals[0].history).toEqual(known);
+    await load('zero', 0);
+    expect(test.history.get('portal')).toEqual(zero);
+    await load('summary-after-zero');
+    expect(test.renderEntities.mock.lastCall?.[0].portals[0].history).toEqual(zero);
   });
 
   it('treats login HTML as authentication failure without retrying or rendering it', async () => {

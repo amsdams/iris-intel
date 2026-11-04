@@ -131,8 +131,11 @@ current/default zoom, retains the radius adapter for overlays and selection, and
 details have their own owners below.
 Renderer callbacks read the current state; disposal invalidates its render context and map-keyed resources stay separate.
 `map/map-request.ts` owns map refresh generations, tile/cache/refill/render queues, fixture/live fetching, artifact
-injection and map-request diagnostics. The existing pure planning, decoding and queue/cache algorithms stay in
-`packages/iitc-core`. Movement and map disposal explicitly notify this page-owned controller; tile cache survives map
+injection and map-request diagnostics. `map/map-entity-adapter.ts` projects decoded entities and artifact results into
+render payloads. It reads portal history without mutation and returns explicit updates; the coordinator applies them
+at the existing fixture/cache/batch/final preparation points before publication. Artifact timestamp fallback receives
+an explicit clock. Transport, envelope/error handling, scheduling and diagnostic publication stay in the coordinator.
+The existing pure planning, decoding and queue/cache algorithms stay in `packages/iitc-core`. Movement and map disposal explicitly notify this page-owned controller; tile cache survives map
 replacement while pending work and request identity are invalidated. `intel/intel-request.ts` holds shared page-context
 CSRF/version/auth helpers, lifetime-bound endpoint transport and the shared JSON endpoint helper for panel requests.
 
