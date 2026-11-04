@@ -6,9 +6,13 @@ export function formatCommActor(message: IitcIrisCommMessage): string {
 
 export function getCommDisplayParts(message: IitcIrisCommMessage): IitcIrisCommMessage['parts'] {
   const actor = formatCommActor(message).replace(/^@/, '').toLowerCase();
+  let prefix = true;
   return message.parts.filter((part) => {
+    if (part.type === 'text' && !part.text.trim()) return true;
+    const first = prefix;
+    prefix = false;
     if (part.type !== 'player') return true;
-    return part.text.replace(/^@/, '').toLowerCase() !== actor;
+    return !part.sender && !(first && !part.at && part.text.replace(/^@/, '').toLowerCase() === actor);
   }).map((part, index) => part.type === 'text' && index === 0
     ? {...part, text: part.text.replace(/\s+/g, ' ').replace(/^\s*[,.:;-]\s*/, '').trimStart()}
     : part)

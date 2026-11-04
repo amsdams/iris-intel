@@ -13,6 +13,24 @@ material, but they should not become the default naming source for IITC IRIS.
 
 ## Porting Doctrine
 
+### COMM correctness, usability and native views — 2026-11-04
+
+User-authorized follow-up to [the COMM review](plans/comm-review.md): fix polling starvation, malformed response
+acceptance, failed-send draft loss and self-mention removal; restore sender focus/mentions, dates, safe URL links,
+own-player emphasis and nickname completion. Add persisted local filters/search and a selected-portal timeline
+derived from loaded public COMM. Reference contracts are `comm.js`, `chat.js`, `request_handling.js`, and
+`comm_declarative_message_filter.js`. Keep automatic deadlines independent of foreground/history completions.
+Preserve raw buffers for Player Tracker. Filters are display-only; timeline coverage is explicitly loaded messages,
+not authoritative ownership or complete history. Pure filter/classification/matching rules belong in core; browser
+focus/storage/transport, draft ownership and timeline subscription belong in the app. Additive activity/send metadata
+may extend the bridge while existing payloads/keys remain valid. No automatic resend or new background monitoring.
+
+Implemented: channel-local send acknowledgments/draft recovery; independent recurring poll deadlines; response
+validation; preserved body mentions; sender/date/link/own-player/Tab usability; persisted active filters and eight
+named local views; and a selected-portal public-system timeline (most recent 100 matches plus total). Its additive
+activity subscription follows selection/map readiness and reads loaded data only. Unit/browser coverage and remaining
+live-device checks are recorded in the review and roadmap.
+
 ### COMM and map freshness parity pass — 2026-11-04
 
 The user authorized the three fixes in [the investigation](plans/comm-map-refresh-investigation.md). Reopen map

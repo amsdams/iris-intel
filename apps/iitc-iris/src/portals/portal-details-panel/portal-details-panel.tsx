@@ -3,6 +3,7 @@ import './portal-side-panel-stacked.css';
 import './agent-name.css';
 import './portal-side-panel.css';
 import './portal-content.css';
+import '../../ui/shared/section-summary.css';
 import './portal-details.css';
 import {SummaryGrid} from '../../ui/summary-grid';
 import {SummaryCell} from '../../ui/summary-cell';
@@ -19,6 +20,7 @@ import {PanelFooter, PanelTitle} from '../../ui/panel';
 import {StatusText} from '../../ui/status-text';
 import {EmptyState} from '../../ui/empty-state';
 import './portal-summary-mini-track.css';
+import {PortalActivity} from '../../comm/portal-activity';
 
 export interface IitcIrisPortalDetailsPanelProps {
   activeSidePanel: string | null;
@@ -36,6 +38,8 @@ export interface IitcIrisPortalDetailsPanelProps {
   portalMissionState: IitcIrisMissionsState | null;
   portalSections: Record<IitcIrisPortalDetailSectionId, boolean>;
   setPortalSectionOpen: (section: IitcIrisPortalDetailSectionId, open: boolean) => void;
+  openPublicComm?: () => void;
+  selectActivityPortal?: (latE6?: number, lngE6?: number, guid?: string) => void;
 }
 
 function formatPortalHealth(portal: IitcIrisSelectedPortal): string {
@@ -332,17 +336,21 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
                 </div>
               </div>
             </PortalDetailSection>
-            <PanelFooter>
-              <DiagnosticsChip
-                title={[
-                  'request: /r/getPortalDetails',
-                  `guid: ${portal.guid}`,
-                ].join('\n')}
-              >
-                {portalDetails.cached ? 'cached' : portalDetails.elapsedMs !== undefined ? `request ${formatElapsedSeconds(portalDetails.elapsedMs)}s` : 'request'}
-              </DiagnosticsChip>
-            </PanelFooter>
           </>
+        )}
+        {props.openPublicComm && props.selectActivityPortal && <PortalActivity portal={portal}
+          openPublicComm={props.openPublicComm} selectPortal={props.selectActivityPortal} />}
+        {portalDetails?.status === 'ready' && (
+          <PanelFooter>
+            <DiagnosticsChip
+              title={[
+                'request: /r/getPortalDetails',
+                `guid: ${portal.guid}`,
+              ].join('\n')}
+            >
+              {portalDetails.cached ? 'cached' : portalDetails.elapsedMs !== undefined ? `request ${formatElapsedSeconds(portalDetails.elapsedMs)}s` : 'request'}
+            </DiagnosticsChip>
+          </PanelFooter>
         )}
       </div>
     </div>

@@ -9,6 +9,52 @@
 
 /* Messages */
 
+.iitc-iris-comm-filters {
+    min-width: 0;
+    color: var(--iitc-iris-color-text);
+    font-size: var(--iitc-iris-text-md);
+}
+
+.iitc-iris-comm-filter-content {
+    margin-top: var(--iitc-iris-space-3);
+    gap: var(--iitc-iris-space-3);
+}
+
+.iitc-iris-comm-filter-content > p { margin: 0; }
+
+.iitc-iris-comm-filter-content label {
+    display: grid;
+    gap: var(--iitc-iris-space-2);
+    min-width: 0;
+    color: var(--iitc-iris-color-muted);
+}
+
+.iitc-iris-comm-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--iitc-iris-space-3);
+    margin-block: var(--iitc-iris-space-3);
+}
+
+.iitc-iris-comm-filter-content .iitc-iris-input-surface {
+    width: 100%;
+    min-width: 0;
+    height: 32px;
+    padding: 0 var(--iitc-iris-space-3);
+    font-size: var(--iitc-iris-text-md);
+}
+
+.iitc-iris-comm-filter-content select.iitc-iris-input-surface {
+    appearance: auto;
+}
+
+.iitc-iris-comm-filter-wide { grid-column: 1 / -1; }
+
+.iitc-iris-comm-saved-views > .iitc-iris-status {
+    display: block;
+    margin-top: var(--iitc-iris-space-3);
+}
+
 .iitc-iris-comm-list {
     display: grid;
     gap: 4px;
@@ -40,9 +86,10 @@
     gap: 2px;
 }
 
-.iitc-iris-comm-meta b {
+.iitc-iris-comm-meta time {
     color: inherit;
     font-size: var(--iitc-iris-text-md);
+    font-weight: 700;
 }
 
 .iitc-iris-comm-meta small {
@@ -73,6 +120,7 @@
 }
 
 :where(.iitc-iris-comm-actor) {
+    appearance: none;
     display: inline-flex;
     max-width: 160px;
     margin-right: 5px;
@@ -88,7 +136,12 @@
     text-overflow: ellipsis;
     vertical-align: baseline;
     white-space: nowrap;
+    cursor: pointer;
 }
+
+.iitc-iris-comm-row.is-own { border-left-color: var(--iitc-iris-color-link); }
+.iitc-iris-comm-row.is-mention { border-left: 3px solid var(--iitc-iris-color-warning); }
+.iitc-iris-comm-text a { color: var(--iitc-iris-color-link); text-decoration: underline; }
 
 .iitc-iris-comm-actor.is-resistance {
     border-color: rgb(0 136 255 / 38%);

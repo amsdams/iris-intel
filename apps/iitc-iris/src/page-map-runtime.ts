@@ -37,6 +37,7 @@ const IITC_IRIS_ASSET_BASE_URL = ((): string => {
 let mapLifetime: IitcIrisMapLifetime | undefined;
 let bootRetryTimer: number | undefined;
 let refreshActivity: ReturnType<typeof createMapRefreshActivity> | undefined;
+let activityPortalGuid: string | undefined;
 
 let latestEntities: IitcIrisRenderEntities | undefined;
 
@@ -204,9 +205,17 @@ const comm = createCommRuntime({
   onPublicMessages: (messages) => {
     processPlayerTrackerCommMessages(messages);
     renderPlayerTracker();
+    postPortalActivity();
   },
 });
 const {refreshComm, sendComm, cancelActiveCommFetch} = comm;
+
+function postPortalActivity(): void {
+  const portal = selection.getSelectedPortal();
+  if (!portal || portal.guid !== activityPortalGuid) return;
+  window.postMessage({type: IITC_IRIS_MESSAGES.portalActivityStatus,
+    portalActivity: {guid: portal.guid, ...comm.getPortalActivity(portal)}} satisfies IitcIrisMessage, '*');
+}
 
 const playerTracker = createPlayerTrackerRuntime({
   getMap: () => window.__iitcIrisMap,
@@ -454,6 +463,14 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   if (event.data?.type === IITC_IRIS_MESSAGES.commVisibility) {
     comm.setPanelVisibility(event.data.commVisible === true);
   }
+  if (event.data?.type === IITC_IRIS_MESSAGES.portalActivityRequest) {
+    if (event.data.commVisible === false) {
+      if (activityPortalGuid === event.data.portalGuid) activityPortalGuid = undefined;
+    } else if (event.data.portalGuid === selection.getSelectedPortal()?.guid) {
+      activityPortalGuid = event.data.portalGuid;
+      postPortalActivity();
+    }
+  }
   if (event.data?.type === IITC_IRIS_MESSAGES.sendComm) {
     void sendComm(normalizeCommTab(event.data.commTab), event.data.commMessage);
   }
@@ -563,6 +580,7 @@ function boot(): void {
     playerTracker.dispose();
     comm.dispose();
     refreshActivity = undefined;
+    activityPortalGuid = undefined;
     inventory.dispose();
     mapRequests.dispose();
     invalidateSearch();

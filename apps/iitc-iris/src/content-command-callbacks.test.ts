@@ -148,7 +148,7 @@ describe('content-command-callbacks', () => {
   // -------------------------------------------------------------------------
 
   describe('sendCommCommand', () => {
-    it('posts send-comm message and clears draft when draft is non-empty', () => {
+    it('posts send-comm message and retains the draft until delivery is confirmed', () => {
       const postMessage = vi.fn();
       const setDraft = vi.fn();
       const result = sendCommCommand('all', 'hello agent', setDraft, postMessage);
@@ -158,7 +158,7 @@ describe('content-command-callbacks', () => {
         commTab: 'all',
         commMessage: 'hello agent',
       });
-      expect(setDraft).toHaveBeenCalledWith('');
+      expect(setDraft).not.toHaveBeenCalled();
     });
 
     it('is a no-op when the draft is empty or whitespace-only', () => {

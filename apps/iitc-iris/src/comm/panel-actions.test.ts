@@ -75,7 +75,7 @@ describe('content-comm-panel-actions', () => {
       commTab: 'all',
       commMessage: 'hello agent',
     });
-    expect(setDraft).toHaveBeenCalledWith('');
+    expect(setDraft).not.toHaveBeenCalled();
   });
 
   it('appends nickname to current draft', () => {

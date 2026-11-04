@@ -121,6 +121,14 @@ new-area history older than the previous cursor, shared public panel/tracker pol
 reader scroll retention, stopping hidden-panel interest and hidden-page resume. Fixtures use simulated responses
 through the real request path; these are not live Intel timing or Android background acceptance.
 
+[comm-usability.smoke.mjs](comm-usability.smoke.mjs) covers per-channel failed-draft recovery and late delivery,
+malformed refresh retention, dates/links/own mentions/sender focus/Tab completion, persisted named filters with
+independent raw tracker input, and selected-portal activity updates/selection changes excluding faction history.
+Expanded filters, including More filters/Saved views, are checked in light/dark phone and short landscape layouts.
+Tests also check saved-view feedback, keyboard expansion of portal events and absence of a nested timeline scrollbar.
+All send responses are simulated. The [UI/testing follow-up](../../docs/iitc-iris/plans/comm-ui-testing.md) records
+coverage limits and the proposed faster-feedback workflow.
+
 `node tests/browser/investigate-comm-map.mjs` is a standalone diagnostic for the
 [2026-11-04 COMM/map freshness investigation](../../docs/iitc-iris/plans/comm-map-refresh-investigation.md).
 Build the app and start `node tests/browser/server.mjs` first, as for the performance probe above. It prints portal/

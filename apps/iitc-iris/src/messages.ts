@@ -20,6 +20,8 @@ export const IITC_IRIS_MESSAGES = {
   mapContext: 'IITC_IRIS_MAP_CONTEXT',
   requestComm: 'IITC_IRIS_REQUEST_COMM',
   commVisibility: 'IITC_IRIS_COMM_VISIBILITY',
+  portalActivityRequest: 'IITC_IRIS_PORTAL_ACTIVITY_REQUEST',
+  portalActivityStatus: 'IITC_IRIS_PORTAL_ACTIVITY_STATUS',
   cancelPanelRequests: 'IITC_IRIS_CANCEL_PANEL_REQUESTS',
   sendComm: 'IITC_IRIS_SEND_COMM',
   commStatus: 'IITC_IRIS_COMM_STATUS',
@@ -169,6 +171,7 @@ export interface IitcIrisMessage {
   userAccuracy?: number;
   commTab?: IitcIrisCommTab;
   commVisible?: boolean;
+  portalActivity?: {guid: string; recent: IitcIrisCommMessage[]; total: number};
   commOlder?: boolean;
   commMessage?: string;
   passcodeText?: string;
@@ -253,6 +256,8 @@ export interface IitcIrisCommState {
   oldMessagesWereAdded?: boolean;
   sendStatus?: 'idle' | 'sending' | 'sent' | 'error' | 'auth';
   sendError?: string;
+  sendText?: string;
+  sendId?: number;
   recent?: IitcIrisCommMessage[];
   elapsedMs?: number;
   error?: string;
@@ -300,6 +305,7 @@ export interface IitcIrisCommMessage {
   playerTeam?: string;
   parts: IitcIrisCommMessagePart[];
   portals: {
+    guid?: string;
     name?: string;
     address?: string;
     latE6?: number;

@@ -3,6 +3,19 @@
 Unprioritized product/parity gaps and dated comparison evidence. The [roadmap](plans/index.md) owns current work;
 [architecture](architecture.md) owns implementation guidance. Completed refactors below are not prerequisites to repeat.
 
+### COMM Review Follow-ups (implemented 2026-11-04, live acceptance pending)
+
+The [COMM review](plans/comm-review.md) identified four defects now fixed: foreground/history requests postponing
+polls, malformed successful-looking responses, failed-send draft loss and removed body self-mentions. Sender
+click/focus, day separators, full timestamps, safe links, own-player emphasis and Tab completion are implemented.
+The authorized native filters/search support eight named local views. Selected-portal activity reads loaded public
+system events, with explicit coverage and a latest-100 cap. Display filters preserve raw Player Tracker input.
+
+Further candidates remain unimplemented: measured bounded catch-up/retention improvements, follow-agent emphasis,
+loaded-window summaries, grouped repetitive events and in-app watchlists. Background notifications require separate
+scope. See the review for reference comparisons and the implemented/future boundary. Live sending and phone UI
+acceptance remain pending.
+
 ### COMM / Player Tracker And Stale Map Entities (fixed 2026-11-04, live acceptance pending)
 
 The user reported player markers moving after COMM activity while a captured portal retained its old faction.

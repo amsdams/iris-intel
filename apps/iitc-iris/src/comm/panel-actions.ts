@@ -78,13 +78,12 @@ export function jumpCommToLatestAction(
 export function sendCommAction(
   commTab: IitcIrisCommTab,
   draft: string,
-  setDraft: (draft: string) => void,
+  _setDraft: (draft: string) => void,
   postMessageFn: (message: IitcIrisMessage) => void = (msg) => window.postMessage(msg, '*')
 ): boolean {
   const res = buildCommSendAction(commTab, draft);
   if (!res) return false;
   postMessageFn(res.message);
-  setDraft('');
   return true;
 }
 

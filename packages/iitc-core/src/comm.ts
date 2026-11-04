@@ -237,6 +237,14 @@ export function parseIitcCommResponse(response: unknown): IitcCommMessage[] {
     .filter((message): message is IitcCommMessage => message !== null);
 }
 
+/** Reject malformed endpoint data before it can alter history or continuation cursors. */
+export function validateIitcCommResponse(response: unknown): void {
+  const rows = response && typeof response === 'object' ? (response as IitcCommResponse).result : undefined;
+  if (!Array.isArray(rows) || rows.some(row => parseMsgData(row) === null)) {
+    throw new Error('getPlexts returned malformed messages');
+  }
+}
+
 export function getIitcChatPortalName(markup: IitcCommMarkupValue): string {
   if (markup.name === 'US Post Office' && typeof markup.address === 'string') {
     return `USPS: ${markup.address.split(',')[0]}`;

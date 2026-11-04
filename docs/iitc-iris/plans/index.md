@@ -14,6 +14,33 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**COMM UI and testing follow-up (2026-11-04):** UI first, per user request. Filters use progressive disclosure for
+advanced fields/saved views and reuse existing Section/ControlRow/StatusText/Badge components. Portal activity adopts
+the portal disclosure skin, event cards and one portal scrollbar; selects retain native dropdown indicators.
+The [UI/testing note](comm-ui-testing.md) records component reuse, test setup assessment, missing coverage and a
+focused-first/build-last workflow. Broader test-infrastructure changes are deferred until after UI acceptance.
+Validation passes: 689 app/core tests plus six release gates, all 61 Chrome cases, final focused UI checks and
+extension/Android release packaging. The 22 shared web assets and served APK match; signing matches the release pin.
+Updated XPI/ZIP: `2026-11-04T15-54-59`; signed APK: `0.4.1-alpha+37ea65e` (1861), including uncommitted UI changes.
+Follow-up feedback moved Portal activity after Facts, before request diagnostics, preserving access while portal
+details are unavailable. Full code checks and five COMM browser cases pass. Rebuilt XPI/ZIP: `2026-11-04T15-59-36`;
+signed APK (1862), with matching certificate/assets/served download. The existing port-6969 server serves the latest
+artifacts at `10.45.211.72`. No new commit or push. Phone acceptance pending.
+
+**COMM correctness and native views (2026-11-04):** implemented the user-authorized four fixes and smaller usability
+improvements from the [review](comm-review.md), plus persisted filters/search/named views and selected-portal activity.
+Drafts remain channel-local in memory and clear only on matching confirmed sends. Automatic deadlines survive history
+requests; malformed refreshes retain buffers/cursors. Sender focus, dates, safe links, own mentions and Tab completion
+are available. Filters affect displayed messages only; tracker input is preserved. The portal timeline uses loaded
+public system events, excludes faction/human chat, shows the most recent 100 matches and creates no extra requests.
+`npm run check` passes (689 app/core tests plus six release gates); all 61 Chrome cases pass. Five focused COMM cases
+also pass after the final filter input skin correction, including light/dark phone/landscape layout checks.
+Extension packaging and signed Android release tests/lint/build pass. All 22 shared assets match APK/XPI/ZIP; the
+APK certificate matches the release pin and the served download matches the APK. XPI/ZIP: `2026-11-04T15-36-03`;
+APK: `0.4.1-alpha+37ea65e` (1860), built from this uncommitted working tree. Port 6969 serves the updated artifacts;
+current LAN address is `10.45.211.72` (addresses may change). Work remains on `feat/comm-map-freshness`, uncommitted;
+no new commit or push was made. Live sending and phone acceptance remain pending. Play Store/closed testing remain deferred.
+
 **Feature branch testing (2026-11-04):** the user requested `feat/comm-map-freshness`, commit/push of the changes,
 and the local download page for an extended APK test. Keep this work on the feature branch while gathering feedback;
 Play Store/closed testing remain deferred. The initial artifact checkpoint below predates the feature commit;

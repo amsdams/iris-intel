@@ -48,6 +48,70 @@ describe('COMM runtime ownership', () => {
     expect(normalizeCommTab('alerts')).toBe('alerts');
   });
 
+  it('does not postpone tracker polling while the user repeatedly loads faction history', async () => {
+    options.isPublicChannelInterested = (): boolean => true;
+    runtime = createCommRuntime(options);
+    await runtime.refreshComm('faction');
+    for (let index = 0; index < 4; index += 1) {
+      await vi.advanceTimersByTimeAsync(30_000);
+      await runtime.refreshComm('faction', true);
+    }
+    const publicRequests = fetchText.mock.calls.filter(([, init]) => (JSON.parse(String(init.body)) as {tab: string}).tab === 'all');
+    expect(publicRequests).toHaveLength(3);
+  });
+
+  it('reports malformed responses without losing loaded messages or advancing their cursor', async () => {
+    await runtime.refreshComm('all');
+    fetchText.mockResolvedValueOnce(reply({unexpected: true}));
+    await runtime.refreshComm('all');
+    expect(runtime.getState()).toMatchObject({status: 'error', messages: 1, newestTimestamp: 2000, error: 'getPlexts returned malformed messages'});
+    expect(options.onPublicMessages).toHaveBeenCalledOnce();
+    fetchText.mockResolvedValueOnce(reply({result: []}));
+    await runtime.refreshComm('all');
+    expect(JSON.parse(String(fetchText.mock.lastCall?.[1].body)) as unknown).toMatchObject({minTimestampMs: 2000});
+    expect(runtime.getState()).toMatchObject({status: 'ready', messages: 1});
+  });
+
+  it('retains failed send metadata in its channel across polling and channel switches', async () => {
+    fetchText.mockResolvedValueOnce(reply({error: 'offline'}));
+    await runtime.sendComm('all', 'recover me');
+    await runtime.refreshComm('faction');
+    expect(runtime.getState().sendText).toBeUndefined();
+    await runtime.refreshComm('all');
+    expect(runtime.getState()).toMatchObject({sendStatus: 'error', sendText: 'recover me', sendError: 'offline'});
+  });
+
+  it('derives portal activity only from the raw public buffer, independently of faction chat', async () => {
+    await runtime.refreshComm('faction');
+    expect(runtime.getPortalActivity({guid: 'p', latE6: 52000000, lngE6: 4000000}).recent).toEqual([]);
+    await runtime.refreshComm('all');
+    expect(runtime.getPortalActivity({guid: 'p', latE6: 52000000, lngE6: 4000000})).toMatchObject({total: 1, recent: [{id: 'new'}]});
+    expect(runtime.getPortalActivity({guid: 'p', latE6: 53000000, lngE6: 5000000}).recent).toEqual([]);
+  });
+
+  it('bounds portal activity to the latest 100 public system events and clears it after changing areas', async () => {
+    const getMap = vi.fn(options.getMap);
+    runtime = createCommRuntime({...options, getMap});
+    const rows = Array.from({length: 105}, (_, index) => message(`event-${index}`, 1000 + index)).reverse();
+    const privateRow = message('secure', 3000);
+    (privateRow[2] as {plext: {categories: number}}).plext.categories = 3;
+    const chatRow = message('chat', 4000);
+    (chatRow[2] as {plext: {plextType: string}}).plext.plextType = 'PLAYER_GENERATED';
+    fetchText.mockResolvedValueOnce(reply({result: [chatRow, privateRow, ...rows]}));
+    await runtime.refreshComm('all');
+    const portal = {guid: 'p', latE6: 52000000, lngE6: 4000000};
+    const activity = runtime.getPortalActivity(portal);
+    expect(activity.total).toBe(105);
+    expect(activity.recent).toHaveLength(100);
+    expect(activity.recent[0].id).toBe('event-5');
+    expect(activity.recent[99].id).toBe('event-104');
+    getMap.mockReturnValue({getBounds: (): LatLngBounds => ({
+      getSouth: (): number => 10, getWest: (): number => 10, getNorth: (): number => 11, getEast: (): number => 11,
+    }) as LatLngBounds});
+    runtime.mapMoved();
+    expect(runtime.getPortalActivity(portal)).toEqual({total: 0, recent: []});
+  });
+
   it('uses authenticated channel requests and preserves portal/player previews', async () => {
     await runtime.refreshComm('all');
     const [endpoint, init, group] = fetchText.mock.calls[0];
@@ -140,7 +204,7 @@ describe('COMM runtime ownership', () => {
     runtime.mapMoved();
     finish(reply({result: [message('stale')]}));
     await old;
-    expect(options.onPublicMessages).not.toHaveBeenCalled();
+    expect(options.onPublicMessages).toHaveBeenCalledExactlyOnceWith([]);
     await runtime.refreshComm('all');
     await runtime.refreshComm('faction');
     await runtime.refreshComm('alerts');
@@ -299,7 +363,7 @@ describe('COMM runtime ownership', () => {
     finish(reply({result: true}));
     await sending;
     expect(fetchText).toHaveBeenCalledOnce();
-    expect(runtime.getState().sendStatus).toBe('sending');
+    expect(runtime.getState()).toMatchObject({sendStatus: 'error', sendText: 'hello'});
   });
 
   it('preserves send errors and does not refresh on failure', async () => {

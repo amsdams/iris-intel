@@ -150,8 +150,23 @@ request and publishing accepted public responses to both consumers. Player Track
 or a separate poll timer. Local public/faction buffers and request cursors are tied to a mutually padded bounds area;
 material changes reset them and reject old-area replies, while alerts and tracker history retain their own lifetimes.
 `IITC_IRIS_COMM_VISIBILITY` explicitly synchronizes panel interest on navigation and page readiness, including switches
-between side panels. Existing request/status payloads and stored keys are preserved. UI COMM state/scroll coordination
-in `content.tsx` remains separate. Pending sends survive panel closure but cannot switch the selected channel on completion.
+between side panels. Automatic deadlines are retained across foreground/history completion. Malformed endpoint
+responses are rejected before changing history/cursors. Existing request/status payloads and stored keys remain
+compatible; send metadata adds a channel-local ID and original text. UI COMM state/scroll coordination and in-memory
+per-channel drafts in `content.tsx` remain separate. Only confirmed delivery clears matching text; a late completion
+preserves newer text and the selected channel. Pending sends survive panel closure; retries are explicit.
+
+`comm/comm-panel/comm-filters.tsx` owns local active filters and up to eight named views in
+`iitc-iris:comm-views:v1`, persisting during actions. Core `comm-views.ts` owns pure classification, filtering, portal
+matching, nickname completion and safe text-link runs. Filters affect displayed messages only; Player Tracker always
+receives raw public history. Filters use the existing native controls and shared Section/ControlRow/StatusText/Badge primitives, with
+separate More filters and Saved views disclosures. The portal disclosure skin lives in
+`ui/shared/section-summary.css`; native details/summary owns keyboard interaction. Timeline styles belong to
+`comm/portal-activity.css`, with a single parent portal scrollbar. `comm/portal-activity.tsx` subscribes through additive `IITC_IRIS_PORTAL_ACTIVITY_REQUEST`
+and `IITC_IRIS_PORTAL_ACTIVITY_STATUS` messages while expanded, replaying its subscription after page readiness.
+The page runtime checks the current portal GUID and derives a latest-100 timeline plus total from loaded public
+system events. This creates no extra fetches or polling interest. Portal matching uses GUID, falling back to exact
+E6 coordinates when absent. Faction chat, complete history and authoritative ownership are outside this view.
 
 Map requests schedule an authoritative refresh after completion: at least 5 minutes above zoom 12 and 15 minutes
 otherwise, or twice the fetch duration. Periodic refresh permits the same tile plan without bypassing the cache;

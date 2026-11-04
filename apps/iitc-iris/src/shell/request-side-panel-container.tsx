@@ -127,6 +127,7 @@ export function IitcIrisRequestSidePanelContainer(props: IitcIrisRequestSidePane
       )}
       {activeSidePanel === 'comm' && (
         <IitcIrisCommPanel
+          ownNickname={agentState.nickname}
           addNickname={addCommNickname}
           commDraft={commDraft}
           commListRef={commListRef}

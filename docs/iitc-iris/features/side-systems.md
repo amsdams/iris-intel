@@ -38,6 +38,10 @@ Current status:
   timestamp continuation, transformed markup, map-linked portal references, and nickname-click insertion into chat
   input. Send-plext support is implemented for `all` and `faction` but still needs live user verification; plugin hook
   equivalents for nickname clicks are not ported yet.
+- The 2026-11-04 [COMM review implementation](../plans/comm-review.md) fixes polling starvation, malformed refresh
+  acceptance, failed-send draft loss and self-mention removal. COMM now includes sender focus, dates, safe URL links,
+  own-player/mention emphasis and Tab completion. Collapsed Filters supports loaded-message search and saved local
+  views without affecting tracker data; Selected Portal → Portal activity shows loaded public system events only.
 - COMM is good enough to unblock other UI panels. Remaining COMM work is polish/live verification rather than a blocker:
   send-plext verification, plugin hook compatibility, and richer interaction can be deferred.
 - Scores now has first-pass core wiring. The panel requests IITC-CE core endpoints `getGameScore` and

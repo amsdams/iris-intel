@@ -216,7 +216,13 @@ function App(): h.JSX.Element {
     capsules: 0,
     portalKeysForSelectedPortal: null,
   }));
-  const [commDraft, setCommDraft] = useState('');
+  const [commDrafts, setCommDrafts] = useState<Record<IitcIrisCommTab, string>>({all: '', faction: '', alerts: ''});
+  const commDraft = commDrafts[commState.tab];
+  const setCommDraft = (draft: string | ((current: string) => string)): void => {
+    const tab = commState.tab;
+    setCommDrafts(current => ({...current, [tab]: typeof draft === 'function' ? draft(current[tab]) : draft}));
+  };
+  const acknowledgedCommSends = useRef(new Set<number>());
   const [passcodeDraft, setPasscodeDraft] = useState('');
   const commListRef = useRef<HTMLDivElement | null>(null);
   const commOlderScrollHeightRef = useRef<number | null>(null);
@@ -500,11 +506,14 @@ function App(): h.JSX.Element {
   };
 
   const sendComm = (): void => {
+    if (commState.sendStatus === 'sending') return;
+    jumpCommToLatest();
     sendCommCommand(commState.tab, commDraft, setCommDraft, postIitcMessage);
   };
 
   const addCommNickname = (nickname: string): void => {
     setCommDraft((current) => addCommNicknameCommand(current, nickname));
+    window.requestAnimationFrame(() => document.querySelector<HTMLInputElement>('.iitc-iris-comm-send-form input')?.focus());
   };
 
   const openIntelLogin = (): void => {
@@ -758,6 +767,13 @@ function App(): h.JSX.Element {
   }, [mapFocusMode]);
 
   useEffect(() => {
+    const {sendId, sendStatus, sendText, tab} = commState;
+    if (sendId === undefined || sendStatus !== 'sent' || acknowledgedCommSends.current.has(sendId)) return;
+    acknowledgedCommSends.current.add(sendId);
+    setCommDrafts(current => current[tab].trim() === sendText ? {...current, [tab]: ''} : current);
+  }, [commState]);
+
+  useEffect(() => {
     const autoRequest = getCommAutoRequest(activeSidePanel, commState.status, commState.tab);
     if (!autoRequest) return;
     const post = (): void => {
@@ -815,7 +831,7 @@ function App(): h.JSX.Element {
       }
       commOlderScrollHeightRef.current = null;
       commOlderRequestPendingRef.current = false;
-      if (commStickToBottomRef.current || commState.sendStatus === 'sending' || commState.sendStatus === 'sent') {
+      if (commStickToBottomRef.current) {
         list.scrollTop = list.scrollHeight;
         setCommUserAtBottom(true);
       }
@@ -1027,6 +1043,8 @@ function App(): h.JSX.Element {
           openPortalImage={() => setPortalImageOpen(true)}
           openSelectedPortalMissions={openSelectedPortalMissions}
           portal={entityFetch.selectedPortal}
+          openPublicComm={() => openCommPanel('all')}
+          selectActivityPortal={selectCommPortal}
           portalDetails={selectedPortalDetails}
           portalMissionState={selectedPortalMissionState}
           portalSections={portalSections}

@@ -19,4 +19,9 @@ describe('IITC IRIS COMM display', () => {
     expect(getCommTeamClass('E')).toBe('is-enlightened');
     expect(getCommTeamClass('N')).toBe('');
   });
+  it('preserves a self-mention in the message body while removing the redundant sender', () => {
+    const parts = getCommDisplayParts({...message, parts: [{type: 'player', text: 'Ada', sender: true},
+      {type: 'text', text: ' Note to '}, {type: 'player', text: 'Ada', at: true}, {type: 'text', text: ': remember'}]});
+    expect(parts.filter(part => part.type === 'player')).toEqual([{type: 'player', text: 'Ada', at: true}]);
+  });
 });

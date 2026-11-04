@@ -17,6 +17,8 @@ import {
   type IitcCommChannel,
   type IitcCommChannelData,
   type IitcCommMessage,
+  validateIitcCommResponse,
+  matchesIitcCommPortal,
 } from '@iris/iitc-core';
 
 interface CommRuntimeOptions {
@@ -40,6 +42,7 @@ interface CommRuntime {
   scheduleRefresh: (delayMs?: number) => void;
   mapMoved: () => void;
   dispose: () => void;
+  getPortalActivity: (portal: {guid: string; latE6: number; lngE6: number}) => {recent: NonNullable<IitcIrisCommState['recent']>; total: number};
 }
 
 const COMM_TAB_STORAGE_KEY = 'iitc-chat-tab';
@@ -54,10 +57,13 @@ export function createCommRuntime({getMap, getLifetime, getMapCenterE6, fetchIit
   isIdle = (): boolean => false, isAuthRecoveryActive = (): boolean => false}: CommRuntimeOptions): CommRuntime {
   let activeChannel: IitcCommChannel | undefined;
   let refreshTimer: number | undefined;
+  let refreshDueAt: number | undefined;
   let areaBounds: NonNullable<IitcIrisCommState['bounds']> | undefined;
   let areaGeneration = 0;
   let authBlocked = false;
   let lastAutomaticRefresh = -Infinity;
+  let sendSequence = 0;
+  const sendStates: Partial<Record<IitcCommChannel, Pick<IitcIrisCommState, 'sendStatus' | 'sendError' | 'sendText' | 'sendId'>>> = {};
   interface ChannelRequest {
     controller: AbortController;
     older: boolean;
@@ -93,7 +99,7 @@ export function createCommRuntime({getMap, getLifetime, getMapCenterE6, fetchIit
   function postCommState(): void {
     window.postMessage({
       type: IITC_IRIS_MESSAGES.commStatus,
-      comm: latestCommState,
+      comm: {...latestCommState, ...sendStates[latestCommState.tab]},
       requestDiagnostics: getIitcRequestDiagnostics(),
     } satisfies IitcIrisMessage, '*');
   }
@@ -121,6 +127,7 @@ export function createCommRuntime({getMap, getLifetime, getMapCenterE6, fetchIit
         postCommState();
       }
       areaBounds = next;
+      onPublicMessages([]);
     }
     areaBounds ??= next;
     return next;
@@ -149,6 +156,7 @@ export function createCommRuntime({getMap, getLifetime, getMapCenterE6, fetchIit
       portals: message.markup
         .filter(([type]) => type === 'PORTAL')
         .map(([, value]) => ({
+          guid: value.guid,
           name: value.name,
           address: value.address,
           latE6: value.latE6,
@@ -203,6 +211,7 @@ export function createCommRuntime({getMap, getLifetime, getMapCenterE6, fetchIit
     if (!response.ok) throw new Error(`getPlexts HTTP ${response.status}`);
     const error = parsed && typeof parsed === 'object' ? (parsed as {error?: unknown}).error : undefined;
     if (typeof error === 'string' && error) throw new Error(error);
+    validateIitcCommResponse(parsed);
     return parsed;
   }
 
@@ -250,44 +259,37 @@ export function createCommRuntime({getMap, getLifetime, getMapCenterE6, fetchIit
       message: text,
       ...center,
     }) : null;
+    if (sendStates[tab]?.sendStatus === 'sending') return;
     if (!payload) {
-      latestCommState = {
-        ...latestCommState,
-        tab,
-        sendStatus: 'error',
-        sendError: tab === 'alerts' ? "can't send to alerts" : 'empty message or missing map center',
-      };
+      sendStates[tab] = {...sendStates[tab], sendStatus: 'error',
+        sendError: tab === 'alerts' ? "can't send to alerts" : 'empty message or missing map center'};
+      latestCommState = {...latestCommState, tab};
       postCommState();
       return;
     }
 
     const abortController = new AbortController();
-    latestCommState = {
-      ...latestCommState,
-      tab,
-      sendStatus: 'sending',
-      sendError: undefined,
-    };
+    sendStates[tab] = {sendStatus: 'sending', sendText: text.trim(), sendId: ++sendSequence};
+    latestCommState = {...latestCommState, tab};
     postCommState();
 
     try {
       await postSendPlext(payload, abortController.signal);
       lifetime.signal.throwIfAborted();
+      sendStates[tab] = {...sendStates[tab], sendStatus: 'sent', sendError: undefined};
       if (latestCommState.tab === tab) {
-        latestCommState = {...latestCommState, sendStatus: 'sent', sendError: undefined};
         postCommState();
       }
       if (activeChannel === tab) await refreshComm(tab);
       else await requestChannel(tab, false, false);
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') return;
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        sendStates[tab] = {...sendStates[tab], sendStatus: 'error', sendError: 'Delivery was not confirmed. Check COMM before retrying.'};
+        return;
+      }
+      sendStates[tab] = {...sendStates[tab], sendStatus: isIitcAuthError(error) ? 'auth' : 'error',
+        sendError: error instanceof Error ? error.message : String(error)};
       if (latestCommState.tab !== tab) return;
-      latestCommState = {
-        ...latestCommState,
-        tab,
-        sendStatus: isIitcAuthError(error) ? 'auth' : 'error',
-        sendError: error instanceof Error ? error.message : String(error),
-      };
       postCommState();
     }
   }
@@ -297,8 +299,7 @@ export function createCommRuntime({getMap, getLifetime, getMapCenterE6, fetchIit
     const bounds = getCurrentCommBounds();
     const result = applyIitcCommResponse({result: []}, commChannelsData[tab], older, false, tab);
     latestCommState = {...createIitcCommSuccessState({channel: tab, applyResult: result,
-      getOlderMsgs: older, elapsedMs, bounds, toPreview: toCommMessagePreview}),
-      ...(latestCommState.sendStatus === 'sending' ? {sendStatus: 'sending' as const} : {})};
+      getOlderMsgs: older, elapsedMs, bounds, toPreview: toCommMessagePreview})};
     postCommState();
   }
 
@@ -319,13 +320,20 @@ export function createCommRuntime({getMap, getLifetime, getMapCenterE6, fetchIit
       request.controller.abort();
       requests.delete(tab);
     }
-    if (!lifetime || lifetime.signal.aborted || authBlocked || isAuthRecoveryActive() || !interested.size) return;
+    if (!lifetime || lifetime.signal.aborted || authBlocked || isAuthRecoveryActive() || !interested.size) {
+      refreshDueAt = undefined;
+      return;
+    }
+    const now = Date.now();
+    refreshDueAt = Math.min(refreshDueAt ?? Infinity, Math.max(now + delayMs, lastAutomaticRefresh + 10_000));
     refreshTimer = lifetime.schedule(() => {
       refreshTimer = undefined;
+      refreshDueAt = undefined;
       if (isIdle() || isAuthRecoveryActive()) return;
       lastAutomaticRefresh = Date.now();
+      scheduleRefresh();
       void Promise.all([...interestedChannels()].map(tab => requestChannel(tab, false, false)));
-    }, Math.max(delayMs, lastAutomaticRefresh + 10_000 - Date.now()));
+    }, Math.max(0, refreshDueAt - now));
   }
 
   async function requestChannel(tab: IitcCommChannel, older: boolean, foreground: boolean): Promise<void> {
@@ -368,8 +376,7 @@ export function createCommRuntime({getMap, getLifetime, getMapCenterE6, fetchIit
         if (latestCommState.tab === tab) {
           latestCommState = {...createIitcCommSuccessState({channel: tab,
             applyResult: result, getOlderMsgs: older, elapsedMs: performance.now() - startedAt,
-            bounds, toPreview: toCommMessagePreview}),
-            ...(latestCommState.sendStatus === 'sending' ? {sendStatus: 'sending' as const} : {})};
+            bounds, toPreview: toCommMessagePreview})};
           postCommState();
         }
       } catch (error) {
@@ -405,7 +412,12 @@ export function createCommRuntime({getMap, getLifetime, getMapCenterE6, fetchIit
     await requestChannel(tab, getOlderMsgs, true);
   }
 
-  return {getState: () => latestCommState, refreshComm, sendComm, cancelActiveCommFetch, scheduleRefresh,
+  return {getState: () => ({...latestCommState, ...sendStates[latestCommState.tab]}), refreshComm, sendComm, cancelActiveCommFetch, scheduleRefresh,
+    getPortalActivity: (portal): ReturnType<CommRuntime['getPortalActivity']> => {
+      const messages = getIitcCommChannelMessages(commChannelsData.all).filter(message => message.public && !message.secure && message.auto)
+        .map(toCommMessagePreview).filter(message => matchesIitcCommPortal(message, portal)).sort((a, b) => a.time - b.time || a.id.localeCompare(b.id));
+      return {recent: messages.slice(-100), total: messages.length};
+    },
     setPanelVisibility: (visible): void => {
       const tab = latestCommState.tab;
       if (!visible) {
@@ -421,6 +433,7 @@ export function createCommRuntime({getMap, getLifetime, getMapCenterE6, fetchIit
     dispose: (): void => {
       getLifetime()?.cancelScheduled(refreshTimer);
       refreshTimer = undefined;
+      refreshDueAt = undefined;
       for (const request of requests.values()) request.controller.abort();
       requests.clear();
       activeChannel = undefined;
