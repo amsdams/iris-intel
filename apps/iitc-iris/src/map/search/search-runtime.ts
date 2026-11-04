@@ -23,6 +23,7 @@ interface SearchRuntimeOptions {
 }
 
 interface SearchRuntime {
+  bindMap: (map: LeafletMap) => void;
   runSearch: (term: string | undefined, confirmed?: boolean) => Promise<void>;
   clearSearch: () => void;
   previewSearchResult: (result: IitcIrisSearchResult | undefined) => void;
@@ -35,7 +36,45 @@ export function createSearchRuntime({
   getMap, getLifetime, getPortals, getPortalRadius, selectPortal, clearLayers, addLayer, pane,
 }: SearchRuntimeOptions): SearchRuntime {
   let latestSearchSequence = 0;
+  let navigationMap: LeafletMap | undefined;
+  let zooming = false;
+  let pendingSelection: IitcIrisSearchResult | undefined;
   const toLatLng = (latE6: number, lngE6: number): [number, number] => [latE6 / 1_000_000, lngE6 / 1_000_000];
+
+  function flushSelection(): void {
+    const map = navigationMap;
+    const lifetime = getLifetime();
+    if (!map || !lifetime || !pendingSelection) return;
+    // Run after the current Leaflet event/frame finishes. Rapid selections coalesce.
+    lifetime.requestFrame(() => {
+      if (lifetime.signal.aborted || navigationMap !== map || zooming || !pendingSelection) return;
+      const result = pendingSelection;
+      pendingSelection = undefined;
+      navigateToSearchResult(result);
+    });
+  }
+
+  function onZoomStart(): void { zooming = true; }
+  function onZoomEnd(): void {
+    zooming = false;
+    flushSelection();
+  }
+
+  function invalidateSearch(): void {
+    latestSearchSequence += 1;
+    navigationMap?.off('zoomstart', onZoomStart);
+    navigationMap?.off('zoomend', onZoomEnd);
+    navigationMap = undefined;
+    zooming = false;
+    pendingSelection = undefined;
+  }
+
+  function bindMap(map: LeafletMap): void {
+    invalidateSearch();
+    navigationMap = map;
+    map.on('zoomstart', onZoomStart);
+    map.on('zoomend', onZoomEnd);
+  }
 
   function getLocalSearchResults(term: string): IitcIrisSearchResult[] {
     return getIitcLocalSearchResults({
@@ -117,6 +156,7 @@ export function createSearchRuntime({
 
   function clearSearch(): void {
     latestSearchSequence += 1;
+    pendingSelection = undefined;
     clearLayers();
     postSearchState(createIitcSearchIdleState());
   }
@@ -152,6 +192,12 @@ export function createSearchRuntime({
   }
 
   function selectSearchResult(result: IitcIrisSearchResult | undefined): void {
+    if (!result || result.type === 'empty') return;
+    pendingSelection = result;
+    flushSelection();
+  }
+
+  function navigateToSearchResult(result: IitcIrisSearchResult): void {
     if (!result || result.type === 'empty') return;
     const map = getMap();
     if (!map) return;
@@ -228,6 +274,5 @@ export function createSearchRuntime({
     });
   }
 
-  return {runSearch, clearSearch, previewSearchResult, selectSearchResult,
-    invalidateSearch: (): void => { latestSearchSequence += 1; }};
+  return {bindMap, runSearch, clearSearch, previewSearchResult, selectSearchResult, invalidateSearch};
 }

@@ -14,6 +14,17 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**Search navigation (2026-11-04):** confirmed and fixed the search-during-zoom race. The latest selection waits for
+the active zoom to finish and then navigates on an animation frame; intermediate selections coalesce. Public Leaflet
+events are bound to each map lifetime, with queued selection cancellation on Clear or map disposal/replacement.
+The new real-browser regression failed before the fix and passes afterward; unit coverage protects cancellation and
+replacement. Point/area zoom behavior and animation remain. `npm run check` passes (668 app/core tests plus six
+release gates), as do all 51 Chrome cases, extension packaging and `git diff --check`. Phone smoke remains pending.
+Panel close/reopen checks for Scores, Passcode and Missions remain the next small engineering candidate.
+
+**Play Store pause (2026-11-04):** the user deferred Play Store and closed testing until they have time to organize
+a tester group and share the invitation. The October 29 Console steps below are retained for resumption.
+
 **Session pickup (2026-10-29):** resume Play Console closed testing. The user reports the Console requires a
 published closed-testing release, at least 12 opted-in testers and at least 14 days with 12 testers; currently it
 shows 0 opted in. Next: select countries/regions and testers, create a release (reuse an eligible existing bundle
@@ -172,7 +183,7 @@ Zoom availability smoke is accepted; checks and signed artifacts are ready for t
 build includes both System → Panels and System → About. Verify release CI and install its published build after
 pushing. No additional implementation is required before wrapping up.
 Main lesson: distinguish missing Intel data from disabled display settings, and unknown metadata from a negative result.
-Next candidates are the existing search-during-zoom race and panel cancellation/reopening checks; player-tracker zoom
+The search-during-zoom race was fixed on 2026-11-04; panel cancellation/reopening checks remain a next candidate. Player-tracker zoom
 overrides and COMM coverage feedback remain optional/deferred. Earlier combined overlay smoke limits remain above.
 Earlier summary-card and level-label smoke passed. After pushing, verify release CI and install its published build.
 Keep inventory availability under observation; zoom-dependent availability smoke is accepted above. Further

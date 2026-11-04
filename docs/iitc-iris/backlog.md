@@ -92,11 +92,28 @@ before replacement instead of waiting for paint; drawing/mission actions and rep
 User smoke accepted (2026-10-28): behavior appears unchanged and the two new close buttons are usable; platform and
 individual feature paths were not separately reported. This item is closed unless a concrete regression appears.
 
-### Search navigation during zoom animation (2026-10-25)
+### Search navigation during zoom animation (fixed 2026-11-04)
 
 Browser checks reproduced an existing Leaflet edge case: activating another search result during an in-progress zoom
-transition can discard the second navigation. Normal activation after the transition passes. Keep this as a small
-follow-up; the Enter/result-action simplification preserves the existing map animation behavior.
+transition can discard the second navigation. Normal activation after the transition passes. This predates the
+Enter/result-action simplification.
+
+Reconfirmed on current source (2026-11-04) with the compiled app in headless Chrome at 412 × 780, using real
+result-row mouse clicks and stubbed address responses. From zoom 16, select a small address at 52,4 (target zoom 15),
+then another at 52.001,4.001 while the first zoom is active. Three immediate repeats settled near the first address;
+later clicks during the same transition also missed the second center. Waiting for the zoom to finish and selecting
+both results with no zoom change reached the second address. Both selection messages arrived; no page errors occurred.
+Leaflet 1.9.4 updates its logical zoom before the visual transition finishes, allowing the second selection to start
+a pan while the first zoom is still active; zoom completion restores the first target and disrupts that pan. Search
+previously called `setView`/`fitBounds` without coordinating these overlapping movements.
+
+Search now observes public `zoomstart`/`zoomend` events for each map lifetime. It applies the latest selected result
+on an animation frame after the zoom finishes, coalescing intermediate selections while preserving animated navigation,
+point zoom 15, area fitting and portal selection. Clear cancels queued navigation; map disposal/replacement detaches
+listeners and discards pending results/frames. The browser regression fails before the fix and passes afterward with
+three actual result-row clicks during a zoom; unit coverage protects latest-selection, cancellation and map replacement.
+`npm run check` (668 app/core tests plus six release gates), all 51 Chrome browser cases, extension packaging and
+`git diff --check` pass. Android and Firefox live acceptance remain untested.
 
 ### Menu Symbol Guidance
 

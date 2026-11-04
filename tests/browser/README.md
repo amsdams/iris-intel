@@ -126,7 +126,9 @@ rendering before and after map replacement, including stored drawing restoration
 order, single-action point/portal navigation, and address bounds fitting with stubbed Nominatim responses. It also
 checks that `/` opens/refocuses the field, menu opening leaves focus alone, and editing/disabled shortcuts are respected.
 Fast Enter submission is checked with a delayed online response; closing clears the preview without losing results or
-changing the camera, and reopening restores the query. Street-sized bounds reach zoom 15; municipality, province, country, and continent fixtures still fit their full bounds.
+changing the camera, and reopening restores the query. Rapid result clicks during an animated zoom must settle at the
+last selected result. Street-sized bounds reach zoom 15; municipality, province, country, and continent fixtures still
+fit their full bounds.
 
 [intel-fixture.html](intel-fixture.html) loads the actual compiled IRIS UI/runtime with simulated Intel globals,
 empty API responses, and representative host input CSS. External map/network requests are stubbed by the tests.

@@ -87,6 +87,28 @@ test('loaded portal activation centers and applies the standard zoom', async ({p
   await expect(page.locator('.iitc-iris-search-panel')).toHaveCount(0);
 });
 
+test('the latest search selection wins during an animated zoom', async ({page}) => {
+  await page.route('https://nominatim.openstreetmap.org/**', route => route.fulfill({json: [
+    {place_id: 1, display_name: 'Race target A', lat: '52', lon: '4', boundingbox: ['51.9999', '52.0001', '3.9999', '4.0001']},
+    {place_id: 2, display_name: 'Race target B', lat: '52.001', lon: '4.001', boundingbox: ['52.0009', '52.0011', '4.0009', '4.0011']},
+    {place_id: 3, display_name: 'Race target C', lat: '52.002', lon: '4.002', boundingbox: ['52.0019', '52.0021', '4.0019', '4.0021']},
+  ]}));
+  const input = page.locator('.iitc-iris-search-input');
+  await input.fill('Race target');
+  await input.press('Enter');
+  await expect(results(page)).toHaveCount(3);
+  const second = await results(page).nth(1).boundingBox();
+  const third = await results(page).nth(2).boundingBox();
+  await results(page).nth(0).click();
+  await page.waitForFunction(() => window.__iitcIrisMap._animatingZoom === true);
+  // Raw mouse clicks avoid locator actionability waits consuming the zoom transition.
+  await page.mouse.click(second.x + second.width / 2, second.y + second.height / 2);
+  await page.mouse.click(third.x + third.width / 2, third.y + third.height / 2);
+  await expectView(page, 52.002, 4.002);
+  await expect(page.locator('.leaflet-pan-anim')).toHaveCount(0);
+  await expectView(page, 52.002, 4.002);
+});
+
 test('slash opens or refocuses Search without changing menu or text-field behavior', async ({page}) => {
   const input = page.locator('.iitc-iris-search-input');
   // The beforeEach opens Search through its menu; it must not summon the keyboard.

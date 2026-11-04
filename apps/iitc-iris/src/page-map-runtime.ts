@@ -149,7 +149,7 @@ const {
   renderIitcDrawTools: () => renderIitcDrawTools(),
 });
 
-const {runSearch, clearSearch, previewSearchResult, selectSearchResult, invalidateSearch} = createSearchRuntime({
+const {bindMap: bindSearchMap, runSearch, clearSearch, previewSearchResult, selectSearchResult, invalidateSearch} = createSearchRuntime({
   getMap: () => window.__iitcIrisMap,
   getLifetime: () => mapLifetime,
   getPortals: () => latestEntities?.portals ?? [],
@@ -569,6 +569,7 @@ function boot(): void {
     mapLifetime = undefined;
   });
   window.__iitcIrisMapContainer = container;
+  bindSearchMap(map);
   createIitcIrisPanes(map);
 
   baseLayerController = createBaseLayerController(map, IITC_IRIS_ASSET_BASE_URL, (status) => {
