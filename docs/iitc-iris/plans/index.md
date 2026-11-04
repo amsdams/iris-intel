@@ -14,6 +14,15 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**Android testing before merge (2026-11-04):** signed APK `0.4.1-alpha+cb83390` (version code 1871) is built from
+`refactor/architecture-maintenance` and served at `http://192.168.0.44:6969/downloads/iitc-iris-android.apk`.
+The user will test it before merging; the branch remains unmerged and unpushed. Release checks passed: 15 Android
+JavaScript tests, 31 native JUnit tests, Android release lint and signed assembly. Package identity and pinned signing
+certificate match; all 22 bundled IRIS assets match the current web build and the LAN download bytes match the APK.
+Existing web evidence remains 704 app/core tests and 65 Chrome cases plus accepted general IRIS smoke. Phone acceptance
+for this APK is pending: prioritize COMM/send/history/channel drafts, map/portal/layers, preference persistence,
+Android Back and background/resume. The download server's LAN address may change.
+
 **Architecture maintenance (2026-11-04):** [the plan](architecture-maintenance.md) owns ARCH-01–09, module boundaries,
 acceptance and completion evidence; the [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes it.
 ARCH-09/01 are committed as `64cdfb2`; ARCH-03 is committed as `db6ac6b` after the user's quick COMM smoke.
