@@ -453,6 +453,19 @@ timing and artifact behavior retained; no new hooks or public plugin surface. Re
 responses, cache/retry delivery, source changes, authentication and disposal; a browser check runs simulated TIMEOUT
 recovery and cached refresh through real Leaflet layers. Rendering semantics and visual timing are unchanged by intent.
 
+## Map request refinement and artifact freshness — 2026-11-06
+
+`map/map-entity-transport.ts` now owns endpoint formatting/decoding and fixture reads; `map/map-refresh-session.ts`
+owns per-refresh cache selection, queue/response accumulation and diagnostics. The coordinator retains generation,
+cancellation, refill/delay policy, page cache lifetime, old-response handoff and render/status/history publication.
+Existing endpoint and IITC queue/cache behavior is retained; no new plugin hooks or request timing policy is added.
+
+Correctness fix: a reproduced IRIS race let an old artifact request overwrite a newer refresh's artifact status,
+although its obsolete entities were already rejected. Artifact loading/success/error snapshots now require the
+current generation. Controlled late-success and late-failure regressions verify that newer diagnostics and status
+publications survive unchanged. This fixes freshness reporting; it does not establish live artifact-service or
+Android acceptance. The architecture maintenance plan records validation/build evidence.
+
 ## Entity renderer ownership extraction — 2026-10-27
 
 Reference seams: `core/code/map_renderer.js`, `portal_marker.js`, `portal_highlighter.js`, and `layerchooser.js`.

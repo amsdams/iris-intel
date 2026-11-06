@@ -344,4 +344,31 @@ describe('map request coordination', () => {
     expect(test.runtime.getSnapshot().artifacts).toMatchObject({status: 'error', error: 'getArtifactPortals failed HTTP 503'});
     expect(test.renderEntities.mock.lastCall?.[0].portals[0].guid).toBe('portal');
   });
+
+  it.each(['success', 'failure'] as const)('starts artifacts with progress and rejects an older artifact %s after a newer refresh completes', async (completion) => {
+    const test = setup();
+    const oldArtifacts = deferred<TextResponse>();
+    let artifactRequests = 0;
+    test.fetchEndpoint.mockImplementation(async (endpoint, init) => {
+      if (endpoint === 'getEntities') return textResponse(success(requestTiles(init)));
+      artifactRequests += 1;
+      return artifactRequests === 1 ? oldArtifacts.promise : textResponse({result: {}});
+    });
+    const previous = test.runtime.refreshEntities();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(artifactRequests).toBe(1);
+    expect(test.renderEntities).toHaveBeenCalledOnce();
+    expect(test.runtime.getSnapshot().artifacts.status).toBe('loading');
+    expect(test.postStatus.mock.calls.some(([status]) => status === 'entities ready')).toBe(false);
+    test.move();
+    await test.runtime.refreshEntities();
+    const currentArtifacts = test.runtime.getSnapshot().artifacts;
+    expect(currentArtifacts.status).toBe('empty');
+    const published = test.postStatus.mock.calls.length;
+    oldArtifacts.resolve(completion === 'success' ? textResponse({result: {late: rawPortal('late-artifact')}})
+      : {response: new Response(null, {status: 503}), text: 'old failure'});
+    await previous;
+    expect(test.postStatus).toHaveBeenCalledTimes(published);
+    expect(test.runtime.getSnapshot().artifacts).toBe(currentArtifacts);
+  });
 });

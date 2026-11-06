@@ -22,10 +22,29 @@ remains 704 app/core tests and 65 Chrome cases. The accepted batch is fast-forwa
 `050da9d` on 2026-11-06. No remote push was performed.
 
 **Renderer maintenance (2026-11-06):** current branch is `refactor/renderer-maintenance`, created from that merged main.
-[The maintenance plan](architecture-maintenance.md#renderer-follow-up--2026-11-06) owns the selected, pending slices:
+[The maintenance plan](architecture-maintenance.md#renderer-follow-up--2026-11-06) owns the implemented, uncommitted slices:
 ARCH-10 visibility/filter policy, ARCH-11 level/key label coordination, ARCH-12 ornament/artifact coordination.
-Start with ARCH-10; preserve core diffing, retained layer identity, render ordering and map-lifetime behavior.
-ARCH-01–09 remain complete. Menu customization/feature activation is separate proposed product work.
+Visibility policy, label coordination and decoration coordination now have explicit owners, sharing one layer-sync
+helper. Renderer: 1,567 → 964 LOC; core diffing, retained identity, render ordering and map-lifetime behavior remain
+with the renderer. Checks pass: 712 app/core tests and 65 Chrome cases. Comparison probes match prior policy,
+reconciliation and decoration behavior. The plan records lifecycle contracts, per-slice evidence and source sizes.
+Follow-up hardening makes returned policy plans read-only and names overlay resets `resetReferences()`; the label
+lifecycle regression also verifies recreation after reset/cleanup. Signed APK `0.4.1-alpha+85a4c9d` (1874) includes
+these uncommitted ARCH-10–12 changes. Certificate, all 22 bundled web assets and served download match. Release
+validation passes 15 Android JavaScript tests, 31 native tests and release lint/assembly. XPI/ZIP are also refreshed.
+Download: `http://192.168.0.169:6969/downloads/iitc-iris-android.apk`. Phone smoke is pending; no commit, push or merge.
+**Maintainability follow-ups (2026-11-06):** the user authorized ARCH-13–16 while deferring the renderer phone smoke.
+Implemented on the same branch: lint-enforced dependency boundaries, shell navigation ownership, request diagnostic
+helpers and lifecycle contracts. [The maintenance plan](architecture-maintenance.md#2026-11-06--authorized-maintainability-follow-ups-arch-1316)
+owns scope/evidence. App is 993 LOC; requests 767 LOC. APK 1874 predates these follow-ups; no new APK is claimed.
+Validation passes 719 app/core tests, all 65 Chrome cases and the architecture-rule checks; XPI/ZIP are refreshed.
+**Request coordinator (2026-11-06):** ARCH-17–18 extract endpoint transport and per-refresh cache/queue/response
+accounting, retaining generation/cancellation/refill/publication in the coordinator (767 → 530 LOC; refresh function
+396 → 269). A reproduced late-artifact diagnostic overwrite is fixed with generation checks. The
+[maintenance plan](architecture-maintenance.md#2026-11-06--request-coordinator-review-and-improvement-arch-1718)
+owns evidence and acceptance. Checks pass: 728 app/core tests and all 65 Chrome cases; XPI/ZIP are refreshed.
+APK 1874 predates this work; phone smoke is still deferred.
+Changes remain uncommitted. ARCH-01–09 remain complete. Menu customization/feature activation is separate proposed product work.
 
 **Architecture maintenance (2026-11-04):** [the plan](architecture-maintenance.md) owns ARCH-01–09, module boundaries,
 acceptance and completion evidence; the [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes it.

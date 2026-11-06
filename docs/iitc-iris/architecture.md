@@ -11,6 +11,13 @@ This is the retained architecture guidance from the completed CSS, component, co
 - `apps/android-intel-spike` is a disposable native login/injection proof, outside the npm workspaces;
   phone login/persistence and manual bundled IRIS injection passed a quick feature smoke.
 - Features depend on shared `ui/` primitives. Shared UI does not depend on features.
+- ESLint's local `architecture/import-boundaries` rule enforces core-only dependencies, UI primitive isolation,
+  and private runtime entry points. It checks imports/re-exports, literal dynamic imports, require and TypeScript
+  import types, resolving relative paths before checking. Runtime entry points are consumed within their feature
+  folder or by `page-map-runtime.ts`; `map-diagnostics.ts` and `map-settings-runtime.ts` have explicit type-only
+  adapter exceptions. Tests may exercise runtime owners, while core/UI tests retain their dependency limits.
+  Core currently has no external production dependencies; deliberate additions require an explicit rule change.
+  Rule regressions run through `npm run test:architecture`, included in `npm run check`.
 - Use [IITC-shaped facades](facade-pattern.md) selectively for pure domain contracts.
 
 Base maps stay under Leaflet ownership. `map/layers/base-layers.ts` creates OSM raster tiles or an OpenFreeMap
@@ -39,7 +46,13 @@ System → About owns visible project/plugin acknowledgements and offline licens
 records upstream feature sources; packaging copies it and the project license with IITC, Leaflet, Preact and MapLibre
 notices into the shared `licenses/` assets used by extensions and Android.
 
-`content.tsx` assembles the app, bridges page messages, and coordinates shared camera/entity/auth/navigation state.
+`content.tsx` assembles the app, bridges page messages, and coordinates shared camera/entity/auth state.
+`shell/use-shell-navigation.ts` owns active sheet/side panel, portal-image visibility, persisted sheet transitions,
+hidden-panel guards and deferred Search focus. `shell/sheet-navigation-actions.ts` applies the existing pure
+navigation effects with their cancellation/setter/storage order. Navigation effects retain their former App
+registration position. Pending Search focus is cancelled on replacement, navigation away and unmount. Cancellation
+happens in the sheet setter, so an older pending Preact effect cannot cancel a newly requested focus frame. The message
+adapter retains direct navigation setters and persistence so selection-driven updates keep their original ordering.
 Search, Layers, Missions, and location controls own their feature workflows. Their effect calls retain deliberate
 registration order. `comm/use-comm-ui-state.ts` owns per-channel drafts, send acknowledgment bookkeeping and
 scroll/history UI actions/state. Its request/visibility and scroll effect groups register at the former App positions,
@@ -49,8 +62,8 @@ their existing workflows. Avoid a broad app hook or global store that hides this
 
 App calls existing portal, clipboard, Passcode and auth actions directly and posts the existing panel/camera message
 builders. State-bound UI callbacks stay in App. `content-command-callbacks.ts` retains context guards/anchor adaptation
-and sheet/menu/COMM/Missions coordination, including request cancellation and setter/storage ordering. Do not add an
-extra command layer that only forwards a feature action or builder call.
+and cross-feature menu/COMM/Missions coordination. Sheet cancellation and setter/storage ordering belong to the shell
+navigation actions. Do not add an extra command layer that only forwards a feature action or builder call.
 
 `messages.ts` owns bridge constants and envelope composition and preserves existing type imports through explicit
 exports. `messages/entities.ts` owns portal/render models: `IitcIrisPortalSummary` shares common selected/rendered portal
@@ -69,6 +82,37 @@ maintenance, which retain their feature-specific behavior.
 Core `portal-analysis.ts` owns counts, portal-list/AP, scoreboard and list-summary aggregation.
 `summarizeIitcPortalsList` sums the supplied rows; the app workflow selects its filtered subset and retains sorting,
 state/memoization, formatting, colors and SVG geometry. Portal-list panel/control props use the core summary type.
+
+
+## Feature Lifecycle Contracts
+
+Use direct typed owners and callbacks. There is no shared feature base class, plugin registry or activation engine.
+For each stateful owner, name its lifetime, work trigger, cancellation/invalidation operation, retained state and
+resource cleanup in its API comment and tests. Add pause/resume methods only when the feature actually needs them.
+
+- Menu placement, layer visibility and runtime activation are separate inputs. Hiding a menu item does not disable
+  processing or erase feature data. Sheet visibility may change a feature's polling interest where already specified.
+- Cancellation ends owned work; invalidation also rejects obsolete replies. A restarted request must not accept a
+  previous request's reply. Keep map replacement/generation guards at the owner that can establish freshness.
+- `resetReferences()` forgets indexes/snapshots only. Layer clearing removes rendered content. Map disposal ends
+  map-owned resources; it does not imply deleting page history or persisted preferences.
+- Cleanup releases only resources the owner created. Owners surviving map replacement read the current map through
+  callbacks. Cancellation/cleanup must tolerate repeated calls without removing another owner's work.
+
+| Owner | Lifetime / trigger | Stop or invalidate | Retained state / resource owner |
+| --- | --- | --- | --- |
+| Shell navigation | Mounted App; navigation or page messages | Search focus frame cancelled on replacement, leaving or unmount | Sheet preference persists; selection/request transport stays outside navigation. |
+| Map requests | Page coordinator, current-map requests and per-refresh sessions | Cancel fetch/timers; generation checks and map lifetime reject obsolete work | Data-source reset invalidates the request generation; cache policy stays with the coordinator. Diagnostic helpers are stateless. |
+| COMM | Page channel buffers; current-map transport and independent polling interests | Cancel fetch or dispose polling on map teardown | Buffers/history remain page-owned; hiding COMM does not suppress tracker/portal-activity consumers. |
+| Player Tracker | Page history; public COMM input and layer/zoom rendering | Clear marker resources on disposal; map lifetime removes layers | History remains; hidden layers already limit tracker polling interest but do not gate all COMM processing. |
+| Label/decorations | Page indexes; current-map Canvas | Reset references, clean orphans, remove layers/map in existing order | Canvas/image caches and pending image work belong to the map adapters. |
+| Draw Tools | Stored drawings plus page actions; current-map rendering | Injected layer clear and map disposal | Closing/hiding the sheet retains drawings and selected layer visibility. |
+| Missions | Page list/detail state and persisted caches; explicit requests | `cancelRequests()` aborts list/detail work; superseded replies are ignored | Caches remain. Existing cancellation can retain loading state; close/reopen recovery is a follow-up, not a proven dormancy contract. |
+
+Existing regression suites cover map disposal, stale replies, label/image teardown and COMM polling interests.
+Navigation adds real Preact state/effect coverage for restoration, hidden panels, cancellation order, image closure
+and frame cleanup. The Missions cancellation/loading limitation is retained in the
+[optional-features plan](plans/optional-features-plan.md); verify recovery before adding activation controls.
 
 ## CSS And Component Contract
 
@@ -146,18 +190,43 @@ The page runtime composes `map/search/search-runtime.ts` (query sequencing, geoc
 current map/entities/settings through explicit callbacks; they do not capture a replaced map or import the entry point.
 Search invalidation remains in map disposal; its requests use the existing map lifetime.
 
-`map/entities/map-renderer.ts` owns portal/link/field layers, visibility filters, incremental synchronization,
-highlighter style refresh, portal overlays and render diagnostics. `map/entities/portal-marker-style.ts` calculates
-base marker appearance from explicit portal, fill-policy and zoom inputs without Leaflet. The renderer supplies
-current/default zoom, retains the radius adapter for overlays and selection, and applies highlighter overrides last.
-`map/map-layers.ts` names the shared layer/pane types; map creation still owns their allocation. Selection and portal
-details have their own owners below.
-Renderer callbacks read the current state; disposal invalidates its render context and map-keyed resources stay separate.
-`map/map-request.ts` owns map refresh generations, tile/cache/refill/render queues, fixture/live fetching, artifact
+`map/entities/map-renderer.ts` owns portal/link/field creation, retained identity, bucket-cache lifetime,
+incremental/full render-path selection, highlighter refresh, update ordering and combined render diagnostics.
+`entity-visibility.ts` owns explicit-input filter matching and changed-setting scope/secondary-work decisions; the
+renderer supplies current settings. Returned plans expose read-only flags and bucket sets; only the local scope
+builder mutates them. `portal-marker-style.ts` owns base appearance from portal/policy/zoom inputs;
+the renderer supplies current/default zoom, retains the radius adapter and applies highlighter overrides last.
+
+`entity-layer-sync.ts` supplies one reconciler for indexed core and overlay layers. `portal-label-overlays.ts` owns
+level/key candidate selection, both indexes/snapshots and synchronization of their shared label-layer list; it uses
+the existing label Canvas and collision-selection adapters. `portal-decoration-overlays.ts` owns ornament settings,
+ornament/artifact specifications, indexes/snapshots and diagnostic accumulation; it uses the existing image Canvas
+adapter. Labels receive filtered portals; decorations retain the full entity input. Ornament settings are read at the
+existing render/timing position, and accumulated diagnostics are published after selection/drawing callbacks as before.
+
+Both overlay owners live with the page renderer and read the current map through callbacks. `resetReferences()` forgets overlay
+references without removing layers or destroying Canvas resources. Full clear removes layers before reset; context
+invalidation resets references so the next overlay update removes unindexed leftovers. Map disposal retains the
+existing ordered layer/map removal and reference reset. Canvas resources/caches remain map-owned, including image
+load cancellation/eviction and label glyph caches. `map/map-layers.ts` names layer/pane types; map creation owns their
+allocation. Selection and portal details have their own owners below.
+`map/map-request-diagnostics.ts` owns diagnostic payload types, render occurrence counters/unique tile-key
+accumulation and empty artifact snapshots. `map/map-request.ts` retains the latest artifact snapshot and all timing,
+reset, publication and generation decisions; diagnostic helpers have no timers, network or mutable shared defaults.
+`map/map-entity-transport.ts` owns map endpoint formats/decoding and fixture reads, receiving the current-map
+lifetime callback and existing authenticated transport. The coordinator supplies version, signal and call timing;
+endpoint-specific error/empty-result semantics remain explicit. `map/map-refresh-session.ts` owns one refresh's
+fresh-cache selection, tile/render queue state, response merging, stale fallback, retry accounting and diagnostics.
+It receives the page-owned cache and has no timers, network or rendering callbacks. Its queue getter is for reading;
+start/apply/stale/complete methods own mutations. It requires no disposal method because it owns no async resources.
+The coordinator rejects stale generations before applying a batch, and filters old-response handoffs to wanted tiles.
+Artifact diagnostic writes also check the current generation, including late success/error completion.
+`map/map-request.ts` owns map refresh generations, page cache and session creation, refill execution, artifact
 injection and map-request diagnostics. `map/map-entity-adapter.ts` projects decoded entities and artifact results into
 render payloads. It reads portal history without mutation and returns explicit updates; the coordinator applies them
 at the existing fixture/cache/batch/final preparation points before publication. Artifact timestamp fallback receives
-an explicit clock. Transport, envelope/error handling, scheduling and diagnostic publication stay in the coordinator.
+an explicit clock. Endpoint/envelope parsing stays in transport; error recovery, scheduling and diagnostic
+publication stay in the coordinator.
 The existing pure planning, decoding and queue/cache algorithms stay in `packages/iitc-core`. Movement and map disposal explicitly notify this page-owned controller; tile cache survives map
 replacement while pending work and request identity are invalidated. `intel/intel-request.ts` holds shared page-context
 CSRF/version/auth helpers, lifetime-bound endpoint transport and the shared JSON endpoint helper for panel requests.

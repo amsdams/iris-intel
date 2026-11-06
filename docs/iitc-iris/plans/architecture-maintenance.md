@@ -3,7 +3,8 @@
 Status: complete for the selected implementation scope (nine tracked items, ten slices). General IRIS smoke is
 accepted after ARCH-08. General Android usage is accepted on 2026-11-06 after the user used APK 1871 for a while
 and reported that everything looks good. Validation and specific coverage limits are recorded below.
-Follow-up ARCH-10–12 is selected on `refactor/renderer-maintenance`; implementation is pending.
+Follow-up ARCH-10–18 is implemented on `refactor/renderer-maintenance` and remains uncommitted for review.
+The earlier Android acceptance covers the prior merged batch, not this new renderer/navigation/request work.
 
 This is the implementation tracker for the validated parts of the [architecture review](arch-review.md).
 The [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes the work; this file owns scope,
@@ -529,14 +530,14 @@ No new feature, CI workflow, merge or push was included in this review.
 
 The user accepted general use of APK `0.4.1-alpha+cb83390` (1871) and authorized integration plus a new branch for
 ARCH-10–12. The completed batch is fast-forward merged into local main at `050da9d`;
-`refactor/renderer-maintenance` starts there. The three slices below are selected and pending implementation. They
+`refactor/renderer-maintenance` starts there. The three slices below are implemented in the working tree, pending review. They
 follow the completed ARCH-01–09 batch. This file remains the single scope/progress owner; roadmap/backlog only index it.
 
 | Done | ID | New owner | Scope and evidence |
 | --- | --- | --- | --- |
-| [ ] | ARCH-10 | `map/entities/entity-visibility.ts` | Move filter definitions/matching and closely related changed-setting scope decisions into explicit-input app functions. Test faction, level, placeholder and combined changes without Leaflet; preserve the existing browser filter/layer-identity checks. Keep actual layer mutation, bucket-cache lifetime and render-path selection with the renderer. |
-| [ ] | ARCH-11 | `map/entities/portal-label-overlays.ts` | Own level/key candidate selection, indexes, previous snapshots and synchronization together. Reuse label Canvas adapters and shared diff logic; preserve their shared label-layer list, collision selection and inventory-only refresh. Specify clear versus reference reset and map replacement before moving state. |
-| [ ] | ARCH-12 | `map/entities/portal-decoration-overlays.ts` | Own ornament settings reads, ornament/artifact specifications, indexes, synchronization and diagnostics. Reuse the image Canvas/cache adapter. Preserve full-entity versus filtered-label input semantics, image order/opacity/anchors, failed/late loads, toggles and map replacement. |
+| [x] | ARCH-10 | `map/entities/entity-visibility.ts` | Move filter definitions/matching and closely related changed-setting scope decisions into explicit-input app functions. Test faction, level, placeholder and combined changes without Leaflet; preserve the existing browser filter/layer-identity checks. Keep actual layer mutation, bucket-cache lifetime and render-path selection with the renderer. |
+| [x] | ARCH-11 | `map/entities/portal-label-overlays.ts` | Own level/key candidate selection, indexes, previous snapshots and synchronization together. Reuse label Canvas adapters and shared diff logic; preserve their shared label-layer list, collision selection and inventory-only refresh. Specify clear versus reference reset and map replacement before moving state. |
+| [x] | ARCH-12 | `map/entities/portal-decoration-overlays.ts` | Own ornament settings reads, ornament/artifact specifications, indexes, synchronization and diagnostics. Reuse the image Canvas/cache adapter. Preserve full-entity versus filtered-label input semantics, image order/opacity/anchors, failed/late loads, toggles and map replacement. |
 
 Keep core portal/link/field creation, retained layer identity, incremental/full render decisions and overall update
 ordering explicit in `map-renderer.ts`. Avoid passing the whole renderer closure to new owners or duplicating the
@@ -546,3 +547,175 @@ Reassess after each slice; no line-count target or performance gain is promised.
 once a slice settles, run the full applicable checks and browser suite. Compare existing combined-toggle timing and
 layer-mutation evidence to catch accidental full rebuilds; package only for a requested review checkpoint. Runtime
 feature activation/menu customization and speculative state-machine/listener changes remain separate tasks.
+
+
+### 2026-11-06 — ARCH-10: explicit visibility and update policy
+
+`entity-visibility.ts` owns the existing filter descriptors/matching, level/faction classification, changed-setting
+core scope and secondary-work decisions. Settings are explicit inputs. Current-map adapters, Leaflet mutations,
+entity bucket WeakMap and render-path selection remain in the renderer. No filter semantics were redesigned.
+Renderer: 1,567 → 1,275 LOC; policy owner: 308 LOC. Production source: 24,291 → 24,307 (+16).
+
+Five focused policy tests cover per-kind/faction visibility, level/neutral/placeholder rules, combined change scopes,
+whole-overlay precedence and secondary-work invalidation. A temporary comparison matched 49,152 visibility/planning
+results against the prior implementation. Full checks passed with 709 app/core tests; all 65 Chrome cases passed
+(52.7 seconds), including filter restoration, retained identity and combined-toggle timing/order assertions.
+
+### 2026-11-06 — ARCH-11: level and key label owner
+
+`portal-label-overlays.ts` owns level/key indexes and previous snapshots, projection/collision candidates, marker
+creation through existing Canvas adapters, synchronization and orphan cleanup. Both label kinds stay together
+because they share `layers.labels`. Root inventory-only refresh passes filtered portals to the same key-label owner.
+Level candidates are still selected before the core render, with the same timing field. Selection/drawing callbacks
+remain after overlay synchronization.
+
+`entity-layer-sync.ts` extracts the existing generic indexed reconciler and small index/list utilities once. Core
+entities, labels and decorations use it without duplicate algorithms. It receives only the layer-add adapter; each
+caller keeps its own state/indexes. Group membership, unchanged identity, creation/removal order and mutation counts
+are preserved. Three focused tests exercise replacement/removal, grouped and unattached layers, and shared-label
+orphan cleanup; a temporary comparison matched 4,000 lifecycle transitions against the old reconciler.
+
+Renderer: 1,275 → 1,081 LOC; label owner: 115 LOC; shared helper initially 136 LOC (146 after signature formatting
+in ARCH-12). Production source: 24,307 → 24,364 (+57). Full checks passed with 712 app/core tests; all 65 Chrome cases
+passed (52.5 seconds). Existing real-Leaflet tests cover label/key coexistence, collision/filter/zoom decisions,
+inventory updates, Canvas identity, animated movement, full clear and map replacement. No new wrapper-mirroring tests.
+
+### 2026-11-06 — ARCH-12: decoration owner and final checkpoint
+
+`portal-decoration-overlays.ts` owns the independent ornament storage reads/fallbacks, ornament/artifact specifications,
+indexes and previous snapshots, image synchronization/order and ornament diagnostic accumulation. It receives the
+full portal list, preserving the distinction from filtered label input. The existing image Canvas retains map-keyed
+caches, stacking, failed/late-load handling and eviction. No image/Canvas implementation changes were made.
+
+The renderer still reads ornament settings at the original timing point, synchronizes labels before decorations,
+renders selected portal/object/Draw Tools afterward and publishes the accumulated diagnostics at the same point.
+Resetting render diagnostics retains the previous ornament diagnostic snapshot, as before. The new owner resets
+references only; full clears and map disposal retain their prior layer-removal ordering. Invalidation orphan cleanup
+still occurs before overlay synchronization, including after references have been reset.
+
+Renderer: 1,081 → 964 LOC; decoration owner: 161 LOC; shared helper signature formatting adds 10 LOC. Production
+source: 24,364 → 24,418 (+54). Across all three slices the renderer shrinks 1,567 → 964 (-603), while whole production
+source grows 24,291 → 24,418 (+127) for explicit interfaces/module wiring. The four new owners are 308/146/115/161 LOC.
+This is an ownership improvement, not a claim of deleted functionality or faster rendering. The three largest files
+are now App (1,036), renderer (964) and map requests (859); no further extraction is automatically queued.
+
+A temporary comparison matched 700 decoration transitions, including independent storage failures, dimensions,
+anchors/opacity/order, diagnostics, toggles, reference reset and map replacement. Existing browser cases verify actual
+image pixels, cache bounds, superseded/failed loads and replacement-map rendering. Final `npm run check` passes:
+712 app/core tests (137 core, 575 app), 6 release checks, 18 build guards, lint/types, CSS and workbench build.
+All 65 Chrome browser cases pass (50.4 seconds), including combined layer/highlighter/base-map timing/order and
+retained-layer assertions. Markdown links and whole-change whitespace checks pass. No runtime performance gain
+is claimed; no timing thresholds or browser retries were relaxed.
+
+All three slices remain uncommitted for review. Device evidence for this renderer batch remains separate from the
+prior merged batch's Android acceptance.
+
+### 2026-11-06 — review follow-ups and downloadable checkpoint
+
+Render-scope flags and bucket sets, including the shared default plans, now have read-only TypeScript contracts.
+Only a private builder can mutate a scope; this is compile-time protection, not runtime freezing of Set instances.
+Both overlay owners call their reference-only operation `resetReferences()`, matching the documented distinction
+between forgetting indexes/snapshots and removing layers or disposing map-owned resources.
+
+The shared-label lifecycle regression now also recreates both label kinds after reference reset/orphan cleanup,
+asserting that removed layers are not reused and newly indexed layers survive cleanup. Existing real-browser cases
+already cover full clear, retained Canvas identity, asynchronous image completion and map replacement; no duplicate
+Canvas harness was added. Focused policy/reconciliation tests, affected lint/type checks and full repository checks
+pass. Final policy owner: 314 LOC; renderer remains 964 LOC. Whole production source is now 24,424 (+133 from baseline).
+
+Returning decoration diagnostics instead of mutating the render-local accumulator is optional future interface
+polish. Finer label/decoration invalidation should follow measurements showing unnecessary work; neither is queued
+as a required extraction. No additional framework or numbered architecture slice is needed for these follow-ups.
+
+
+Final validation after hardening passes `npm run check` (712 app/core tests, release/build guards, lint/types, CSS
+and workbench), all 65 Chrome cases (51.3 seconds) and whole-change whitespace checks. `package:reuse` produced
+XPI/ZIP `2026-11-06T18-41-37`; Android reused the same verified web output. Signed APK
+`0.4.1-alpha+85a4c9d` (1874) includes this uncommitted working tree, rather than only its named HEAD commit.
+Release checks pass 15 JavaScript tests, 31 native JUnit tests, lint and signed assembly. Application identity and
+pinned certificate match; all 22 APK assets match generated assets and web output, and the served APK hash matches.
+Local download: `http://192.168.0.169:6969/downloads/iitc-iris-android.apk`. Phone smoke is pending; prioritize
+layer/filter toggles, level/key labels, ornaments/artifacts, pan/zoom, inventory refresh and map reload.
+No commit, push or merge was performed for ARCH-10–12 or these follow-ups.
+
+
+### 2026-11-06 — authorized maintainability follow-ups (ARCH-13–16)
+
+The user authorized all four follow-ups before completing the ARCH-10–12 phone smoke. These changes remain on
+`refactor/renderer-maintenance`; the existing signed APK 1874 still represents the earlier renderer checkpoint.
+This plan owns progress; architecture.md owns lasting contracts, and roadmap/backlog only link here.
+
+| Done | ID | Improvement | Implementation / acceptance |
+| --- | --- | --- | --- |
+| [x] | ARCH-13 | Dependency boundaries | Local ESLint rule enforces core independence, UI primitive isolation and private runtime entry points. Resolve relative paths; check imports, exports, literal dynamic imports, require and TS import types. Explicit page-composition and type-only diagnostic/settings exceptions; regression tests run in `npm run check`. |
+| [x] | ARCH-14 | Shell navigation owner | `shell/use-shell-navigation.ts` owns sheet/panel/image state, restore/persistence, visibility guards and deferred search focus. `shell/sheet-navigation-actions.ts` owns cancellation/setter/storage ordering; existing action tests move with it. Feature requests/primary-menu composition and message-adapter ordering remain explicit in App. |
+| [x] | ARCH-15 | Request diagnostic helpers | `map/map-request-diagnostics.ts` owns payload types, render occurrence/unique-key accumulation and fresh artifact defaults. Request coordinator retains timers, generation/cancellation/cache ownership, artifact success/error handling and publication timing. |
+| [x] | ARCH-16 | Lifecycle contracts | Architecture guide records owner lifetimes, triggers, stop/invalidate operations, retained data and cleanup responsibilities. Preserve current activation behavior and direct typed owners; no common base class or feature engine. Record the existing Missions cancellation/loading limitation before future dormancy work. |
+
+Navigation regressions use real Preact state/effects and cover restored panels, cancellation before persistence,
+hidden-sheet rejection/closure, image-and-sheet closure, deferred focus replacement, navigation-away and unmount
+cleanup. Search focus now has an explicit frame owner; pending focus cannot survive navigation away or App unmount.
+Existing cancellation/setter/storage order is unchanged. Diagnostic regressions distinguish render occurrences from
+unique tile keys and verify independent defaults/prior snapshots. Four lint-rule test groups exercise allowed and
+rejected dependencies, TypeScript type-only exceptions, and alternate import forms.
+
+App: 1,036 → 993 LOC; command callbacks: 157 → 95; map requests: 859 → 767. New navigation hook/actions:
+82/64 LOC; diagnostic helper: 84 LOC. Production source grows 24,424 → 24,458 (+34) across this batch, for explicit ownership
+and focus cleanup; no runtime performance improvement is claimed.
+
+Browser validation caught a Search-focus regression in an initial cleanup effect: an older pending effect could
+cancel a newly requested frame. Cancellation now belongs to the sheet setter, including message-adapter transitions;
+unmount cleanup only releases the outstanding frame. A fifth navigation regression covers opening before pending
+mount effects flush. All six Search browser cases pass with the fix; no timeout or retry allowance was changed.
+Final repository checks pass with 719 app/core tests (137 core, 582 app), 6 release checks, 18 build guards,
+4 architecture-rule test groups, lint/types, CSS and workbench. All 65 Chrome cases pass on the final source (47.4 seconds). `package:reuse` refreshes XPI/ZIP
+`2026-11-06T19-47-21` from the verified web output; shared assets match. Markdown targets and whole-change
+whitespace checks pass. No new APK was built: APK 1874 covers the earlier ARCH-10–12 renderer checkpoint, and
+its phone smoke remains pending. ARCH-13–16 and ARCH-10–12 remain uncommitted; no push or merge was performed.
+
+
+### 2026-11-06 — request coordinator review and improvement (ARCH-17–18)
+
+The user authorized investigation and implementation of the request-coordinator improvements. Review found that
+endpoint formatting/parsing and per-refresh cache/queue/response accounting still shared the coordinator closure.
+The existing generation checks, five-slot refill execution, delays, cancellation and publication order form a
+cohesive lifecycle owner and remain together. No renderer extraction or general request framework is included.
+
+| Done | ID | Owner | Scope / acceptance |
+| --- | --- | --- | --- |
+| [x] | ARCH-17 | `map/map-entity-transport.ts` | Own getEntities/getArtifactPortals endpoint inputs/decoding and fixture reads; retain CSRF read timing, groups, headers, version/signal arguments, HTTP/HTML/empty/JSON error semantics and artifact empty-result behavior. Coordinator controls request timing and cancellation. |
+| [x] | ARCH-18 | `map/map-refresh-session.ts` | Own one refresh's fresh-cache selection, tile/render queues, filtered response merging, retry accounting, stale fallback and diagnostic snapshots. Inject the page-owned cache. No timers, DOM, network, generation state or render callbacks. Coordinator checks generations before applying a batch, chooses delays/refills and publishes entities/history/status. |
+
+The session is a concrete state owner, not a moved closure taking the coordinator's callbacks. Its queue mutations
+are explicit start/apply/stale/complete operations; the queue getter is for coordinator decisions. The page cache
+and old-response handoff stay with the coordinator. Superseded network results are filtered to still-wanted tiles
+before current-session application; unrelated stale cache warming remains disabled. Existing core retry/queue/cache
+algorithms are reused. Transport/session entry points are protected by the architecture import rule.
+
+A new regression reproduced an existing bug: after a newer refresh completed, an older artifact success/failure
+could overwrite its artifact diagnostic snapshot, even though obsolete entities themselves were rejected. The
+coordinator now checks the generation before artifact loading/completion/error snapshot writes. Late success and
+failure cases verify the newer snapshot/publications remain intact; artifact work still starts with the first
+progress render and is awaited before final ready publication. The prior failing output is recorded locally at
+`/tmp/iris-artifact-generation-repro.log`; the lasting regression is in `map-request.test.ts`.
+
+Focused evidence: the existing coordinator/diagnostics tests pass. Three session tests cover fresh/stale cache
+selection, initial versus outstanding tile diagnostics, filtered external delivery without active-slot consumption,
+retry recovery/counters and prior snapshots. Four transport tests cover exact request inputs, auth versus ordinary
+failure classification, artifact error/empty semantics and current-map fixture reads. Both obsolete-artifact
+regressions pass. Focused type checks, affected lint and import-boundary regressions pass.
+
+Coordinator: 767 → 530 LOC; `refreshEntities()`: 396 → 269 LOC. Transport/session: 105/140 LOC. Across these
+production files, 767 → 775 (+8) for explicit contracts and the artifact generation fix. No performance gain is
+claimed. Remaining refill execution and progress publication stay explicit in the coordinator; another extraction
+is not automatically required just to make it smaller. Changes remain uncommitted on `refactor/renderer-maintenance`.
+
+
+Final validation passes `npm run check`: 728 app/core tests (137 core, 591 app), 6 release checks, 18 build guards,
+4 architecture-rule test groups, lint/types, CSS and workbench. All 65 Chrome browser cases pass (50.8 seconds),
+including concurrent/refill/cache recovery, map replacement and combined update timing/identity checks. No browser
+timeout, retry or performance threshold was relaxed. `package:reuse` produces XPI/ZIP `2026-11-06T19-58-21`;
+all 22 shared asset files in each package match the verified web output. Local Markdown links, new source endings
+and whole-change whitespace checks pass. Whole app/core production source is 24,466 LOC (+8 in this batch).
+APK 1874 remains the earlier renderer checkpoint and does not contain ARCH-13–18. Phone smoke remains deferred;
+no new APK, commit, push or merge was performed.
