@@ -3,6 +3,7 @@
 Status: complete for the selected implementation scope (nine tracked items, ten slices). General IRIS smoke is
 accepted after ARCH-08. General Android usage is accepted on 2026-11-06 after the user used APK 1871 for a while
 and reported that everything looks good. Validation and specific coverage limits are recorded below.
+Follow-up ARCH-10–12 is selected on `refactor/renderer-maintenance`; implementation is pending.
 
 This is the implementation tracker for the validated parts of the [architecture review](arch-review.md).
 The [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes the work; this file owns scope,
@@ -524,18 +525,18 @@ local Chrome/fixture checks plus the user's general smoke do not establish every
 No new feature, CI workflow, merge or push was included in this review.
 
 
-### Proposed renderer follow-up — 2026-11-06
+### Renderer follow-up — 2026-11-06
 
-The user has accepted general use of APK `0.4.1-alpha+cb83390` (1871). ARCH-01–09 remain complete; local branch
-integration is the recommended next checkpoint. The renderer investigation identifies three additional bounded
-slices below. These are proposals, not started work or an automatic extension of ARCH-04. Keep this file the single
-scope/progress owner if they are selected; the roadmap/backlog should only index it.
+The user accepted general use of APK `0.4.1-alpha+cb83390` (1871) and authorized integration plus a new branch for
+ARCH-10–12. The completed batch is fast-forward merged into local main at `050da9d`;
+`refactor/renderer-maintenance` starts there. The three slices below are selected and pending implementation. They
+follow the completed ARCH-01–09 batch. This file remains the single scope/progress owner; roadmap/backlog only index it.
 
-| Proposed ID | New owner | Scope and evidence |
-| --- | --- | --- |
-| ARCH-10 | `map/entities/entity-visibility.ts` | Move filter definitions/matching and closely related changed-setting scope decisions into explicit-input app functions. Test faction, level, placeholder and combined changes without Leaflet; preserve the existing browser filter/layer-identity checks. Keep actual layer mutation, bucket-cache lifetime and render-path selection with the renderer. |
-| ARCH-11 | `map/entities/portal-label-overlays.ts` | Own level/key candidate selection, indexes, previous snapshots and synchronization together. Reuse label Canvas adapters and shared diff logic; preserve their shared label-layer list, collision selection and inventory-only refresh. Specify clear versus reference reset and map replacement before moving state. |
-| ARCH-12 | `map/entities/portal-decoration-overlays.ts` | Own ornament settings reads, ornament/artifact specifications, indexes, synchronization and diagnostics. Reuse the image Canvas/cache adapter. Preserve full-entity versus filtered-label input semantics, image order/opacity/anchors, failed/late loads, toggles and map replacement. |
+| Done | ID | New owner | Scope and evidence |
+| --- | --- | --- | --- |
+| [ ] | ARCH-10 | `map/entities/entity-visibility.ts` | Move filter definitions/matching and closely related changed-setting scope decisions into explicit-input app functions. Test faction, level, placeholder and combined changes without Leaflet; preserve the existing browser filter/layer-identity checks. Keep actual layer mutation, bucket-cache lifetime and render-path selection with the renderer. |
+| [ ] | ARCH-11 | `map/entities/portal-label-overlays.ts` | Own level/key candidate selection, indexes, previous snapshots and synchronization together. Reuse label Canvas adapters and shared diff logic; preserve their shared label-layer list, collision selection and inventory-only refresh. Specify clear versus reference reset and map replacement before moving state. |
+| [ ] | ARCH-12 | `map/entities/portal-decoration-overlays.ts` | Own ornament settings reads, ornament/artifact specifications, indexes, synchronization and diagnostics. Reuse the image Canvas/cache adapter. Preserve full-entity versus filtered-label input semantics, image order/opacity/anchors, failed/late loads, toggles and map replacement. |
 
 Keep core portal/link/field creation, retained layer identity, incremental/full render decisions and overall update
 ordering explicit in `map-renderer.ts`. Avoid passing the whole renderer closure to new owners or duplicating the

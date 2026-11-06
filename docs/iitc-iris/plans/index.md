@@ -18,14 +18,14 @@ The retained ownership rules and known limits are in [Application Architecture](
 and reports that everything looks good. General Android usage acceptance is recorded; individual edge cases were
 not separately enumerated. Release validation passed 15 Android JavaScript tests, 31 native JUnit tests, Android
 release lint and signed assembly; identity/certificate and all 22 bundled IRIS assets were verified. Web validation
-remains 704 app/core tests and 65 Chrome cases. The local `refactor/architecture-maintenance` branch is still ahead
-of main and unmerged. Recommendation: integrate this accepted batch, then use a separate branch for the proposed
-renderer follow-up below. No merge or new implementation is authorized by this handoff.
+remains 704 app/core tests and 65 Chrome cases. The accepted batch is fast-forward merged into local main at
+`050da9d` on 2026-11-06. No remote push was performed.
 
-**Proposed renderer maintenance follow-up (2026-11-06):** [the maintenance plan](architecture-maintenance.md#proposed-renderer-follow-up--2026-11-06)
-records three proposed slices: ARCH-10 visibility/filter policy, ARCH-11 level/key label coordination, ARCH-12 ornament/
-artifact coordination. Preserve core diffing, layer identity, render ordering and existing map-lifetime behavior.
-These are proposals beyond the completed ARCH-01–09 scope; the optional-features plan remains separate product work.
+**Renderer maintenance (2026-11-06):** current branch is `refactor/renderer-maintenance`, created from that merged main.
+[The maintenance plan](architecture-maintenance.md#renderer-follow-up--2026-11-06) owns the selected, pending slices:
+ARCH-10 visibility/filter policy, ARCH-11 level/key label coordination, ARCH-12 ornament/artifact coordination.
+Start with ARCH-10; preserve core diffing, retained layer identity, render ordering and map-lifetime behavior.
+ARCH-01–09 remain complete. Menu customization/feature activation is separate proposed product work.
 
 **Architecture maintenance (2026-11-04):** [the plan](architecture-maintenance.md) owns ARCH-01–09, module boundaries,
 acceptance and completion evidence; the [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes it.
@@ -47,8 +47,8 @@ formatting and SVG remain app-owned. All nine tracked architecture items (ten sl
 artifact handoff and the refreshed ranked inventory are in the plan's final checkpoint. Checks pass: 704 app/core tests
 and 65 Chrome cases. XPI/ZIP `2026-11-04T19-51-47` is served on port 6969; APK unchanged, no push. No further slice is queued;
 The completed-branch review found no functional regression in the reviewed boundaries; one EOF whitespace issue
-was fixed and all 55 type contracts were rechecked. Branch integration remains separate. Large-file follow-ups require a concrete maintenance
-need and their own lifecycle/behavior evidence.
+was fixed and all 55 type contracts were rechecked. This batch is now integrated locally; ARCH-10–12 are tracked
+separately above with their own lifecycle/behavior evidence.
 
 **Faster testing (2026-11-04):** user authorized the testing workflow improvements. Repeated 61-case benchmarks passed
 at 89.51 seconds with one worker and 48.80/47.83 seconds with two; local default is now two, CI retains one. A baseline

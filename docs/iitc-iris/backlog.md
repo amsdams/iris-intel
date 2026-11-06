@@ -9,8 +9,9 @@ The [architecture maintenance plan](plans/architecture-maintenance.md) tracks AR
 inventory, concrete module destinations and acceptance checks. ARCH-09 COMM boundary hardening, ARCH-01 copy-feedback
 ownership, ARCH-03 COMM UI workflow, ARCH-04 portal styling, ARCH-05 response adaptation, ARCH-06a/b shared portal/
 feature payload types, ARCH-02 selective wrapper cleanup, ARCH-07 optional storage I/O and ARCH-08 core list
-aggregation are implemented. All selected items are done; the plan records the final inventory and remaining review/
-device boundaries. Broad renderer/AppShell/state-machine rewrites and unmeasured listener changes are not
+aggregation are implemented and accepted on Android. The batch is integrated into local main. Renderer follow-up
+ARCH-10–12 is selected on `refactor/renderer-maintenance`: visibility policy, label coordination and decoration
+coordination. The plan owns its pending checklist and acceptance evidence. Broad renderer/AppShell/state-machine rewrites and unmeasured listener changes are not
 automatic scope. Keep progress and completion evidence in the plan rather than duplicating checklists here.
 
 ### COMM Review Follow-ups (implemented 2026-11-04, live acceptance pending)
