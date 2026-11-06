@@ -12,7 +12,7 @@
     "build": "npm run build --workspaces --if-present",
     "build:wb": "npm run build:wb -w apps/iitc-iris",
     "clean": "npm run clean --workspaces --if-present",
-    "check": "npm run test:release && npm run test:build && npm run check --workspaces --if-present && npm run lint:css && npm run build:wb",
+    "check": "npm run test:release && npm run test:build && npm run test:architecture && npm run check --workspaces --if-present && npm run lint:css && npm run build:wb",
     "lint": "npm run lint --workspaces --if-present && npm run lint:css",
     "lint:fix": "npm run lint:fix --workspaces --if-present && npm run lint:css:fix",
     "lint:css": "stylelint 'apps/iitc-iris/**/*.css'",
@@ -33,6 +33,7 @@
     "android:release": "node --test apps/android-intel-spike/tests/*.test.mjs && node scripts/android.mjs :app:testReleaseUnitTest :app:lintRelease :app:assembleRelease",
     "android:bundle": "node --test apps/android-intel-spike/tests/*.test.mjs && node scripts/android.mjs :app:testReleaseUnitTest :app:lintRelease :app:bundleRelease",
     "android:serve": "npm run serve",
+    "test:architecture": "node --test scripts/architecture-rules.test.mjs",
     "test:build": "node --test scripts/web-build.test.mjs",
     "test:browser:reuse": "node scripts/run-browser-tests.mjs",
     "package:reuse": "npm run package:reuse -w apps/iitc-iris"

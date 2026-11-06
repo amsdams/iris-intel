@@ -1,6 +1,7 @@
 import {AppearancePanel} from './system/appearance-panel/appearance-panel';
 import {PanelsPanel} from './system/panels-panel/panels-panel';
 import {AboutPanel} from './system/about-panel/about-panel';
+import {useShellNavigation, useShellNavigationEffects} from './shell/use-shell-navigation';
 import {usePanelVisibility} from './shell/panel-visibility';
 import {BaseLayerNotice} from './map/layers/base-layer-notice';
 import {useUiTheme} from './shell/ui-theme';
@@ -14,11 +15,8 @@ import './iitc-iris.css';
 import {PORTAL_HIGHLIGHTER_REGISTRY} from './map/layers/highlighter-registry';
 import {
   getPrimaryMenuId,
-  isSidePanelId,
   SIDE_PANEL_REGISTRY,
   type IitcIrisPrimaryMenuId,
-  type IitcIrisSheetId,
-  type IitcIrisSidePanelId,
 } from './shell/menu-registry';
 import {
   type IitcIrisPortalDetailSectionId,
@@ -31,9 +29,6 @@ import {handleIitcIrisContentMessage, type CameraState, type EntityFetchState} f
 import {
   centerMapContextCommand,
   selectMapContextAnchorCommand,
-  closeSheetToMapCommand,
-  openSheetCommand,
-  toggleSheetCommand,
   openCommPanelCommand,
   selectCommTabCommand,
   toggleCommPanelCommand,
@@ -82,7 +77,6 @@ import {useLocationWorkflow} from './map/location-workflow';
 import {
   createDataSourceSettings,
   loadInitialMapView,
-  loadStoredActiveSheet,
   loadStoredBaseLayerId,
   loadStoredBoolean,
   loadStoredCommTab,
@@ -148,8 +142,6 @@ const EMPTY_REQUEST_DIAGNOSTICS: IitcIrisRequestDiagnostics = {
   activeByEndpoint: {},
   active: [],
 };
-type SidePanelId = IitcIrisSidePanelId;
-type SheetId = IitcIrisSheetId;
 type PrimaryMenuId = IitcIrisPrimaryMenuId;
 type PortalSectionId = IitcIrisPortalDetailSectionId;
 
@@ -176,18 +168,16 @@ function App(): h.JSX.Element {
   const [systemCopyStatus, setSystemCopyStatus] = useCopyFeedbackStatus();
   const [contextCopyStatus, setContextCopyStatus] = useCopyFeedbackStatus();
   const [portalCopyStatus, setPortalCopyStatus] = useCopyFeedbackStatus();
-  const [portalImageOpen, setPortalImageOpen] = useState(false);
+  const navigation = useShellNavigation(postIitcMessage, isPanelVisible);
+  const {activeSheet, activeSidePanel, portalImageOpen, setActiveSheet, setActiveSidePanel, setPortalImageOpen,
+    openSheet, toggleSheet, closeSheetToMap, closeSheets, openSearch} = navigation;
+  const closeSidePanel = closeSheetToMap;
   const [portalSections, setPortalSections] = useState<Record<PortalSectionId, boolean>>(() => loadStoredPortalSections());
   const [shortcutsEnabled, setShortcutsEnabled] = useState(() => loadStoredBoolean(SHORTCUTS_ENABLED_STORAGE_KEY, true));
   const [mapFocusMode, setMapFocusMode] = useState(() => loadStoredBoolean(MAP_FOCUS_MODE_STORAGE_KEY, false));
   const [mapContext, setMapContext] = useState<IitcIrisMapContextSelection | null>(null);
   const [drawToolsItems, setDrawToolsItems] = useState<IitcIrisDrawToolsItem[]>([]);
   const [debugDockVisible, setDebugDockVisible] = useState(() => loadStoredDebugDockVisible());
-  const [activeSheet, setActiveSheet] = useState<SheetId>(() => loadStoredActiveSheet());
-  const [activeSidePanel, setActiveSidePanel] = useState<SidePanelId | null>(() => {
-    const sheet = loadStoredActiveSheet();
-    return isSidePanelId(sheet) ? sheet : null;
-  });
   const [agentState, setAgentState] = useState<IitcIrisAgentState>(() => ({status: 'idle'}));
   const [commState, setCommState] = useState<IitcIrisCommState>(() => ({status: 'idle', tab: loadStoredCommTab(), messages: 0}));
   const [scoresState, setScoresState] = useState<IitcIrisScoresState>(() => ({status: 'idle', requestState: 'idle', region: {status: 'idle'}}));
@@ -401,35 +391,7 @@ function App(): h.JSX.Element {
     });
   };
 
-  const closeSheetToMap = useCallback((): void => {
-    closeSheetToMapCommand(activeSheet, activeSidePanel, postIitcMessage, {setActiveSheet, setActiveSidePanel, storeActiveSheet, storeSidePanelId});
-  }, [activeSheet, activeSidePanel, postIitcMessage]);
-
-  const closeSidePanel = useCallback((): void => {
-    closeSheetToMap();
-  }, [closeSheetToMap]);
-
-  const openSheet = useCallback((sheet: SheetId): void => {
-    if (!isPanelVisible(sheet)) return;
-    openSheetCommand(sheet, activeSheet, activeSidePanel, postIitcMessage, {setActiveSheet, setActiveSidePanel, storeActiveSheet, storeSidePanelId});
-  }, [activeSheet, activeSidePanel, postIitcMessage, isPanelVisible]);
-
-  const openSearch = useCallback((): void => {
-    openSheet('search');
-    // Search may mount on this render; focus after Preact has updated the DOM.
-    window.requestAnimationFrame(() => {
-      document.querySelector<HTMLInputElement>('.iitc-iris-search-input')?.focus();
-    });
-  }, [openSheet]);
-
-  const toggleSheet = useCallback((sheet: SheetId): void => {
-    if (!isPanelVisible(sheet)) return;
-    toggleSheetCommand(sheet, activeSheet, activeSidePanel, postIitcMessage, {setActiveSheet, setActiveSidePanel, storeActiveSheet, storeSidePanelId});
-  }, [activeSheet, activeSidePanel, postIitcMessage, isPanelVisible]);
-
-  useEffect(() => {
-    if (!isPanelVisible(activeSheet)) closeSheetToMap();
-  }, [activeSheet, isPanelVisible, closeSheetToMap]);
+  useShellNavigationEffects(navigation);
 
   const refreshScores = (): void => {
     postIitcMessage(createRequestScoresMessage());
@@ -576,11 +538,6 @@ function App(): h.JSX.Element {
     clearPortalSelectionAction(postIitcMessage);
   };
 
-  const closeSheets = useCallback((): void => {
-    setPortalImageOpen(false);
-    openSheet('map');
-  }, [openSheet]);
-
   const search = useSearchWorkflow({mapFocusMode, postMessage: postIitcMessage, openSheet, closeSheets});
   const {searchTerm, searchState, activeSearchResultIndex,
     setSearchTerm, setSearchState, setActiveSearchResultIndex,
@@ -677,7 +634,7 @@ function App(): h.JSX.Element {
 
     window.addEventListener('message', onMessage);
     return (): void => window.removeEventListener('message', onMessage);
-  }, [activeSidePanel, baseLayerId, camera.zoom, dataSource, handleBaseLayerStatus, highlighterSettings, layerSettings, lifecycleSettings, setDrawToolsImportStatus, setMissionsState, setSearchState]);
+  }, [activeSidePanel, baseLayerId, camera.zoom, dataSource, handleBaseLayerStatus, highlighterSettings, layerSettings, lifecycleSettings, setDrawToolsImportStatus, setMissionsState, setSearchState, setActiveSheet, setActiveSidePanel, setPortalImageOpen]);
 
   useLayerSettingsEffects(layers);
 
@@ -743,7 +700,7 @@ function App(): h.JSX.Element {
     };
     window.addEventListener('keydown', onKeyDown);
     return (): void => window.removeEventListener('keydown', onKeyDown);
-  }, [closeSheets, hasSelectedObject, openSearch, panMap, portalImageOpen, shortcutsEnabled, togglePrimaryMenu, toggleSheet, zoomMap]);
+  }, [closeSheets, hasSelectedObject, openSearch, panMap, portalImageOpen, shortcutsEnabled, togglePrimaryMenu, toggleSheet, zoomMap, setPortalImageOpen]);
 
   useEffect(() => installIitcIrisHostBack({
     portalImageOpen, activeSheet, hasSelectedObject,
@@ -752,7 +709,7 @@ function App(): h.JSX.Element {
       setMapContext(null);
       clearPortalSelectionAction(postIitcMessage);
     },
-  }), [activeSheet, closeSheets, hasSelectedObject, portalImageOpen, postIitcMessage]);
+  }), [activeSheet, closeSheets, hasSelectedObject, portalImageOpen, postIitcMessage, setPortalImageOpen]);
 
   return (
     <div className={`iitc-iris-shell iitc-iris-sheet-${activeSheet} ${entityFetch.selectedPortal ? 'iitc-iris-has-selected-portal' : ''}`}>

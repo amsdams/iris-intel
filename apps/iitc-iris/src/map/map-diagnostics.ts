@@ -5,7 +5,8 @@ import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSet
   type IitcIrisRenderEntities, type IitcIrisRenderPortal, type IitcIrisRequestDiagnostics} from '../messages';
 import {isIitcAuthMessage} from '../intel/intel-request';
 import {PORTAL_HIGHLIGHTER_REGISTRY} from './layers/highlighter-registry';
-import type {createMapRequest, TileDiagnostics} from './map-request';
+import type {createMapRequest} from './map-request';
+import type {TileDiagnostics} from './map-request-diagnostics';
 import type {createMapRenderer} from './entities/map-renderer';
 import type {createMapSelectionRuntime} from './map-selection-runtime';
 import type {createPortalDetailsRuntime} from '../portals/portal-details-runtime';

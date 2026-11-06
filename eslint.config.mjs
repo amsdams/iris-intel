@@ -3,6 +3,7 @@ import {defineConfig} from 'eslint/config';
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
 import globals from 'globals';
+import {importBoundaries} from './scripts/architecture-rules.mjs';
 
 export default defineConfig(
   eslint.configs.recommended,
@@ -25,6 +26,7 @@ export default defineConfig(
     ignores: ['**/vite.config.ts'],
     plugins: {
       'react-hooks': reactHooks,
+      architecture: {rules: {'import-boundaries': importBoundaries}},
     },
     languageOptions: {
       parser: tseslint.parser,
@@ -38,6 +40,7 @@ export default defineConfig(
       },
     },
     rules: {
+      'architecture/import-boundaries': 'error',
       // THE "NO ANY" RULES
       '@typescript-eslint/no-deprecated': 'error',
       '@typescript-eslint/no-explicit-any': 'error',
