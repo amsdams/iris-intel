@@ -10,7 +10,7 @@ inventory, concrete module destinations and acceptance checks. ARCH-09 COMM boun
 ownership, ARCH-03 COMM UI workflow, ARCH-04 portal styling, ARCH-05 response adaptation, ARCH-06a/b shared portal/
 feature payload types, ARCH-02 selective wrapper cleanup, ARCH-07 optional storage I/O and ARCH-08 core list
 aggregation are implemented and accepted on Android. The batch is integrated into local main. Renderer follow-up
-ARCH-10–12 is implemented in the working tree on `refactor/renderer-maintenance`: visibility policy, label
+ARCH-10–12 is committed on `refactor/renderer-maintenance`: visibility policy, label
 coordination and decoration coordination. Authorized ARCH-13–16 add dependency enforcement, shell navigation
 ownership, request diagnostic helpers and documented lifecycle contracts. ARCH-17–18 refine request transport and
 per-refresh accounting and fix obsolete artifact diagnostic writes. The plan owns review status and validation evidence. Broad renderer/AppShell/state-machine rewrites and unmeasured listener changes are not

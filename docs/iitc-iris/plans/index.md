@@ -14,6 +14,16 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**Current branch test checkpoint (2026-11-06):** user authorized commit/push and longer APK testing before merging.
+ARCH-10–18 are committed on `refactor/renderer-maintenance` as `9e93185`, `83cd5e9` and `af248e3`.
+Signed APK **`0.4.1-alpha+af248e3` (1877)** includes the complete code batch, superseding APK 1874.
+Download: `http://192.168.0.169:6969/downloads/iitc-iris-android.apk`. Signing, identity, all 22 bundled assets and
+served download hash are verified. Web validation: 728 app/core tests and all 65 Chrome cases; Android release:
+15 JavaScript tests, 31 native JUnit tests, lint and signed assembly. The
+[plan's final handoff](architecture-maintenance.md#2026-11-06--committed-branch-and-signed-android-handoff)
+owns commit/build evidence. Main integration and phone acceptance remain pending. Earlier checkpoints below
+retain their original implementation/build status; this entry is the current handoff.
+
 **Android acceptance (2026-11-06):** the user has used signed APK `0.4.1-alpha+cb83390` (1871) for a while
 and reports that everything looks good. General Android usage acceptance is recorded; individual edge cases were
 not separately enumerated. Release validation passed 15 Android JavaScript tests, 31 native JUnit tests, Android

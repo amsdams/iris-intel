@@ -3,7 +3,8 @@
 Status: complete for the selected implementation scope (nine tracked items, ten slices). General IRIS smoke is
 accepted after ARCH-08. General Android usage is accepted on 2026-11-06 after the user used APK 1871 for a while
 and reported that everything looks good. Validation and specific coverage limits are recorded below.
-Follow-up ARCH-10–18 is implemented on `refactor/renderer-maintenance` and remains uncommitted for review.
+Follow-up ARCH-10–18 is implemented and committed on `refactor/renderer-maintenance`. Signed APK 1877
+contains the complete batch; longer Android testing is pending. See the final branch handoff below.
 The earlier Android acceptance covers the prior merged batch, not this new renderer/navigation/request work.
 
 This is the implementation tracker for the validated parts of the [architecture review](arch-review.md).
@@ -719,3 +720,26 @@ all 22 shared asset files in each package match the verified web output. Local M
 and whole-change whitespace checks pass. Whole app/core production source is 24,466 LOC (+8 in this batch).
 APK 1874 remains the earlier renderer checkpoint and does not contain ARCH-13–18. Phone smoke remains deferred;
 no new APK, commit, push or merge was performed.
+
+
+### 2026-11-06 — committed branch and signed Android handoff
+
+The user authorized committing/pushing the feature branch and testing the APK for a while before main integration.
+ARCH-10–18 are committed as three focused changes:
+
+- `9e93185`: entity visibility, shared layer synchronization and portal label/decoration ownership.
+- `83cd5e9`: shell navigation, module-boundary enforcement and diagnostic helpers.
+- `af248e3`: map endpoint transport, refresh sessions, artifact freshness fix and architecture documentation.
+
+Signed APK `0.4.1-alpha+af248e3` (1877) is built from the clean code checkpoint, reusing the web output already
+validated by 728 app/core tests and all 65 Chrome cases. Android release validation passes 15 JavaScript tests,
+31 native JUnit tests, release lint and signed assembly. The permanent application ID and pinned release certificate
+match; all 22 bundled IRIS assets match the verified web output/generated Android assets. The served LAN APK hash
+matches the built APK (`cc47de4ce83cc1381fa1906b588caab03be6aa187b6256f1211697c56c516ef3`).
+
+Download: `http://192.168.0.169:6969/downloads/iitc-iris-android.apk`. The existing port-6969 server serves this
+new signed APK. It supersedes APK 1874 and includes navigation/request follow-ups as well as renderer work.
+This documentation-only handoff follows the code checkpoint; the APK's source commit remains `af248e3`.
+The user authorized pushing `refactor/renderer-maintenance`; main remains unchanged while longer phone testing
+is pending. Exercise normal map/portal/COMM use, filters and labels, Search focus/navigation, inventory updates,
+map reload and background/resume. No live/Android acceptance of the new batch is claimed yet.
