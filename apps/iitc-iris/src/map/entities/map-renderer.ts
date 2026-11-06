@@ -1,28 +1,29 @@
+import {createPortalDecorationOverlays, createEmptyOrnamentDiagnostics, type OrnamentDiagnostics} from './portal-decoration-overlays';
+import {createEntityLayerSync, compactRenderedLayers, mapEntitiesByGuid, createEmptyRenderMutationLayerDiagnostics} from './entity-layer-sync';
+import {createPortalLabelOverlays} from './portal-label-overlays';
+import {
+  isPortalVisibleWith, isLinkVisibleWith, isFieldVisibleWith, getPortalLevelBucket,
+  getSecondaryEntityRenderUpdate as getSecondaryUpdate, getFactionLayerSetting,
+  arePortalLevelFiltersEnabled, getDirectFactionToggleTeam, getCoreEntityRenderScope,
+  getWholeCoreOverlayToggleKey, ALL_CORE_ENTITY_RENDER_SCOPE, ALL_SECONDARY_ENTITY_RENDER_UPDATE,
+  type IitcIrisSecondaryEntityRenderUpdate, type IitcIrisCoreEntityRenderScope,
+  type IitcIrisPortalLevelBucket,
+} from './entity-visibility';
 import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap} from 'leaflet';
-import {getIitcOrnamentDefinition, isIitcExcludedOrnament, parseIitcOrnamentVisibilitySettings, type IitcOrnamentVisibilitySettings} from '@iris/iitc-core';
 import type {
   IitcIrisHighlighterSettings, IitcIrisLayerSettings, IitcIrisLayerUpdateTimingDiagnostics,
   IitcIrisRenderEntities, IitcIrisRenderField, IitcIrisRenderLink,
   IitcIrisRenderMutationDiagnostics, IitcIrisRenderMutationLayerDiagnostics, IitcIrisRenderPolicy, IitcIrisRenderPortal,
 } from '../../messages';
 import {IITC_TEAM_COLORS} from '../../iitc-colors';
-import {getPortalLevel, getPortalMarkerScale, getPortalRadius as getPortalRadiusForZoom,
+import {getPortalRadius as getPortalRadiusForZoom,
   getPortalMarkerStyle as getPortalBaseMarkerStyle} from './portal-marker-style';
-import {createPortalKeyCountCanvas, createPortalKeyCountLabel, createPortalLevelCanvas, createPortalLevelLabel} from './portal-label-canvas';
-import {createPortalImage, createPortalImageCanvas, type PortalImage} from './portal-image-canvas';
 import {IitcIrisCanvas} from '../map-canvas';
-import {getVisibleLevelLabelGuids} from './portal-level-numbers';
 import {getPortalHighlighter} from '../layers/highlighter-registry';
 import {createIitcGeodesicPolygon, createIitcGeodesicPolyline} from '../leaflet-geodesic';
 import {getLayerPane, type IitcIrisCoreLayerKey, type IitcIrisEntityLayerIndex, type IitcIrisMapLayers} from '../map-layers';
 
 const TEAM_COLORS = IITC_TEAM_COLORS;
-
-interface OrnamentDiagnostics {
-  drawnMarkers: number;
-  hiddenMarkers: number;
-  types: Record<string, number>;
-}
 
 interface MapRendererOptions {
   getMap: () => LeafletMap | undefined;
@@ -44,13 +45,6 @@ interface MapRendererOptions {
   renderSelectedPortal: () => void;
   renderSelectedMapObject: () => void;
   renderIitcDrawTools: () => void;
-}
-
-interface IitcIrisSecondaryEntityRenderUpdate {
-  portalOverlays: boolean;
-  selectedPortal: boolean;
-  selectedMapObject: boolean;
-  drawTools: boolean;
 }
 
 interface RenderEntitiesOptions {
@@ -90,28 +84,15 @@ export function createMapRenderer({
   const toLatLng = (latE6: number, lngE6: number): [number, number] => [latE6 / 1e6, lngE6 / 1e6];
   const getTeamColor = (team: keyof typeof TEAM_COLORS): string => TEAM_COLORS[team] ?? TEAM_COLORS.N;
   const roundTimingMs = (value: number): number => Math.round(value * 10) / 10;
-
-  interface KeyBadge {guid: string; latE6: number; lngE6: number; count: number; radius: number}
-  const keyLabelIndex: IitcIrisEntityLayerIndex = new Map();
-  let previousKeyBadges: KeyBadge[] = [];
-  const levelLabelIndex: IitcIrisEntityLayerIndex = new Map();
-  let previousLevelLabelPortals: IitcIrisRenderPortal[] = [];
-
-  interface Decoration extends PortalImage {guid: string; latE6: number; lngE6: number}
-  const decorationIndexes: Record<'ornaments' | 'artifacts', IitcIrisEntityLayerIndex> = {
-    ornaments: new Map(), artifacts: new Map(),
-  };
-  const previousDecorations: Record<'ornaments' | 'artifacts', Decoration[]> = {ornaments: [], artifacts: []};
+  const {addEntityRenderedLayer, removeEntityRenderedLayers, syncEntityLayers} = createEntityLayerSync(addRenderedLayer);
+  const labelOverlays = createPortalLabelOverlays({getMap, getLayerSettings, getPortalKeyCount, getPortalRadius,
+    syncEntityLayers, clearRenderedLayers});
+  const decorationOverlays = createPortalDecorationOverlays({getMap, defaultZoom, getPortalRadius,
+    syncEntityLayers, clearRenderedLayers});
 
   function resetPortalOverlays(): void {
-    decorationIndexes.ornaments.clear();
-    decorationIndexes.artifacts.clear();
-    previousDecorations.ornaments = [];
-    previousDecorations.artifacts = [];
-    keyLabelIndex.clear();
-    previousKeyBadges = [];
-    levelLabelIndex.clear();
-    previousLevelLabelPortals = [];
+    decorationOverlays.resetReferences();
+    labelOverlays.resetReferences();
   }
 
   function getPortalRadius(level: number | undefined, isPlaceholder: boolean): number {
@@ -123,21 +104,9 @@ export function createMapRenderer({
     return getPortalHighlighter(renderPolicy.activeHighlighter).getStyle?.({portal, history}) ?? {};
   }
 
-  function createKeyCountMarker(latLng: [number, number], count: number, portalRadius: number): LeafletLayer {
-    const map = getMap() as (LeafletMap & {__iitcIrisKeyCountRenderer?: L.Canvas}) | undefined;
-    if (!map) throw new Error('Cannot create key-count labels without a map');
-    map.__iitcIrisKeyCountRenderer ??= createPortalKeyCountCanvas(getLayerPane('labels'));
-    return createPortalKeyCountLabel(latLng, count, portalRadius, map.__iitcIrisKeyCountRenderer);
-  }
-
   function clearRenderedLayersFromGroup(layers: LeafletLayer[], group: L.LayerGroup): void {
     group.clearLayers();
     layers.length = 0;
-  }
-
-  function addRenderedLayerToGroup(layers: LeafletLayer[], group: L.LayerGroup, layer: LeafletLayer): void {
-    group.addLayer(layer);
-    layers.push(layer);
   }
 
   function clearEntityLayerIndex(index: IitcIrisEntityLayerIndex): void {
@@ -213,61 +182,6 @@ export function createMapRenderer({
     );
   }
 
-  function addEntityRenderedLayer(
-    layers: LeafletLayer[],
-    index: IitcIrisEntityLayerIndex,
-    guid: string,
-    layer: LeafletLayer,
-    group?: L.LayerGroup,
-  ): void {
-    const previousLayerCount = layers.length;
-    if (group) {
-      addRenderedLayerToGroup(layers, group, layer);
-    } else {
-      addRenderedLayer(layers, layer);
-    }
-    if (layers.length === previousLayerCount) return;
-    const indexedLayers = index.get(guid) ?? [];
-    indexedLayers.push(layer);
-    index.set(guid, indexedLayers);
-  }
-
-  function removeEntityRenderedLayers(
-    layers: LeafletLayer[],
-    index: IitcIrisEntityLayerIndex,
-    guid: string,
-    removedLayers?: Set<LeafletLayer>,
-    group?: L.LayerGroup,
-  ): void {
-    const indexedLayers = index.get(guid);
-    if (!indexedLayers) return;
-    for (const layer of indexedLayers) {
-      if (group) {
-        group.removeLayer(layer);
-      } else {
-        layer.remove();
-      }
-      if (removedLayers) {
-        removedLayers.add(layer);
-        continue;
-      }
-      const layerIndex = layers.indexOf(layer);
-      if (layerIndex >= 0) layers.splice(layerIndex, 1);
-    }
-    index.delete(guid);
-  }
-
-  function compactRenderedLayers(layers: LeafletLayer[], removedLayers: Set<LeafletLayer>): void {
-    if (removedLayers.size === 0) return;
-    let nextIndex = 0;
-    for (const layer of layers) {
-      if (removedLayers.has(layer)) continue;
-      layers[nextIndex] = layer;
-      nextIndex += 1;
-    }
-    layers.length = nextIndex;
-  }
-
   function getLayerRenderer(layerKey: 'fields' | 'links' | 'portals'): L.Renderer | undefined {
     const map = getMap();
     if (!map) return undefined;
@@ -298,138 +212,15 @@ export function createMapRenderer({
     if (update.selectedPortal) clearRenderedLayers(layers.selectedPortal);
     if (update.selectedMapObject) clearRenderedLayers(layers.selectedMapObject);
     if (update.portalOverlays) {
-      // Drop unindexed leftovers after a render-context reset; normal sync retains unchanged images.
-      for (const key of ['ornaments', 'artifacts'] as const) {
-        const retained = new Set([...decorationIndexes[key].values()].flat());
-        const removed = new Set(layers[key].filter(layer => !retained.has(layer)));
-        clearRenderedLayers([...removed]);
-        compactRenderedLayers(layers[key], removed);
-      }
-      // Keep both indexed label overlays attached; their sync removes changed/hidden badges.
-      const retainedLabels = new Set([...levelLabelIndex.values(), ...keyLabelIndex.values()].flat());
-      const removedLabels = new Set(layers.labels.filter((layer) => !retainedLabels.has(layer)));
-      clearRenderedLayers([...removedLabels]);
-      compactRenderedLayers(layers.labels, removedLabels);
+      decorationOverlays.clearUnindexed(layers);
+      labelOverlays.clearUnindexed(layers);
     }
-  }
-
-  function syncDecorations(layers: IitcIrisMapLayers, key: 'ornaments' | 'artifacts', decorations: Decoration[]): void {
-    syncEntityLayers(
-      layers[key], decorationIndexes[key], previousDecorations[key], decorations,
-      (a, b) => a.latE6 === b.latE6 && a.lngE6 === b.lngE6 && a.url === b.url && a.size === b.size &&
-        a.anchorX === b.anchorX && a.anchorY === b.anchorY && a.opacity === b.opacity && a.zIndexOffset === b.zIndexOffset,
-      (decoration) => {
-        const map = getMap() as (LeafletMap & {__iitcIrisImageRenderers?: Partial<Record<typeof key, L.Canvas>>}) | undefined;
-        if (!map) throw new Error('Cannot create portal decorations without a map');
-        const renderers = map.__iitcIrisImageRenderers ??= {};
-        const renderer = renderers[key] ??= createPortalImageCanvas(getLayerPane(key), `iitc-iris-${key}-canvas`);
-        return createPortalImage(toLatLng(decoration.latE6, decoration.lngE6), decoration, renderer);
-      },
-    );
-    for (const decoration of decorations) {
-      for (const layer of decorationIndexes[key].get(decoration.guid) ?? []) {
-        const imageLayer = layer as L.CircleMarker & {options: L.CircleMarkerOptions & {portalImage: PortalImage}};
-        if (imageLayer.options.portalImage.order === decoration.order) continue;
-        imageLayer.options.portalImage.order = decoration.order;
-        imageLayer.redraw();
-      }
-    }
-    previousDecorations[key] = decorations;
-  }
-
-  function loadOrnamentVisibilitySettings(): IitcOrnamentVisibilitySettings {
-    let excludedOrnaments: unknown;
-    let knownOrnaments: unknown;
-    let layerGroupDisplayed: unknown;
-    try {
-      const rawExcluded = window.localStorage.getItem('excludedOrnaments');
-      excludedOrnaments = rawExcluded ? JSON.parse(rawExcluded) : [];
-    } catch {
-      excludedOrnaments = [];
-    }
-    try {
-      const rawKnown = window.localStorage.getItem('knownOrnaments');
-      knownOrnaments = rawKnown ? JSON.parse(rawKnown) : {};
-    } catch {
-      knownOrnaments = {};
-    }
-    try {
-      const rawLayers = window.localStorage.getItem('ingress.intelmap.layergroupdisplayed');
-      layerGroupDisplayed = rawLayers ? JSON.parse(rawLayers) : {};
-    } catch {
-      layerGroupDisplayed = {};
-    }
-    return parseIitcOrnamentVisibilitySettings({
-      excludedOrnaments,
-      knownOrnaments,
-      layerGroupDisplayed,
-    });
-  }
-
-  function createEmptyOrnamentDiagnostics(): OrnamentDiagnostics {
-    return {
-      drawnMarkers: 0,
-      hiddenMarkers: 0,
-      types: {},
-    };
-  }
-
-  function createLevelLabelMarker(latLng: [number, number], level: number, team: keyof typeof TEAM_COLORS): LeafletLayer {
-    const map = getMap() as (LeafletMap & {__iitcIrisLevelLabelRenderer?: L.Canvas}) | undefined;
-    if (!map) throw new Error('Cannot create portal level labels without a map');
-    map.__iitcIrisLevelLabelRenderer ??= createPortalLevelCanvas(getLayerPane('labels'));
-    return createPortalLevelLabel(latLng, level, team, map.__iitcIrisLevelLabelRenderer);
-  }
-
-  function getLevelLabelCandidates(portals: IitcIrisRenderEntities['portals']): Parameters<typeof getVisibleLevelLabelGuids>[0] {
-    const map = getMap();
-    if (!map) return [];
-    return portals
-      .filter((portal) => !portal.isPlaceholder && portal.level !== undefined)
-      .map((portal) => ({
-        guid: portal.guid,
-        level: getPortalLevel(portal.level, false),
-        point: map.project(L.latLng(portal.latE6 / 1e6, portal.lngE6 / 1e6)),
-      }));
-  }
-
-  function syncLevelLabels(layers: IitcIrisMapLayers, portals: IitcIrisRenderPortal[]): void {
-    syncEntityLayers(
-      layers.labels, levelLabelIndex, previousLevelLabelPortals, portals,
-      (previous, next) => previous.level === next.level && previous.team === next.team &&
-        previous.latE6 === next.latE6 && previous.lngE6 === next.lngE6,
-      (portal) => createLevelLabelMarker(toLatLng(portal.latE6, portal.lngE6), portal.level ?? 0, portal.team),
-    );
-    previousLevelLabelPortals = portals;
-  }
-
-  function syncKeyLabels(layers: IitcIrisMapLayers, badges: KeyBadge[]): void {
-    syncEntityLayers(
-      layers.labels, keyLabelIndex, previousKeyBadges, badges,
-      (previous, next) => previous.count === next.count && previous.radius === next.radius &&
-        previous.latE6 === next.latE6 && previous.lngE6 === next.lngE6,
-      (badge) => createKeyCountMarker(toLatLng(badge.latE6, badge.lngE6), badge.count, badge.radius),
-    );
-    previousKeyBadges = badges;
-  }
-
-  function getKeyBadges(portals: IitcIrisRenderPortal[]): KeyBadge[] {
-    if (!getLayerSettings().keyCount) return [];
-    const badges: KeyBadge[] = [];
-    for (const portal of portals) {
-      const count = getPortalKeyCount(portal.guid);
-      if (count !== undefined && count > 0) {
-        badges.push({guid: portal.guid, latE6: portal.latE6, lngE6: portal.lngE6, count,
-          radius: getPortalRadius(portal.level, portal.isPlaceholder)});
-      }
-    }
-    return badges;
   }
 
   function refreshKeyCountLabels(): void {
     const entities = getEntities();
     if (!getMap() || !entities || !getLayerSettings().keyCount) return;
-    syncKeyLabels(ensureLayers(), getKeyBadges(entities.portals.filter(isPortalVisible)));
+    labelOverlays.syncKeys(ensureLayers(), entities.portals.filter(isPortalVisible));
   }
 
   function getRenderPolicy(): IitcIrisRenderPolicy {
@@ -452,117 +243,8 @@ export function createMapRenderer({
     };
   }
 
-  type IitcIrisCoreFilterEntityKind = 'portal' | 'link' | 'field';
-  type IitcIrisCoreFilterDataConstraint = Partial<{
-    team: IitcIrisRenderPortal['team'];
-    level: number | undefined;
-    isPlaceholder: boolean;
-  }>;
-  interface IitcIrisCoreFilterDesc {
-    portal?: boolean;
-    link?: boolean;
-    field?: boolean;
-    data?: IitcIrisCoreFilterDataConstraint;
-    pred?: (entity: IitcIrisRenderPortal | IitcIrisRenderLink | IitcIrisRenderField) => boolean;
-  }
-  interface IitcIrisCoreFilterLayer {
-    name: string;
-    setting: keyof IitcIrisLayerSettings;
-    filter: IitcIrisCoreFilterDesc | IitcIrisCoreFilterDesc[];
-  }
-
-  function createIitcIrisLevelFilterLayer(level: 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8): IitcIrisCoreFilterLayer {
-    return {
-      name: `Level ${level} Portals`,
-      setting: `level${level}Portals` as keyof IitcIrisLayerSettings,
-      filter: [
-        {portal: true, data: {level, team: 'R'}},
-        {portal: true, data: {level, team: 'E'}},
-        {portal: true, data: {level, team: 'M'}},
-      ],
-    };
-  }
-
-  const IITC_IRIS_CORE_FILTER_LAYERS: IitcIrisCoreFilterLayer[] = [
-    {name: 'Fields', setting: 'fields', filter: {field: true}},
-    {name: 'Links', setting: 'links', filter: {link: true}},
-    {name: 'Portals', setting: 'portals', filter: {portal: true}},
-    {
-      name: 'Unclaimed/Placeholder Portals',
-      setting: 'unclaimedPortals',
-      filter: [
-        {portal: true, data: {team: 'N'}},
-        {portal: true, data: {level: undefined}},
-        {portal: true, data: {isPlaceholder: true}},
-      ],
-    },
-    ...([1, 2, 3, 4, 5, 6, 7, 8] as const).map(createIitcIrisLevelFilterLayer),
-    {
-      name: 'Resistance',
-      setting: 'resistance',
-      filter: {portal: true, link: true, field: true, data: {team: 'R'}},
-    },
-    {
-      name: 'Enlightened',
-      setting: 'enlightened',
-      filter: {portal: true, link: true, field: true, data: {team: 'E'}},
-    },
-    {
-      name: 'Machina',
-      setting: 'machina',
-      filter: {portal: true, link: true, field: true, data: {team: 'M'}},
-    },
-  ];
-
-  function getCoreFilterEntityData(entity: IitcIrisRenderPortal | IitcIrisRenderLink | IitcIrisRenderField): IitcIrisCoreFilterDataConstraint {
-    if (!entity || typeof entity !== 'object') {
-      return {team: undefined};
-    }
-    if ('level' in entity || 'isPlaceholder' in entity) {
-      const portal = entity as IitcIrisRenderPortal;
-      return {
-        team: portal.team,
-        level: portal.level,
-        isPlaceholder: portal.isPlaceholder,
-      };
-    }
-    return {team: entity.team};
-  }
-
-  function doesCoreFilterDataMatch(
-    constraint: IitcIrisCoreFilterDataConstraint | undefined,
-    entity: IitcIrisRenderPortal | IitcIrisRenderLink | IitcIrisRenderField,
-  ): boolean {
-    if (!constraint) return true;
-    const data = getCoreFilterEntityData(entity);
-    return Object.entries(constraint).every(([key, value]) => data[key as keyof IitcIrisCoreFilterDataConstraint] === value);
-  }
-
-  function doesCoreFilterMatch(
-    kind: IitcIrisCoreFilterEntityKind,
-    entity: IitcIrisRenderPortal | IitcIrisRenderLink | IitcIrisRenderField,
-    filter: IitcIrisCoreFilterDesc,
-  ): boolean {
-    if (!filter[kind]) return false;
-    if (filter.pred) return filter.pred(entity);
-    return doesCoreFilterDataMatch(filter.data, entity);
-  }
-
-  function isCoreEntityFilteredWith(
-    settings: IitcIrisLayerSettings,
-    kind: IitcIrisCoreFilterEntityKind,
-    entity: IitcIrisRenderPortal | IitcIrisRenderLink | IitcIrisRenderField,
-  ): boolean {
-    for (const layer of IITC_IRIS_CORE_FILTER_LAYERS) {
-      if (settings[layer.setting] === true) continue;
-      const filters = Array.isArray(layer.filter) ? layer.filter : [layer.filter];
-      if (filters.some((filter) => doesCoreFilterMatch(kind, entity, filter))) return true;
-    }
-    return false;
-  }
-
-  function isPortalVisibleWith(settings: IitcIrisLayerSettings, portal: IitcIrisRenderPortal): boolean {
-    return !isCoreEntityFilteredWith(settings, 'portal', portal);
+  function getSecondaryEntityRenderUpdate(changedLayerKeys?: (keyof IitcIrisLayerSettings)[]): IitcIrisSecondaryEntityRenderUpdate {
+    return getSecondaryUpdate(getLayerSettings(), changedLayerKeys);
   }
 
   function isPortalVisible(portal: IitcIrisRenderPortal): boolean {
@@ -570,17 +252,9 @@ export function createMapRenderer({
     return isPortalVisibleWith(layerSettings, portal);
   }
 
-  function isLinkVisibleWith(settings: IitcIrisLayerSettings, link: IitcIrisRenderLink): boolean {
-    return !isCoreEntityFilteredWith(settings, 'link', link);
-  }
-
   function isLinkVisible(link: IitcIrisRenderLink): boolean {
     const layerSettings = getLayerSettings();
     return isLinkVisibleWith(layerSettings, link);
-  }
-
-  function isFieldVisibleWith(settings: IitcIrisLayerSettings, field: IitcIrisRenderField): boolean {
-    return !isCoreEntityFilteredWith(settings, 'field', field);
   }
 
   function isFieldVisible(field: IitcIrisRenderField): boolean {
@@ -636,12 +310,6 @@ export function createMapRenderer({
       ...getPortalBaseMarkerStyle(portal, renderPolicy, getMap()?.getZoom() ?? defaultZoom),
       ...dataOverlayStyle,
     };
-  }
-
-  function mapEntitiesByGuid<T extends {guid: string}>(entities: T[]): Map<string, T> {
-    const mapped = new Map<string, T>();
-    for (const entity of entities) mapped.set(entity.guid, entity);
-    return mapped;
   }
 
   function areFieldPointsEqual(a: IitcIrisRenderField['points'], b: IitcIrisRenderField['points']): boolean {
@@ -713,15 +381,6 @@ export function createMapRenderer({
     return true;
   }
 
-  function createEmptyRenderMutationLayerDiagnostics(): IitcIrisRenderMutationLayerDiagnostics {
-    return {
-      added: 0,
-      removed: 0,
-      replaced: 0,
-      unchanged: 0,
-    };
-  }
-
   function createFullRenderMutationLayerDiagnostics(renderedCount: number): IitcIrisRenderMutationLayerDiagnostics {
     return {
       added: renderedCount,
@@ -729,45 +388,6 @@ export function createMapRenderer({
       replaced: 0,
       unchanged: 0,
     };
-  }
-
-  function syncEntityLayers<T extends {guid: string}>(
-    layers: LeafletLayer[],
-    index: IitcIrisEntityLayerIndex,
-    previousEntities: T[],
-    nextEntities: T[],
-    areLayersEqual: (previous: T, next: T) => boolean,
-    createLayer: (entity: T) => LeafletLayer,
-    group?: L.LayerGroup,
-  ): IitcIrisRenderMutationLayerDiagnostics {
-    const previousByGuid = mapEntitiesByGuid(previousEntities);
-    const nextByGuid = mapEntitiesByGuid(nextEntities);
-    const diagnostics = createEmptyRenderMutationLayerDiagnostics();
-    const removedLayers = new Set<LeafletLayer>();
-
-    for (const [guid, previousEntity] of previousByGuid) {
-      const nextEntity = nextByGuid.get(guid);
-      if (nextEntity && areLayersEqual(previousEntity, nextEntity)) {
-        diagnostics.unchanged += 1;
-        continue;
-      }
-      removeEntityRenderedLayers(layers, index, guid, removedLayers, group);
-      if (nextEntity) {
-        diagnostics.replaced += 1;
-      } else {
-        diagnostics.removed += 1;
-      }
-    }
-    compactRenderedLayers(layers, removedLayers);
-
-    for (const [guid, nextEntity] of nextByGuid) {
-      const previousEntity = previousByGuid.get(guid);
-      if (previousEntity && areLayersEqual(previousEntity, nextEntity)) continue;
-      addEntityRenderedLayer(layers, index, guid, createLayer(nextEntity), group);
-      if (!previousEntity) diagnostics.added += 1;
-    }
-
-    return diagnostics;
   }
 
   function getEntityRenderContextKey(renderPolicy: IitcIrisRenderPolicy): string {
@@ -809,104 +429,13 @@ export function createMapRenderer({
       !hasPendingPortalSelection();
   }
 
-  const ALL_SECONDARY_ENTITY_RENDER_UPDATE: IitcIrisSecondaryEntityRenderUpdate = {
-    portalOverlays: true,
-    selectedPortal: true,
-    selectedMapObject: true,
-    drawTools: true,
-  };
-
-  function getSecondaryEntityRenderUpdate(changedLayerKeys?: (keyof IitcIrisLayerSettings)[]): IitcIrisSecondaryEntityRenderUpdate {
-    const layerSettings = getLayerSettings();
-    if (!changedLayerKeys) return ALL_SECONDARY_ENTITY_RENDER_UPDATE;
-    const changedKeySet = new Set(changedLayerKeys);
-    const changesPortalVisibility = changedLayerKeys.some((key) => (
-      key === 'portals' ||
-      key === 'unclaimedPortals' ||
-      key === 'resistance' ||
-      key === 'enlightened' ||
-      key === 'machina' ||
-      /^level[1-8]Portals$/.test(key)
-    ));
-    const enabledPortalOverlay = getLayerSettings().labels ||
-      layerSettings.keyCount ||
-      layerSettings.ornaments ||
-      layerSettings.artifacts;
-    const needsPortalOverlayUpdate = (changesPortalVisibility && enabledPortalOverlay) ||
-      changedKeySet.has('labels') ||
-      changedKeySet.has('keyCount') ||
-      changedKeySet.has('ornaments') ||
-      changedKeySet.has('artifacts');
-    const changesLinkVisibility = changedKeySet.has('links') ||
-      changedKeySet.has('resistance') ||
-      changedKeySet.has('enlightened') ||
-      changedKeySet.has('machina');
-
-    return {
-      portalOverlays: needsPortalOverlayUpdate,
-      selectedPortal: changesPortalVisibility,
-      selectedMapObject: changedKeySet.has('fields') || changesLinkVisibility,
-      drawTools: changesLinkVisibility,
-    };
-  }
-
-  type IitcIrisPortalLevelBucket = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 'unclaimed';
-
-  interface IitcIrisCoreEntityRenderScope {
-    fields: boolean;
-    links: boolean;
-    portals: boolean;
-    allFields: boolean;
-    allLinks: boolean;
-    allPortals: boolean;
-    fieldTeams: Set<IitcIrisRenderField['team']>;
-    linkTeams: Set<IitcIrisRenderLink['team']>;
-    portalTeams: Set<IitcIrisRenderPortal['team']>;
-    portalLevels: Set<IitcIrisPortalLevelBucket>;
-  }
-
   interface IitcIrisRenderEntityBuckets {
     fieldsByTeam: Map<IitcIrisRenderField['team'], IitcIrisRenderField[]>;
     linksByTeam: Map<IitcIrisRenderLink['team'], IitcIrisRenderLink[]>;
     portalsByTeam: Map<IitcIrisRenderPortal['team'], IitcIrisRenderPortal[]>;
     portalsByLevel: Map<IitcIrisPortalLevelBucket, IitcIrisRenderPortal[]>;
   }
-
-  const ALL_CORE_ENTITY_RENDER_SCOPE: IitcIrisCoreEntityRenderScope = {
-    fields: true,
-    links: true,
-    portals: true,
-    allFields: true,
-    allLinks: true,
-    allPortals: true,
-    fieldTeams: new Set(),
-    linkTeams: new Set(),
-    portalTeams: new Set(),
-    portalLevels: new Set(),
-  };
   const renderEntityBuckets = new WeakMap<IitcIrisRenderEntities, IitcIrisRenderEntityBuckets>();
-
-  function createEmptyCoreEntityRenderScope(): IitcIrisCoreEntityRenderScope {
-    return {
-      fields: false,
-      links: false,
-      portals: false,
-      allFields: false,
-      allLinks: false,
-      allPortals: false,
-      fieldTeams: new Set(),
-      linkTeams: new Set(),
-      portalTeams: new Set(),
-      portalLevels: new Set(),
-    };
-  }
-
-  function getPortalLevelBucket(portal: IitcIrisRenderPortal): IitcIrisPortalLevelBucket {
-    if (portal.team === 'N' || portal.isPlaceholder || portal.level === undefined || portal.level < 1 || portal.level > 8) {
-      return 'unclaimed';
-    }
-    return portal.level as IitcIrisPortalLevelBucket;
-  }
 
   function addToBucket<K, T>(buckets: Map<K, T[]>, key: K, value: T): void {
     const bucket = buckets.get(key);
@@ -977,36 +506,6 @@ export function createMapRenderer({
     return portals;
   }
 
-  function getFactionLayerSetting(team: IitcIrisRenderPortal['team'], settings: IitcIrisLayerSettings = getLayerSettings()): boolean {
-    if (team === 'R') return settings.resistance;
-    if (team === 'E') return settings.enlightened;
-    if (team === 'M') return settings.machina;
-    return true;
-  }
-
-  function arePortalLevelFiltersEnabled(settings: IitcIrisLayerSettings = getLayerSettings()): boolean {
-    return settings.unclaimedPortals &&
-      settings.level1Portals &&
-      settings.level2Portals &&
-      settings.level3Portals &&
-      settings.level4Portals &&
-      settings.level5Portals &&
-      settings.level6Portals &&
-      settings.level7Portals &&
-      settings.level8Portals;
-  }
-
-  function getDirectFactionToggleTeam(scope: IitcIrisCoreEntityRenderScope): IitcIrisRenderPortal['team'] | null {
-    if (!scope.fields || !scope.links || !scope.portals) return null;
-    if (scope.allFields || scope.allLinks || scope.allPortals) return null;
-    if (scope.fieldTeams.size !== 1 || scope.linkTeams.size !== 1 || scope.portalTeams.size !== 1) return null;
-    if (scope.portalLevels.size > 0) return null;
-    const [fieldTeam] = scope.fieldTeams;
-    const [linkTeam] = scope.linkTeams;
-    const [portalTeam] = scope.portalTeams;
-    return fieldTeam === linkTeam && linkTeam === portalTeam ? portalTeam : null;
-  }
-
   function syncFactionBucketLayers<T extends {guid: string}>(
     layerList: LeafletLayer[],
     index: IitcIrisEntityLayerIndex,
@@ -1049,10 +548,10 @@ export function createMapRenderer({
     if (!arePortalLevelFiltersEnabled(previousLayerSettings) || !arePortalLevelFiltersEnabled(layerSettings)) return null;
     const team = getDirectFactionToggleTeam(scope);
     if (!team || team === 'N') return null;
-    if (getFactionLayerSetting(team, previousLayerSettings) === getFactionLayerSetting(team)) return null;
+    if (getFactionLayerSetting(team, previousLayerSettings) === getFactionLayerSetting(team, layerSettings)) return null;
 
     const buckets = getRenderEntityBuckets(entities);
-    const visible = getFactionLayerSetting(team);
+    const visible = getFactionLayerSetting(team, layerSettings);
 
     let stepStartedAt = performance.now();
     const fields = syncFactionBucketLayers(
@@ -1093,54 +592,6 @@ export function createMapRenderer({
       links,
       portals,
     };
-  }
-
-  function addFactionScope(scope: IitcIrisCoreEntityRenderScope, team: IitcIrisRenderPortal['team']): void {
-    scope.fields = true;
-    scope.links = true;
-    scope.portals = true;
-    if (!scope.allFields) scope.fieldTeams.add(team);
-    if (!scope.allLinks) scope.linkTeams.add(team);
-    if (!scope.allPortals) scope.portalTeams.add(team);
-  }
-
-  function getCoreEntityRenderScope(changedLayerKeys?: (keyof IitcIrisLayerSettings)[]): IitcIrisCoreEntityRenderScope {
-    if (!changedLayerKeys) return ALL_CORE_ENTITY_RENDER_SCOPE;
-    const scope = createEmptyCoreEntityRenderScope();
-
-    for (const key of changedLayerKeys) {
-      if (key === 'fields') {
-        scope.fields = true;
-        scope.allFields = true;
-        scope.fieldTeams.clear();
-      } else if (key === 'links') {
-        scope.links = true;
-        scope.allLinks = true;
-        scope.linkTeams.clear();
-      } else if (key === 'portals') {
-        scope.portals = true;
-        scope.allPortals = true;
-        scope.portalTeams.clear();
-        scope.portalLevels.clear();
-      } else if (key === 'resistance') {
-        addFactionScope(scope, 'R');
-      } else if (key === 'enlightened') {
-        addFactionScope(scope, 'E');
-      } else if (key === 'machina') {
-        addFactionScope(scope, 'M');
-      } else if (key === 'unclaimedPortals') {
-        scope.portals = true;
-        if (!scope.allPortals) {
-          scope.portalTeams.add('N');
-          scope.portalLevels.add('unclaimed');
-        }
-      } else if (/^level[1-8]Portals$/.test(key)) {
-        scope.portals = true;
-        if (!scope.allPortals) scope.portalLevels.add(Number(key.slice(5, 6)) as IitcIrisPortalLevelBucket);
-      }
-    }
-
-    return scope;
   }
 
   function syncVisibilityChangedEntityLayers<T extends {guid: string}>(
@@ -1257,13 +708,6 @@ export function createMapRenderer({
     startedAt: number,
   ): void {
     timing[key] = roundTimingMs(performance.now() - startedAt);
-  }
-
-  function getWholeCoreOverlayToggleKey(changedLayerKeys?: (keyof IitcIrisLayerSettings)[]): IitcIrisCoreLayerKey | null {
-    if (!changedLayerKeys || changedLayerKeys.length !== 1) return null;
-    const [key] = changedLayerKeys;
-    if (key === 'fields' || key === 'links' || key === 'portals') return key;
-    return null;
   }
 
   function getCoreLayerSettingValue(key: IitcIrisCoreLayerKey, settings: IitcIrisLayerSettings = getLayerSettings()): boolean {
@@ -1391,7 +835,7 @@ export function createMapRenderer({
     if (timing) timing.renderPolicyMs = roundTimingMs(performance.now() - stepStartedAt);
 
     stepStartedAt = performance.now();
-    const ornamentVisibility = loadOrnamentVisibilitySettings();
+    const ornamentVisibility = decorationOverlays.loadVisibility();
     if (timing) timing.ornamentSettingsMs = roundTimingMs(performance.now() - stepStartedAt);
 
     const secondaryUpdate = options.secondaryUpdate ?? ALL_SECONDARY_ENTITY_RENDER_UPDATE;
@@ -1408,7 +852,7 @@ export function createMapRenderer({
 
     stepStartedAt = performance.now();
     const visibleLevelLabelGuids = secondaryUpdate.portalOverlays && renderPolicy.labels
-      ? getVisibleLevelLabelGuids(getLevelLabelCandidates(getVisiblePortalsForRender()))
+      ? labelOverlays.getVisibleLevelLabelGuids(getVisiblePortalsForRender())
       : new Set<string>();
     if (timing) timing.visibleLabelsMs = roundTimingMs(performance.now() - stepStartedAt);
 
@@ -1495,56 +939,9 @@ export function createMapRenderer({
 
     stepStartedAt = performance.now();
     if (secondaryUpdate.portalOverlays) {
-      const levelLabelPortals: IitcIrisRenderPortal[] = [];
-      for (const portal of getVisiblePortalsForRender()) {
-        if (renderPolicy.labels && visibleLevelLabelGuids.has(portal.guid) && portal.level !== undefined) {
-          levelLabelPortals.push(portal);
-        }
-      }
+      labelOverlays.sync(layers, getVisiblePortalsForRender(), visibleLevelLabelGuids, renderPolicy.labels);
 
-      syncLevelLabels(layers, levelLabelPortals);
-      syncKeyLabels(layers, getKeyBadges(getVisiblePortalsForRender()));
-
-      const artifacts: Decoration[] = [];
-      if (renderPolicy.artifacts) {
-        for (const portal of entities.portals) {
-          if (portal.isPlaceholder || !portal.artifacts?.length) continue;
-          for (const [index, artifact] of portal.artifacts.entries()) {
-            const isTarget = artifact.role === 'target';
-            const size = isTarget ? 50 : 30;
-            const suffix = isTarget ? 'shard_target' : 'shard';
-            artifacts.push({guid: JSON.stringify([portal.guid, index]), latE6: portal.latE6, lngE6: portal.lngE6,
-              url: `https://commondatastorage.googleapis.com/ingress.com/img/map_icons/marker_images/${artifact.type}_${suffix}.png`,
-              size, anchorX: size / 2, anchorY: size / 2, opacity: isTarget ? 1 : 0.6,
-              zIndexOffset: isTarget ? 1200 : 1100, order: artifacts.length});
-          }
-        }
-      }
-      syncDecorations(layers, 'artifacts', artifacts);
-
-      const ornaments: Decoration[] = [];
-      if (renderPolicy.ornaments) {
-        const size = Math.round(60 * getPortalMarkerScale(getMap()?.getZoom() ?? defaultZoom));
-        for (const portal of entities.portals) {
-          if (!portal.ornaments?.length) continue;
-          const radius = getPortalRadius(portal.level, portal.isPlaceholder);
-          for (const [index, ornament] of portal.ornaments.entries()) {
-            ornamentDiagnostics.types[ornament] = (ornamentDiagnostics.types[ornament] ?? 0) + 1;
-            if (isIitcExcludedOrnament(ornament, ornamentVisibility)) {
-              ornamentDiagnostics.hiddenMarkers += 1;
-              continue;
-            }
-            ornamentDiagnostics.drawnMarkers += 1;
-            const definition = getIitcOrnamentDefinition(ornament);
-            const offset = definition?.url && definition.offset ? definition.offset : [0, 0];
-            ornaments.push({guid: JSON.stringify([portal.guid, index]), latE6: portal.latE6, lngE6: portal.lngE6,
-              url: definition?.url ?? `https://commondatastorage.googleapis.com/ingress.com/img/map_icons/marker_images/${ornament}.png`,
-              size, anchorX: size * offset[0] + size / 2, anchorY: size * offset[1] + size / 2,
-              opacity: definition?.opacity ?? 0.6, zIndexOffset: Math.round(radius), order: ornaments.length});
-          }
-        }
-      }
-      syncDecorations(layers, 'ornaments', ornaments);
+      decorationOverlays.sync(layers, entities.portals, renderPolicy, ornamentVisibility, ornamentDiagnostics);
     }
     if (secondaryUpdate.selectedPortal) renderSelectedPortal();
     if (secondaryUpdate.selectedMapObject) renderSelectedMapObject();
