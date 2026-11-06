@@ -14,14 +14,18 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
-**Android testing before merge (2026-11-04):** signed APK `0.4.1-alpha+cb83390` (version code 1871) is built from
-`refactor/architecture-maintenance` and served at `http://192.168.0.44:6969/downloads/iitc-iris-android.apk`.
-The user will test it before merging; the branch remains unmerged and unpushed. Release checks passed: 15 Android
-JavaScript tests, 31 native JUnit tests, Android release lint and signed assembly. Package identity and pinned signing
-certificate match; all 22 bundled IRIS assets match the current web build and the LAN download bytes match the APK.
-Existing web evidence remains 704 app/core tests and 65 Chrome cases plus accepted general IRIS smoke. Phone acceptance
-for this APK is pending: prioritize COMM/send/history/channel drafts, map/portal/layers, preference persistence,
-Android Back and background/resume. The download server's LAN address may change.
+**Android acceptance (2026-11-06):** the user has used signed APK `0.4.1-alpha+cb83390` (1871) for a while
+and reports that everything looks good. General Android usage acceptance is recorded; individual edge cases were
+not separately enumerated. Release validation passed 15 Android JavaScript tests, 31 native JUnit tests, Android
+release lint and signed assembly; identity/certificate and all 22 bundled IRIS assets were verified. Web validation
+remains 704 app/core tests and 65 Chrome cases. The local `refactor/architecture-maintenance` branch is still ahead
+of main and unmerged. Recommendation: integrate this accepted batch, then use a separate branch for the proposed
+renderer follow-up below. No merge or new implementation is authorized by this handoff.
+
+**Proposed renderer maintenance follow-up (2026-11-06):** [the maintenance plan](architecture-maintenance.md#proposed-renderer-follow-up--2026-11-06)
+records three proposed slices: ARCH-10 visibility/filter policy, ARCH-11 level/key label coordination, ARCH-12 ornament/
+artifact coordination. Preserve core diffing, layer identity, render ordering and existing map-lifetime behavior.
+These are proposals beyond the completed ARCH-01–09 scope; the optional-features plan remains separate product work.
 
 **Architecture maintenance (2026-11-04):** [the plan](architecture-maintenance.md) owns ARCH-01–09, module boundaries,
 acceptance and completion evidence; the [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes it.

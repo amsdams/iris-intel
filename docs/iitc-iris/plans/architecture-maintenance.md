@@ -1,7 +1,8 @@
 # Architecture Maintenance Plan
 
 Status: complete for the selected implementation scope (nine tracked items, ten slices). General IRIS smoke is
-accepted after ARCH-08; validation and remaining specific live/device boundaries are recorded below.
+accepted after ARCH-08. General Android usage is accepted on 2026-11-06 after the user used APK 1871 for a while
+and reported that everything looks good. Validation and specific coverage limits are recorded below.
 
 This is the implementation tracker for the validated parts of the [architecture review](arch-review.md).
 The [backlog](../backlog.md#architecture-maintenance-planned-2026-11-04) indexes the work; this file owns scope,
@@ -521,3 +522,26 @@ the final implementation snapshot above.
 Known limits remain: Playwright is not yet invoked by GitHub Actions (already tracked in `comm-ui-testing.md`), and
 local Chrome/fixture checks plus the user's general smoke do not establish every Firefox/Android/live endpoint path.
 No new feature, CI workflow, merge or push was included in this review.
+
+
+### Proposed renderer follow-up — 2026-11-06
+
+The user has accepted general use of APK `0.4.1-alpha+cb83390` (1871). ARCH-01–09 remain complete; local branch
+integration is the recommended next checkpoint. The renderer investigation identifies three additional bounded
+slices below. These are proposals, not started work or an automatic extension of ARCH-04. Keep this file the single
+scope/progress owner if they are selected; the roadmap/backlog should only index it.
+
+| Proposed ID | New owner | Scope and evidence |
+| --- | --- | --- |
+| ARCH-10 | `map/entities/entity-visibility.ts` | Move filter definitions/matching and closely related changed-setting scope decisions into explicit-input app functions. Test faction, level, placeholder and combined changes without Leaflet; preserve the existing browser filter/layer-identity checks. Keep actual layer mutation, bucket-cache lifetime and render-path selection with the renderer. |
+| ARCH-11 | `map/entities/portal-label-overlays.ts` | Own level/key candidate selection, indexes, previous snapshots and synchronization together. Reuse label Canvas adapters and shared diff logic; preserve their shared label-layer list, collision selection and inventory-only refresh. Specify clear versus reference reset and map replacement before moving state. |
+| ARCH-12 | `map/entities/portal-decoration-overlays.ts` | Own ornament settings reads, ornament/artifact specifications, indexes, synchronization and diagnostics. Reuse the image Canvas/cache adapter. Preserve full-entity versus filtered-label input semantics, image order/opacity/anchors, failed/late loads, toggles and map replacement. |
+
+Keep core portal/link/field creation, retained layer identity, incremental/full render decisions and overall update
+ordering explicit in `map-renderer.ts`. Avoid passing the whole renderer closure to new owners or duplicating the
+generic reconciliation algorithm. Extract a small shared layer-sync utility only where the overlay owners need it.
+
+Reassess after each slice; no line-count target or performance gain is promised. During edits use focused checks;
+once a slice settles, run the full applicable checks and browser suite. Compare existing combined-toggle timing and
+layer-mutation evidence to catch accidental full rebuilds; package only for a requested review checkpoint. Runtime
+feature activation/menu customization and speculative state-machine/listener changes remain separate tasks.
