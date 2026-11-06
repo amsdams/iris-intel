@@ -74,7 +74,8 @@ npm run package
 - `npm run lint`: lint both workspaces and application CSS.
 - `npm run package` / `npm run release`: build Chrome ZIP and Firefox XPI artifacts locally; these do not publish.
 - `npm run serve`: browse/download local Firefox XPI, Chrome ZIP, and Android APK builds at `http://localhost:6969`.
-  The terminal prints a same-Wi-Fi URL; `PORT=8787 npm run serve` overrides the port. No build is triggered.
+  The terminal prints a same-Wi-Fi URL on port 6969. Use this one page for XPI, ZIP and APK downloads; no build is triggered.
+  Set `PORT` only if you need a different port.
 - `npm run android:release`: test/lint/build a signed APK using configured signing credentials (see the Android README).
 - `npm run android:serve`: compatibility alias for the same download page.
 - `npm run clean`: remove generated application output.

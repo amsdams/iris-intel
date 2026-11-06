@@ -302,8 +302,11 @@ export function transformIitcCommMessage(message: IitcCommMessage): [string, Iit
 
 function renderMarkupEntity(type: string, value: IitcCommMarkupValue): IitcCommRenderedPart {
   switch (type) {
-    case 'TEXT':
-      return {type: 'text', text: value.plain ?? '', team: value.team ? teamStringToId(value.team) : undefined};
+    case 'TEXT': {
+      const team = value.team ? teamStringToId(value.team) : undefined;
+      // IITC renderText treats faction-tagged neutral/unknown text as Machina.
+      return {type: 'text', text: value.plain ?? '', team: team === 'N' ? 'M' : team};
+    }
     case 'PORTAL':
       return {
         type: 'portal',

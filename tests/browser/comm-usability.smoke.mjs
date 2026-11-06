@@ -67,6 +67,36 @@ test.beforeEach(async ({page}) => {
 
 test.afterEach(() => {expect(errors).toEqual([]);});
 
+test('Machina names in neutral-tagged TEXT and player markup render red in both themes', async ({page}) => {
+  await page.evaluate(() => {
+    const now = Date.now();
+    window.commReviewFixture.rows.push(
+      ['machina-text', now, {plext: {text: '__MACHINA__ destroyed a portal', categories: 1,
+        team: 'NEUTRAL', plextType: 'SYSTEM_BROADCAST', markup: [
+          ['TEXT', {plain: '__MACHINA__', team: 'NEUTRAL'}], ['TEXT', {plain: ' destroyed a portal'}],
+        ]}}],
+      ['machina-player', now + 1, {plext: {text: 'MachinaSender captured a portal', categories: 1,
+        team: 'MACHINA', plextType: 'SYSTEM_BROADCAST', markup: [
+          ['PLAYER', {plain: 'MachinaSender', team: 'MACHINA'}], ['TEXT', {plain: ' captured a portal'}],
+        ]}}],
+    );
+  });
+  const panel = await openComm(page);
+  await panel.getByRole('button', {name: 'Refresh', exact: true}).click();
+  const textName = panel.getByText('__MACHINA__', {exact: true});
+  const playerName = panel.getByRole('button', {name: 'MachinaSender', exact: true});
+  await expect(textName).toHaveClass(/is-machina/);
+  await expect(playerName).toHaveClass(/is-machina/);
+  for (const [theme, red] of [['dark', 'rgb(255, 77, 87)'], ['light', 'rgb(185, 27, 50)']]) {
+    await page.evaluate(theme => {document.documentElement.dataset.iitcIrisTheme = theme;}, theme);
+    await expect(textName).toHaveCSS('color', red);
+    await expect(playerName).toHaveCSS('color', red);
+    const body = panel.getByText('destroyed a portal', {exact: true});
+    const normalColor = await body.locator('..').evaluate(node => getComputedStyle(node).color);
+    await expect(body).toHaveCSS('color', normalColor);
+  }
+});
+
 test('retains failed drafts per channel, confirms a successful send, and preserves newer text after a late success', async ({page}) => {
   const panel = await openComm(page);
   const draft = panel.locator('.iitc-iris-comm-send-form input');

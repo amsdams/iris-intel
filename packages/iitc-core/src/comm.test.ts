@@ -268,6 +268,25 @@ describe('genIitcCommPostData', () => {
 });
 
 describe('renderIitcCommMarkup', () => {
+  it('uses IITC Machina coloring for faction-tagged neutral/unknown TEXT without changing ordinary text or player teams', () => {
+    for (const [team, expected] of [[undefined, undefined], ['', undefined], ['MACHINA', 'M'], ['M', 'M'],
+      ['NEUTRAL', 'M'], ['__MACHINA__', 'M'], ['RESISTANCE', 'R'], ['ENLIGHTENED', 'E']] as const) {
+      const parsed = parseMsgData(['machina', 12345, {plext: {
+        text: '__MACHINA__ destroyed a portal', categories: 1, team: 'NEUTRAL', plextType: 'SYSTEM_BROADCAST',
+        markup: [['TEXT', {plain: '__MACHINA__', team}], ['TEXT', {plain: ' destroyed '}],
+          ['PLAYER', {plain: 'NeutralPlayer', team: 'NEUTRAL'}]],
+      }}]);
+      if (!parsed) throw new Error('expected parsed Machina message');
+      expect(renderIitcCommMarkup(parsed)).toEqual([
+        {type: 'text', text: '__MACHINA__', team: expected},
+        {type: 'text', text: ' destroyed ', team: undefined},
+        {type: 'player', text: 'NeutralPlayer', team: 'N'},
+      ]);
+      expect(parsed.team).toBe('N');
+      expect(parsed.markup[0][1].team).toBe(team);
+    }
+  });
+
   it('skips duplicated generated-message player prefixes like IITC transformMessage', () => {
     const parsed = parseMsgData(['p1', 12345, {
       plext: {

@@ -404,6 +404,22 @@ detail-cache reuse, pending portal arrival and map replacement. The initial repl
 extraction: it matched another portal at the same coordinates and later refreshed to an empty map. The corrected
 fixture uses a missing GUID and retains the arriving portal in subsequent responses. General XPI user smoke is accepted.
 
+## Machina COMM text coloring — 2026-11-06
+
+Reference `core/code/comm.js` (`renderText`, lines 493–497) treats a nonempty faction tag on `TEXT` markup that
+normalizes to neutral/unknown as Machina. IRIS now applies that same display-only fallback, so names such as
+`__MACHINA__` in neutral-tagged text receive the existing red faction style. Untagged text, other faction colors,
+player/sender teams and the original markup remain unchanged. This does not infer faction from the displayed name.
+A core regression covers the mapping; a simulated COMM browser case verifies computed red text for neutral-tagged
+Machina text and a normal Machina actor in both themes, with ordinary body text retaining its normal color.
+Validation passes 729 app/core tests, all 66 Chrome cases, lint/types and repository checks.
+Live Machina activity has not been verified. XPI/ZIP `2026-11-06T20-16-45` and signed APK
+`0.4.1-alpha+f4a5ce2` (1878) were built from the working tree containing this fix on top of the named HEAD commit. Android release
+validation passes 15 JavaScript tests, 31 native tests, lint and signed assembly; the pinned certificate and all
+22 shared assets match, and LAN downloads match their built files. Port 6969 is the single XPI/ZIP/APK download
+page; the obsolete debug-only server on 8787 is stopped and its README example removed. The user subsequently
+authorized committing/pushing the fix; live phone acceptance is pending.
+
 ## COMM ownership extraction — 2026-10-27
 
 Reference checkpoint: `core/code/comm.js` owns channel buffers, continuation requests and `sendPlext`;
