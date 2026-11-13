@@ -1,3 +1,5 @@
+import type {IitcRegionCheckpoint} from '@iris/iitc-core';
+
 export interface IitcIrisScoresState {
   status: 'idle' | 'loading' | 'ready' | 'empty' | 'error' | 'auth';
   requestState: 'idle' | 'loading' | 'ready' | 'error' | 'auth';
@@ -14,6 +16,9 @@ export interface IitcIrisScoresState {
     resistanceAvg?: number;
     checkpoints?: number;
     lastCheckpoint?: number;
+    scoreHistory?: IitcRegionCheckpoint[];
+    cycleStart?: number;
+    receivedAt?: number;
     topAgents?: number;
     topAgentList?: {
       nick: string;

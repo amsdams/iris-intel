@@ -23,14 +23,15 @@
     "@iris/iitc-core": "*",
     "@maplibre/maplibre-gl-leaflet": "^0.1.4",
     "leaflet": "^1.9.4",
-    "maplibre-gl": "^6.15.0",
-    "preact": "^10.29.8"
+    "maplibre-gl": "^6.18.0",
+    "preact": "^10.29.8",
+    "qrcode-generator": "^2.0.4"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.10.6",
     "@types/leaflet": "^1.9.22",
     "archiver": "^8.0.0",
     "typescript": "^6.0.3",
-    "vite": "^6.4.4"
+    "vite": "^6.4.6"
   }
 }

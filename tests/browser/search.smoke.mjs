@@ -1,4 +1,5 @@
 import {test, expect} from '@playwright/test';
+import {setFixtureSource} from './smoke-fixtures.mjs';
 
 const results = page => page.locator('.iitc-iris-search-result:not(:disabled)');
 const view = page => page.evaluate(() => {
@@ -83,10 +84,11 @@ test('Enter submits even with local results; arrows focus rows and activation na
 
 test('loaded portal activation centers and applies the standard zoom', async ({page}) => {
   const input = page.locator('.iitc-iris-search-input');
-  await page.evaluate(() => window.postMessage({type: 'IITC_IRIS_RENDER_ENTITIES', entities: {
-    generation: 1, portals: [{guid: 'search-test', title: 'Test portal', team: 'N',
-      latE6: 52000000, lngE6: 4000000, isPlaceholder: false}], links: [], fields: [],
-  }}, '*'));
+  // Keep the portal authoritative when startup/move-end refreshes complete; one injected render can be overwritten.
+  await page.route('**/search-portal-map.json', route => route.fulfill({json: {result: {map: {search: {gameEntities: [
+    ['search-test', 1, ['p', 'N', 52000000, 4000000, 1, 100, 0, '', 'Test portal', [], false, false, null, 1]],
+  ]}}}}}));
+  await setFixtureSource(page, {id: 'search-portal', label: 'search portal', url: '/search-portal-map.json'});
   await input.fill('Test portal');
   await expect(results(page)).toHaveCount(1);
   await input.press('ArrowDown');

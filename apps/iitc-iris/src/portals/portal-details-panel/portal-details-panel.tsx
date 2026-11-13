@@ -22,6 +22,7 @@ import {EmptyState} from '../../ui/empty-state';
 import './portal-summary-mini-track.css';
 import {PortalActivity} from '../../comm/portal-activity';
 import {PortalDirections} from '../portal-directions';
+import {PortalStatistics} from '../portal-statistics';
 
 export interface IitcIrisPortalDetailsPanelProps {
   activeSidePanel: string | null;
@@ -285,6 +286,7 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
             </PortalDetailSection>
             <PortalDetailSection sectionId="facts" portalSections={props.portalSections} setPortalSectionOpen={props.setPortalSectionOpen}>
               <div className="iitc-iris-portal-panel-grid iitc-iris-portal-facts">
+                <PortalStatistics details={portalDetails} showMap={props.closePortalDetails} />
                 <StatusText>owner</StatusText>
                 <span className={`iitc-iris-agent-name ${getCommTeamClass(portal.team)}`}>{portalDetails.owner || '-'}</span>
                 <StatusText>mitigation</StatusText>

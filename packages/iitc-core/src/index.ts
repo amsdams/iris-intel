@@ -4,6 +4,8 @@ export * from './entity-decode';
 export * from './data-cache';
 export * from './map-data-render-queue';
 export * from './portal-details';
+export * from './portal-statistics';
+export * from './region-scoreboard';
 export * from './portal-details-facade';
 export * from './comm';
 export * from './comm-views';

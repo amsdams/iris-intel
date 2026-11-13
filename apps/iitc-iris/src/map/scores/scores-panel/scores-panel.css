@@ -1,3 +1,17 @@
+.iitc-iris-scores-body {
+    font-size: var(--iitc-iris-text-md);
+    line-height: var(--iitc-iris-line-readable);
+}
+
+.iitc-iris-scores-body .iitc-iris-status {
+    font-size: var(--iitc-iris-text-sm);
+}
+
+.iitc-iris-scores-body .iitc-iris-score-heading,
+.iitc-iris-scores-body .iitc-iris-score-block > b {
+    font-size: var(--iitc-iris-text-lg);
+}
+
 .iitc-iris-score-block {
     display: grid;
     gap: 5px;
@@ -52,27 +66,7 @@
     background: #00a2ff;
 }
 
-.iitc-iris-agent-list {
-    display: grid;
-    gap: 3px;
-    min-width: 0;
-}
-
-.iitc-iris-agent-row {
-    display: grid;
-    grid-template-columns: 20px minmax(0, 1fr);
-    gap: 6px;
-    align-items: center;
-    min-width: 0;
-    padding: 3px 6px;
-    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 14%);
-    border-radius: 4px;
-    background: rgb(var(--iitc-iris-control-rgb) / 46%);
-}
-
-.iitc-iris-agent-row b {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.iitc-iris-region-agents {
+    padding-left: 32px;
+    overflow-wrap: anywhere;
 }

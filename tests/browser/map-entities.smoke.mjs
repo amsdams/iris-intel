@@ -465,7 +465,7 @@ test('portal details promote shared entities, reuse cached state and reject a ca
   });
   await expect.poll(() => page.evaluate(() => ({details: window.entityFixture.status?.portalDetails?.status,
     owner: window.entityFixture.status?.portalDetails?.owner, title: window.entityFixture.status?.selectedPortal?.title,
-    overlay: window.__iitcIrisLayers.selectedPortal.length}))).toEqual({details: 'ready', owner: 'FixtureOwner', title: 'Detailed portal', overlay: 1});
+    overlay: window.__iitcIrisLayers.selectedPortal.length}))).toEqual({details: 'ready', owner: 'FixtureOwner', title: 'Detailed portal', overlay: 2});
   expect(await page.evaluate(() => window.entityFixture.detailRequests[0].payload)).toEqual({guid: 'res', v: 'smoke-test'});
   await page.evaluate(() => window.postMessage({type: 'IITC_IRIS_ZOOM_TO_AND_SHOW_PORTAL', portalGuid: 'res'}, '*'));
   await expect.poll(() => page.evaluate(() => ({requests: window.entityFixture.detailRequests.length,
@@ -564,7 +564,7 @@ test('pending portal selection resolves on arrival and detail cache survives map
   await page.evaluate(() => window.postMessage({type: 'IITC_IRIS_ZOOM_TO_AND_SHOW_PORTAL', portalGuid: 'pending'}, '*'));
   await expect.poll(() => page.evaluate(() => ({requests: window.entityFixture.detailCount,
     cached: window.entityFixture.status?.portalDetails?.cached, selected: window.entityFixture.status?.selectedPortal?.guid,
-    overlay: window.__iitcIrisLayers.selectedPortal.length}))).toEqual({requests: 2, cached: true, selected: 'pending', overlay: 1});
+    overlay: window.__iitcIrisLayers.selectedPortal.length}))).toEqual({requests: 2, cached: true, selected: 'pending', overlay: 2});
   await page.evaluate(() => window.entityFixture.finishDetails());
   await expect.poll(() => page.evaluate(() => ({cached: window.entityFixture.status?.portalDetails?.cached ?? false,
     status: window.entityFixture.status?.portalDetails?.status, owner: window.entityFixture.status?.portalDetails?.owner})))

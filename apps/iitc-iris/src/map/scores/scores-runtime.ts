@@ -1,3 +1,4 @@
+import {parseIitcRegionScoreResponse} from '@iris/iitc-core';
 import {isIitcAuthError} from '../../intel/intel-request';
 import {IITC_IRIS_MESSAGES, type IitcIrisMessage, type IitcIrisRequestDiagnostics, type IitcIrisScoresState} from '../../messages';
 
@@ -17,10 +18,17 @@ export function createScoresRuntime(options: ScoresRuntimeOptions): ScoresRuntim
   const {getMapCenterE6, postIntelEndpoint, getIitcRequestDiagnostics} = options;
   let currentScoresAbortController: AbortController | undefined;
   let latestScoresState: IitcIrisScoresState = {status: 'idle', requestState: 'idle', region: {status: 'idle'}};
+  let scoresBeforeFetch: IitcIrisScoresState | undefined;
 
   function cancelActiveScoresFetch(): void {
+    if (!currentScoresAbortController) return;
     currentScoresAbortController?.abort();
     currentScoresAbortController = undefined;
+    if (latestScoresState.status === 'loading' && scoresBeforeFetch) {
+      latestScoresState = scoresBeforeFetch;
+      scoresBeforeFetch = undefined;
+      postScoresState();
+    }
   }
 
   function postScoresState(): void {
@@ -52,45 +60,8 @@ export function createScoresRuntime(options: ScoresRuntimeOptions): ScoresRuntim
   }
 
   function parseRegionScoreResponse(response: unknown, center: NonNullable<IitcIrisScoresState['region']>['center']): NonNullable<IitcIrisScoresState['region']> {
-    const result = response && typeof response === 'object' ? (response as {result?: unknown}).result : undefined;
-    if (!result || typeof result !== 'object') return {status: 'empty', center};
-    const region = result as {
-      regionName?: unknown;
-      gameScore?: unknown;
-      scoreHistory?: unknown;
-      topAgents?: unknown;
-    };
-    const gameScore = Array.isArray(region.gameScore) ? region.gameScore : [];
-    const scoreHistory = Array.isArray(region.scoreHistory) ? region.scoreHistory : [];
-    const topAgents = Array.isArray(region.topAgents) ? region.topAgents : [];
-    const topAgentList = topAgents
-      .map((agent) => {
-        const candidate = agent && typeof agent === 'object' ? agent as {nick?: unknown; team?: unknown} : {};
-        const team = candidate.team === 'RESISTANCE'
-          ? 'R'
-          : candidate.team === 'ENLIGHTENED'
-            ? 'E'
-            : candidate.team === 'MACHINA'
-              ? 'M'
-              : 'N';
-        return typeof candidate.nick === 'string' ? {nick: candidate.nick, team} : undefined;
-      })
-      .filter((agent): agent is {nick: string; team: 'E' | 'R' | 'N' | 'M'} => agent !== undefined);
-    const checkpointIndexes = scoreHistory
-      .map((entry) => Array.isArray(entry) ? numberFromUnknown(entry[0]) : undefined)
-      .filter((value): value is number => value !== undefined);
-
-    return {
-      status: 'ready',
-      name: typeof region.regionName === 'string' ? region.regionName : undefined,
-      enlightenedAvg: numberFromUnknown(gameScore[0]),
-      resistanceAvg: numberFromUnknown(gameScore[1]),
-      checkpoints: scoreHistory.length,
-      lastCheckpoint: checkpointIndexes.length > 0 ? Math.max(...checkpointIndexes) : undefined,
-      topAgents: topAgents.length,
-      topAgentList,
-      center,
-    };
+    const region = parseIitcRegionScoreResponse(response);
+    return region ? {...region, status: 'ready', center} : {status: 'empty', center};
   }
 
   async function refreshScores(): Promise<void> {
@@ -105,6 +76,7 @@ export function createScoresRuntime(options: ScoresRuntimeOptions): ScoresRuntim
     const abortController = new AbortController();
     currentScoresAbortController = abortController;
     const startedAt = performance.now();
+    scoresBeforeFetch = latestScoresState;
     latestScoresState = {
       ...latestScoresState,
       status: 'loading',
@@ -136,6 +108,7 @@ export function createScoresRuntime(options: ScoresRuntimeOptions): ScoresRuntim
       };
       postScoresState();
     } catch (error) {
+      if (abortController.signal.aborted || currentScoresAbortController !== abortController) return;
       if (error instanceof DOMException && error.name === 'AbortError') return;
       const status = isIitcAuthError(error) ? 'auth' : 'error';
       latestScoresState = {
@@ -153,7 +126,10 @@ export function createScoresRuntime(options: ScoresRuntimeOptions): ScoresRuntim
       };
       postScoresState();
     } finally {
-      if (currentScoresAbortController === abortController) currentScoresAbortController = undefined;
+      if (currentScoresAbortController === abortController) {
+        currentScoresAbortController = undefined;
+        scoresBeforeFetch = undefined;
+      }
     }
   }
 

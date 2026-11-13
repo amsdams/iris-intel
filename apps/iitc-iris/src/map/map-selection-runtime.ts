@@ -2,7 +2,7 @@ import L, {type Layer as LeafletLayer, type Map as LeafletMap} from 'leaflet';
 import type {IitcIrisRenderEntities, IitcIrisRenderPortal, IitcIrisRenderLink, IitcIrisRenderField,
   IitcIrisSelectedPortal, IitcIrisMissionWaypoint, IitcIrisPortalDetailsState} from '../messages';
 import {getLayerPane, type IitcIrisMapLayers} from './map-layers';
-import {createIitcGeodesicPolygon, createIitcGeodesicPolyline} from './leaflet-geodesic';
+import {createIitcGeodesicPolygon, createIitcGeodesicPolyline, createIitcGeodesicCircle} from './leaflet-geodesic';
 import {
   findIitcPortalByGuidOrLatLng,
   planIitcPortalLinkNavigation,
@@ -11,6 +11,7 @@ import {
 } from '@iris/iitc-core';
 
 interface MapSelectionOptions {
+  getPortalDetails?: () => IitcIrisPortalDetailsState | null;
   getMap: () => LeafletMap | undefined;
   getEntities: () => IitcIrisRenderEntities | undefined;
   getPortalRadius: (level: number | undefined, placeholder: boolean) => number;
@@ -37,6 +38,7 @@ export function createMapSelectionRuntime(options: MapSelectionOptions): {
   applyPortalDetails: (details: IitcPortalDetails, state: IitcIrisPortalDetailsState) => void;
   selectPortal: typeof selectPortal;
   renderSelectedPortal: typeof renderSelectedPortal;
+  zoomSelectedPortalRange: typeof zoomSelectedPortalRange;
   renderSelectedMapObject: typeof renderSelectedMapObject;
   selectMapObject: typeof selectMapObject;
   clearSelectedMapObject: typeof clearSelectedMapObject;
@@ -137,15 +139,30 @@ export function createMapSelectionRuntime(options: MapSelectionOptions): {
       return;
     }
 
-    const portal = latestEntities?.portals.find((candidate) => candidate.guid === selectedPortalGuid);
-    if (!portal) {
-      selectedPortal = null;
+    if (latestEntities?.deletedEntityGuids?.includes(selectedPortalGuid)) {
+      clearPortalSelection();
       return;
     }
+
+    const current = latestEntities?.portals.find((candidate) => candidate.guid === selectedPortalGuid);
+    const retained = selectedPortal?.guid === selectedPortalGuid ? selectedPortal : undefined;
+    // Wider tile coverage can omit portals or replace them with link-endpoint placeholders.
+    // Keep the selected portal's known summary, as IITC does, without adding it to viewport counts.
+    const portal = current && (!current.isPlaceholder || !retained || retained.isPlaceholder) ? current : retained;
+    if (!portal) return;
 
     selectedPortal = toSelectedPortal(portal);
     if (!isPortalVisible(portal)) return;
     addRenderedLayer(layers.selectedPortal, createSelectedPortalMarker(portal));
+    const center = toLatLng(portal.latE6, portal.lngE6);
+    const style = {pane: getLayerPane('selectedPortal'), fill: false, interactive: false};
+    addRenderedLayer(layers.selectedPortal, L.circle(center, {...style, radius: 40, color: 'orange', weight: 2,
+      className: 'iitc-iris-portal-access-range'}));
+    const details = options.getPortalDetails?.();
+    const range = details?.status === 'ready' && details.guid === portal.guid ? details.statistics?.range : undefined;
+    if (range && range.range > 0) addRenderedLayer(layers.selectedPortal,
+      createIitcGeodesicCircle(center, range.range, {...style, color: 'red', weight: 3,
+        dashArray: range.isLinkable ? undefined : '10,10', className: 'iitc-iris-portal-link-range'}));
   }
 
   function renderSelectedMapObject(): void {
@@ -162,6 +179,15 @@ export function createMapSelectionRuntime(options: MapSelectionOptions): {
 
     const field = latestEntities.fields.find((candidate) => candidate.guid === selectedMapObject?.guid);
     if (field && isFieldVisible(field) && field.points.length >= 3) addRenderedLayer(layers.selectedMapObject, createSelectedFieldMarker(field));
+  }
+
+  function zoomSelectedPortalRange(): void {
+    const map = getMap();
+    const details = options.getPortalDetails?.();
+    const range = details?.status === 'ready' && details.guid === selectedPortalGuid ? details.statistics?.range.range : undefined;
+    if (!map || !selectedPortal || !range) return;
+    const circle = createIitcGeodesicCircle(toLatLng(selectedPortal.latE6, selectedPortal.lngE6), range);
+    map.fitBounds(circle.getBounds(), {padding: [20, 20], maxZoom: 17});
   }
 
   function selectMapObject(type: 'link' | 'field', guid: string): void {
@@ -249,7 +275,8 @@ export function createMapSelectionRuntime(options: MapSelectionOptions): {
 
   function applyPortalDetails(details: IitcPortalDetails, state: IitcIrisPortalDetailsState): void {
     const currentEntities = getEntities();
-    const portal = currentEntities?.portals.find((candidate) => candidate.guid === details.guid);
+    const portal: IitcIrisRenderPortal | undefined = currentEntities?.portals.find((candidate) => candidate.guid === details.guid)
+      ?? (selectedPortal?.guid === details.guid ? selectedPortal : undefined);
     if (currentEntities && portal) {
       portal.title = details.title || portal.title;
       portal.image = details.image || portal.image;
@@ -276,6 +303,6 @@ export function createMapSelectionRuntime(options: MapSelectionOptions): {
 
   return {getSelectedPortalGuid: () => selectedPortalGuid, getSelectedPortal: () => selectedPortal,
     hasPendingPortalSelection: () => pendingPortalSelection !== null, resolvePendingPortalSelection, applyPortalDetails,
-    selectPortal, renderSelectedPortal, renderSelectedMapObject, selectMapObject, clearSelectedMapObject,
+    selectPortal, renderSelectedPortal, zoomSelectedPortalRange, renderSelectedMapObject, selectMapObject, clearSelectedMapObject,
     findPortalByGuidOrLatLng, zoomToAndShowPortal, selectMissionWaypoint, clearPortalSelection};
 }

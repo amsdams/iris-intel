@@ -1,15 +1,17 @@
 import {h} from 'preact';
+import {IITC_CHECKPOINT_COUNT} from '@iris/iitc-core';
+import {RegionScoreboard} from './region-scoreboard';
 import './scores-panel.css';
+import '../../../ui/shared/section-summary.css';
 import {getCommTeamClass} from '../../../comm/comm-display';
 import type {IitcIrisScoresState} from '../../../messages';
 import {formatElapsedSeconds, getAuthErrorMessage} from '../../../ui-status';
 import {ActionButton} from '../../../ui/action-button';
 import {ControlRow} from '../../../ui/control-row';
 import {DiagnosticsChip} from '../../../ui/diagnostics-chip';
+import {EmptyState} from '../../../ui/empty-state';
 import {PanelBody, PanelFooter} from '../../../ui/panel';
 import {StatusText} from '../../../ui/status-text';
-import {SummaryCell} from '../../../ui/summary-cell';
-import {SummaryGrid} from '../../../ui/summary-grid';
 
 export interface IitcIrisScoresPanelProps {
   scoresState: IitcIrisScoresState;
@@ -42,7 +44,7 @@ function formatRegionCenter(scoresState: IitcIrisScoresState): string {
 }
 
 export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelProps): h.JSX.Element {
-  return <PanelBody>
+  return <PanelBody className="iitc-iris-scores-body">
     <ControlRow>
       <ActionButton onClick={() => refresh()} disabled={scoresState.status === 'loading'} title="Fetch global and regional scores for the current map center">
         {scoresState.status === 'loading' ? 'Loading' : 'Refresh'}
@@ -69,7 +71,7 @@ export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelP
       <div className="iitc-iris-score-heading">
         <span>{scoresState.region?.name || 'Region'}</span>
         <StatusText>
-          CP {scoresState.region?.lastCheckpoint !== undefined ? `${scoresState.region.lastCheckpoint} / ${scoresState.region.checkpoints ?? '-'}` : '-'}
+          CP {scoresState.region?.lastCheckpoint !== undefined ? `${scoresState.region.lastCheckpoint} / ${IITC_CHECKPOINT_COUNT}` : '-'}
         </StatusText>
       </div>
       <div className="iitc-iris-score-bar" style={`--enl-percent: ${getRegionEnlightenedPercent(scoresState)}%;`}>
@@ -80,22 +82,17 @@ export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelP
         <span className="is-enlightened">ENL <b>{formatInteger(scoresState.region?.enlightenedAvg)}</b> MU</span>
         <span className="is-resistance">RES <b>{formatInteger(scoresState.region?.resistanceAvg)}</b> MU</span>
       </div>
+      <StatusText>Region lead: {formatScoreLead(scoresState.region?.enlightenedAvg, scoresState.region?.resistanceAvg)}</StatusText>
     </div>
-    <SummaryGrid>
-      <SummaryCell value={formatScoreLead(scoresState.region?.enlightenedAvg, scoresState.region?.resistanceAvg)} label="region lead" />
-      <SummaryCell value={formatInteger(scoresState.region?.topAgents)} label="top agents" />
-      <SummaryCell value={formatRegionCenter(scoresState)} label="center" />
-    </SummaryGrid>
-    {scoresState.region?.topAgentList && scoresState.region.topAgentList.length > 0 && (
-      <div className="iitc-iris-agent-list">
-        {scoresState.region.topAgentList.slice(0, 5).map((agent, index) => (
-          <span className="iitc-iris-agent-row" key={`${agent.nick}-${index}`}>
-            <small>{index + 1}</small>
-            <b className={getCommTeamClass(agent.team)}>{agent.nick}</b>
-          </span>
-        ))}
-      </div>
+    {(scoresState.region?.status === 'ready' || Boolean(scoresState.region?.topAgentList?.length)) && (
+      <details>
+        <summary className="iitc-iris-section-summary">Top agents ({scoresState.region?.topAgents ?? 0})</summary>
+        {!scoresState.region?.topAgentList?.length ? <EmptyState>No top agents returned.</EmptyState> : <ol className="iitc-iris-region-agents">
+          {scoresState.region.topAgentList.map((agent, index) => <li key={`${index}:${agent.nick}`} className={getCommTeamClass(agent.team)}>{agent.nick}</li>)}
+        </ol>}
+      </details>
     )}
+    {scoresState.region && <RegionScoreboard region={scoresState.region} />}
     <PanelFooter>
       <DiagnosticsChip
         title={[

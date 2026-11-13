@@ -1,6 +1,7 @@
 import type {IitcIrisPortalDetailsState, IitcIrisSelectedPortal, IitcIrisRenderPortal} from '../messages';
 import {getCsrfToken, extractVersion, looksLikeHtml, isIitcAuthError, createIitcAuthError, type IntelRequest} from '../intel/intel-request';
 import {
+  getIitcPortalStatistics, type IitcPortalPlayer,
   applyIitcPortalDetailsResponse,
   createIitcPortalDetailsAuthState,
   createIitcPortalDetailsErrorState,
@@ -13,6 +14,7 @@ import {
 } from '@iris/iitc-core';
 
 interface PortalDetailsOptions {
+  getPlayer?: () => IitcPortalPlayer;
   getSelectedPortalGuid: () => string | undefined;
   getSelectedPortal: () => IitcIrisSelectedPortal | null;
   portalHistoryByGuid: Map<string, NonNullable<IitcIrisRenderPortal['history']>>;
@@ -22,7 +24,7 @@ interface PortalDetailsOptions {
 }
 
 /** Retain detail cache/history across maps; only current, uncancelled selection may promote entities. */
-export function createPortalDetailsRuntime({getSelectedPortalGuid, getSelectedPortal, portalHistoryByGuid,
+export function createPortalDetailsRuntime({getPlayer, getSelectedPortalGuid, getSelectedPortal, portalHistoryByGuid,
   fetchIitcEndpointText, repostLatestEntityStatus, onDetailsLoaded}: PortalDetailsOptions): {
   getState: () => IitcIrisPortalDetailsState | null;
   clearState: () => void;
@@ -108,6 +110,7 @@ export function createPortalDetailsRuntime({getSelectedPortalGuid, getSelectedPo
       }
       repostLatestEntityStatus();
     } catch (error) {
+      if (abortController.signal.aborted || getSelectedPortalGuid() !== guid) return;
       if (error instanceof DOMException && error.name === 'AbortError') return;
       const elapsedMs = performance.now() - startedAt;
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -120,6 +123,14 @@ export function createPortalDetailsRuntime({getSelectedPortalGuid, getSelectedPo
     }
   }
 
-  return {getState: () => latestPortalDetails, clearState: (): void => {latestPortalDetails = null;},
+  function getState(): IitcIrisPortalDetailsState | null {
+    const portal = getSelectedPortal();
+    if (!portal || latestPortalDetails?.status !== 'ready' || latestPortalDetails.guid !== portal.guid) return latestPortalDetails;
+    return {...latestPortalDetails, statistics: getIitcPortalStatistics({...portal,
+      mods: latestPortalDetails.mods ?? [], resonators: latestPortalDetails.resonators ?? []},
+    portal.links.count, portal.fields.count, getPlayer?.())};
+  }
+
+  return {getState, clearState: (): void => {latestPortalDetails = null;},
     cancelActivePortalDetailsFetch, refreshSelectedPortalDetails};
 }

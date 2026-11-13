@@ -1,9 +1,19 @@
 import {h} from 'preact';
+import {useState} from 'preact/hooks';
 import type {IitcIrisPortalSummary} from '../messages/entities';
 import {isAndroidHost} from '../platform/assets';
 import '../ui/action-button/action-button.css';
 import '../ui/button/button.css';
 import './portal-directions.css';
+import {ActionButton} from '../ui/action-button';
+import {StatusText} from '../ui/status-text';
+import {copyIitcIrisText} from '../shell/feedback';
+import {useCopyFeedbackStatus} from '../shell/use-copy-feedback';
+import {PortalQr} from './portal-qr';
+
+export function getPortalPrimeLink(guid: string): string {
+  return `https://link.ingress.com/portal/${encodeURIComponent(guid)}`;
+}
 
 /** Use coordinates rather than a name search: portal names need not identify a Maps place. */
 export function getPortalDirections(portal: Pick<IitcIrisPortalSummary, 'latE6' | 'lngE6' | 'title'>): {
@@ -26,6 +36,8 @@ export function getPortalDirections(portal: Pick<IitcIrisPortalSummary, 'latE6' 
 }
 
 export function PortalDirections({portal}: {portal: IitcIrisPortalSummary}): h.JSX.Element | null {
+  const [showQr, setShowQr] = useState(false);
+  const [copyStatus, setCopyStatus] = useCopyFeedbackStatus();
   const links = getPortalDirections(portal);
   if (!links) return null;
   const android = isAndroidHost();
@@ -43,6 +55,12 @@ export function PortalDirections({portal}: {portal: IitcIrisPortalSummary}): h.J
       </a>
       {android && <a className="iitc-iris-button iitc-iris-portal-action" href={links.geo}
         title="Open this portal location in a compatible maps app">Other maps…</a>}
+      <ActionButton title="Copy Ingress Prime portal link" onClick={() => copyIitcIrisText(getPortalPrimeLink(portal.guid),
+        {setStatus: setCopyStatus, successStatus: 'Prime portal link copied'})}>Copy Prime link</ActionButton>
+      <ActionButton aria-expanded={showQr} title="Show a QR code for this portal location"
+        onClick={() => setShowQr(!showQr)}>{showQr ? 'Hide QR' : 'QR code'}</ActionButton>
     </div>
+    {copyStatus && <StatusText role="status">{copyStatus}</StatusText>}
+    {showQr && <PortalQr payload={`GEO:${portal.latE6 / 1e6},${portal.lngE6 / 1e6}`} />}
   </details>;
 }

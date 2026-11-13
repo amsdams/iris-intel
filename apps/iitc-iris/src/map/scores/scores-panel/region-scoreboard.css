@@ -1,0 +1,62 @@
+.iitc-iris-region-scoreboard {
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+}
+
+.iitc-iris-region-chart {
+    display: block;
+    width: 100%;
+    height: auto;
+    color: var(--iitc-iris-color-text);
+}
+
+.iitc-iris-region-chart text {
+    fill: currentcolor;
+    font-family: var(--iitc-iris-font-ui);
+    font-size: var(--iitc-iris-text-md);
+}
+
+.iitc-iris-region-chart polyline,
+.iitc-iris-region-axis {
+    fill: none;
+    stroke: currentcolor;
+    stroke-width: 1.5;
+}
+
+.iitc-iris-region-chart circle {
+    fill: currentcolor;
+}
+
+.iitc-iris-region-resistance {
+    color: #08f;
+}
+
+.iitc-iris-region-enlightened {
+    color: #03dc03;
+}
+
+.iitc-iris-region-table-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.iitc-iris-region-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--iitc-iris-text-md);
+    font-variant-numeric: tabular-nums;
+}
+
+.iitc-iris-region-table th,
+.iitc-iris-region-table td {
+    padding: 4px;
+    border-bottom: 1px solid rgb(var(--iitc-iris-border-rgb) / 25%);
+    text-align: right;
+}
+
+@media (width <= 760px) {
+    .iitc-iris-region-table {
+        font-size: var(--iitc-iris-text-sm);
+    }
+}

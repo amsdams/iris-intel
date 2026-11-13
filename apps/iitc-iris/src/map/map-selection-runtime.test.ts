@@ -2,12 +2,14 @@ import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {createMapSelectionRuntime} from './map-selection-runtime';
 import type {Map as LeafletMap} from 'leaflet';
 import type {IitcIrisRenderEntities, IitcIrisRenderPortal} from '../messages';
+import type {IitcIrisPortalDetailsState} from '../messages';
 import type {IitcIrisMapLayers} from './map-layers';
 import type {IitcPortalDetails} from '@iris/iitc-core';
 
-const markers = vi.hoisted(() => ({circleMarker: vi.fn(), line: vi.fn(), polygon: vi.fn()}));
-vi.mock('leaflet', () => ({default: {circleMarker: markers.circleMarker}}));
-vi.mock('./leaflet-geodesic', () => ({createIitcGeodesicPolyline: markers.line, createIitcGeodesicPolygon: markers.polygon}));
+const markers = vi.hoisted(() => ({circleMarker: vi.fn(), circle: vi.fn(), range: vi.fn(), line: vi.fn(), polygon: vi.fn()}));
+vi.mock('leaflet', () => ({default: {circleMarker: markers.circleMarker, circle: markers.circle}}));
+vi.mock('./leaflet-geodesic', () => ({createIitcGeodesicPolyline: markers.line, createIitcGeodesicPolygon: markers.polygon,
+  createIitcGeodesicCircle: markers.range}));
 type Options = Parameters<typeof createMapSelectionRuntime>[0];
 const portal: IitcIrisRenderPortal = {guid: 'portal', title: 'Portal', team: 'R', latE6: 52000000, lngE6: 4000000, isPlaceholder: true};
 
@@ -88,7 +90,7 @@ describe('map selection ownership', () => {
     expect(options.clearRenderedLayers).toHaveBeenLastCalledWith(layers.selectedPortal);
     entities.portals = [];
     runtime.renderSelectedPortal();
-    expect(runtime.getSelectedPortal()).toBeNull();
+    expect(runtime.getSelectedPortal()).toMatchObject({guid: 'portal', title: 'Replacement'});
     expect(runtime.getSelectedPortalGuid()).toBe('portal');
   });
 
@@ -108,5 +110,56 @@ describe('map selection ownership', () => {
     vi.mocked(options.addRenderedLayer).mockClear();
     hidden.renderSelectedPortal();
     expect(options.addRenderedLayer).not.toHaveBeenCalled();
+  });
+
+  it('shows access range without details and only uses matching ready link ranges', () => {
+    let details: IitcIrisPortalDetailsState = {status: 'loading', guid: 'portal'};
+    runtime = createMapSelectionRuntime({...options, getPortalDetails: () => details});
+    runtime.selectPortal(portal);
+    runtime.renderSelectedPortal();
+    expect(markers.circle).toHaveBeenLastCalledWith([52, 4], expect.objectContaining({radius: 40, interactive: false}));
+    expect(markers.range).not.toHaveBeenCalled();
+    const statistics = {range: {base: 100, boost: 1, range: 100, isLinkable: false}} as NonNullable<IitcIrisPortalDetailsState['statistics']>;
+    details = {status: 'ready', guid: 'different', statistics};
+    runtime.renderSelectedPortal();
+    expect(markers.range).not.toHaveBeenCalled();
+    details.guid = 'portal';
+    runtime.renderSelectedPortal();
+    expect(markers.range).toHaveBeenLastCalledWith([52, 4], 100, expect.objectContaining({dashArray: '10,10', interactive: false}));
+    statistics.range.isLinkable = true;
+    runtime.renderSelectedPortal();
+    expect(markers.range).toHaveBeenLastCalledWith([52, 4], 100, expect.objectContaining({dashArray: undefined}));
+  });
+
+  it('retains known metadata through placeholders but accepts new full portal data', () => {
+    const full = {...portal, isPlaceholder: false, team: 'M' as const, level: 7, resCount: 8};
+    runtime.selectPortal(full);
+    entities = {...entities, links: [], portals: [{...portal, team: 'N'}]};
+    runtime.renderSelectedPortal();
+    expect(runtime.getSelectedPortal()).toMatchObject({team: 'M', level: 7, resCount: 8, isPlaceholder: false, links: {count: 0}});
+    entities.portals = [{...full, team: 'E', level: 3, resCount: 4}];
+    runtime.renderSelectedPortal();
+    expect(runtime.getSelectedPortal()).toMatchObject({team: 'E', level: 3, resCount: 4});
+  });
+
+  it('clears a retained selection on explicit server deletion', () => {
+    runtime.selectPortal(portal);
+    entities = {...entities, portals: [], deletedEntityGuids: ['portal']};
+    runtime.renderSelectedPortal();
+    expect(runtime.getSelectedPortal()).toBeNull();
+    expect(runtime.getSelectedPortalGuid()).toBeUndefined();
+    expect(options.clearPortalDetails).toHaveBeenCalledOnce();
+    expect(options.cancelActivePortalDetailsFetch).toHaveBeenCalledOnce();
+  });
+
+  it('applies fresh selected details even while map responses omit the portal', () => {
+    runtime.selectPortal(portal);
+    entities.portals = [];
+    runtime.renderSelectedPortal();
+    const details = {guid: 'portal', title: 'Retained details', team: 'R', latE6: 52000000, lngE6: 4000000,
+      level: 8, resCount: 8, health: 100} as IitcPortalDetails;
+    runtime.applyPortalDetails(details, {status: 'ready'});
+    expect(runtime.getSelectedPortal()).toMatchObject({guid: 'portal', title: 'Retained details', level: 8, isPlaceholder: false});
+    expect(entities.portals).toEqual([]);
   });
 });

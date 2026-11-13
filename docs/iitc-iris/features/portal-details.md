@@ -7,9 +7,10 @@ choice. Request/cancellation and persisted-section contracts remain behavior-pre
 
 IITC-CE source references:
 
-- `reference/ingress-intel-total-conversion/core/code/portal_detail.js`
-- `reference/ingress-intel-total-conversion/core/code/portal_detail_display.js`
-- `reference/ingress-intel-total-conversion/core/code/portal_detail_display_tools.js`
+- `reference/ingress-intel-total-conversion/core/code/portal.js`
+- `reference/ingress-intel-total-conversion/core/code/portal_details.js`
+- `reference/ingress-intel-total-conversion/core/code/portal_display.js`
+- `reference/ingress-intel-total-conversion/core/code/portal_display_tools.js`
 
 Acceptance:
 
@@ -104,3 +105,11 @@ Reviewed downloads: signed APK `0.4.1-alpha+a1dfb91` (1880) supersedes 1879 with
 XPI/ZIP timestamp `2026-11-13T19-45-40`. Release checks pass 15 JavaScript tests, 33 native tests, lint and signed
 assembly. The signing pin, all 22 bundled web assets and the served APK match. APK 1879 has user acceptance;
 1880 adds only the reviewed layout fix and has automated validation, not a separate phone retest.
+
+## Additional core features — 2026-11-13
+
+Map links now includes Prime portal-link copying and optional local QR sharing (`GEO:lat,lng`). Facts adds calculated
+link range (click to fit), energy totals, maximum outgoing links, friendly/attack AP, hack counts/cooldown/burnout and
+attack modifiers. Selection adds the IITC 40m access indicator and detail-based geodesic link range, dashed when
+not fully deployed. The [missing core features plan](../plans/missing-core-features.md) owns contracts, reference
+comparisons, testing and pending live acceptance. Previously accepted XPI/APK artifacts predate these additions.

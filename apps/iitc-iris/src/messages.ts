@@ -64,6 +64,7 @@ export const IITC_IRIS_MESSAGES = {
   panBy: 'IITC_IRIS_PAN_BY',
   setUserLocation: 'IITC_IRIS_SET_USER_LOCATION',
   zoomToAndShowPortal: 'IITC_IRIS_ZOOM_TO_AND_SHOW_PORTAL',
+  zoomPortalRange: 'IITC_IRIS_ZOOM_PORTAL_RANGE',
   clearPortalSelection: 'IITC_IRIS_CLEAR_PORTAL_SELECTION',
   mapContext: 'IITC_IRIS_MAP_CONTEXT',
   requestComm: 'IITC_IRIS_REQUEST_COMM',

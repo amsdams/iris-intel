@@ -1,4 +1,4 @@
-import type {IitcPortalCounts, IitcPortalsListEntry, IitcScoreboard} from '@iris/iitc-core';
+import type {IitcPortalCounts, IitcPortalsListEntry, IitcScoreboard, IitcPortalStatistics} from '@iris/iitc-core';
 
 export interface IitcIrisRenderArtifact {
   role: 'fragment' | 'target';
@@ -61,6 +61,7 @@ export interface IitcIrisPortalResonator {
 }
 
 export interface IitcIrisPortalDetailsState {
+  statistics?: IitcPortalStatistics;
   status: 'idle' | 'loading' | 'ready' | 'error' | 'auth';
   guid?: string;
   elapsedMs?: number;
@@ -103,6 +104,7 @@ export interface IitcIrisRenderField {
 
 export interface IitcIrisRenderEntities {
   generation: number;
+  deletedEntityGuids?: string[];
   portals: IitcIrisRenderPortal[];
   links: IitcIrisRenderLink[];
   fields: IitcIrisRenderField[];

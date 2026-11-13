@@ -1,13 +1,19 @@
-import {test, expect} from '@playwright/test';
+import {test, expect, setFixtureSource} from './smoke-fixtures.mjs';
+import {installPortalFixture, setupPortalMap, selectPortal} from './portal-fixture.mjs';
+import jsQR from 'jsqr';
+
+test.use({locale: 'en-US', timezoneId: 'UTC'});
 
 for (const android of [false, true]) {
   for (const theme of ['light', 'dark']) {
     test(`portal map links use the selected coordinates (${android ? 'Android host' : 'browser'}, ${theme})`, async ({page, context}) => {
-      const errors = [];
-      page.on('pageerror', error => errors.push(error.message));
-      await context.route('**/*', route => new URL(route.request().url()).origin === 'http://127.0.0.1:6973'
-        ? route.continue() : route.fulfill({status: 200, body: ''}));
-      await page.addInitScript(theme => localStorage.setItem('iitc-iris:ui-theme', theme), theme);
+      await page.addInitScript(theme => {
+        localStorage.setItem('iitc-iris:ui-theme', theme);
+        window.__irisRpcHandlers = {
+          getArtifactPortals: () => Response.json({result: {}}),
+          getPortalDetails: () => Response.json({result: false}),
+        };
+      }, theme);
       await page.goto('/');
       await expect.poll(() => page.evaluate(() => Boolean(window.__iitcIrisMap))).toBe(true);
       await context.route('**/map-links-fixture.json', route => route.fulfill({json: {result: {map: {
@@ -16,17 +22,7 @@ for (const android of [false, true]) {
           ['next', 1000, ['p', 'R', -33868800, 151209300, 1, 100, 8, '', 'Next portal', [], false, false, null, 1000]],
         ]},
       }}}}));
-      await page.evaluate(() => new Promise(resolve => {
-        const settled = ({data}) => {
-          if (data.type !== 'IITC_IRIS_ENTITY_STATUS' || data.status !== 'fixture Map links') return;
-          window.removeEventListener('message', settled);
-          resolve();
-        };
-        window.addEventListener('message', settled);
-        window.postMessage({type: 'IITC_IRIS_DATA_SOURCE_SETTINGS', dataSource: {
-          mode: 'fixture', id: 'map-links', label: 'Map links', url: '/map-links-fixture.json',
-        }}, '*');
-      }));
+      await setFixtureSource(page, {id: 'map-links', label: 'Map links', url: '/map-links-fixture.json'});
       await page.evaluate(android => {
         if (android) document.querySelector('meta[name="iitc-iris-asset-base"]').content
           = 'https://intel.ingress.com/__iris_android__/';
@@ -84,7 +80,51 @@ for (const android of [false, true]) {
       await panel.locator('summary').filter({hasText: /^Map links$/}).click();
       await expect(google).toHaveAttribute('href', 'https://www.google.com/maps/search/?api=1&query=-33.8688%2C151.2093');
       await expect(osmDirections).toHaveAttribute('href', 'https://www.openstreetmap.org/directions?to=-33.8688%2C151.2093#map=16/-33.8688/151.2093');
-      expect(errors).toEqual([]);
     });
   }
+}
+
+for (const theme of ['light', 'dark']) for (const width of [320, 1200]) {
+  test(`Prime link copying and QR destinations follow portal selection (${theme}, ${width}px)`, async ({page, context}) => {
+    await installPortalFixture({page, context});
+    await page.setViewportSize({width, height: 780});
+    await setupPortalMap(page, theme);
+    await page.evaluate(() => {window.portalFixture.clipboard = [];
+      Object.defineProperty(navigator, 'clipboard', {configurable: true, value: {
+        writeText: async text => {window.portalFixture.clipboard.push(text);},
+      }});
+    });
+    await selectPortal(page, 'alpha');
+    const primary = page.locator('.iitc-iris-sheet-tabbar-primary');
+    await primary.getByRole('button', {name: 'Portal', exact: true}).click();
+    const portal = page.getByRole('complementary', {name: 'Selected portal details'});
+    await portal.locator('summary').filter({hasText: /^Map links$/}).click();
+    await portal.getByRole('button', {name: 'Copy Prime link', exact: true}).click();
+    await expect.poll(() => page.evaluate(() => window.portalFixture.clipboard)).toEqual(['https://link.ingress.com/portal/alpha']);
+    await portal.getByRole('button', {name: 'QR code', exact: true}).click();
+    const qr = portal.getByRole('img', {name: 'Portal location QR code'});
+    await expect(qr).toBeVisible();
+    // Decode the actual rendered SVG, not the caption or encoder's internal matrix.
+    const image = await qr.evaluate(async svg => {
+      const copy = svg.cloneNode(true);
+      copy.setAttribute('width', '256');
+      copy.setAttribute('height', '256');
+      const bitmap = new Image();
+      bitmap.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(new XMLSerializer().serializeToString(copy))}`;
+      await bitmap.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bitmap, 0, 0, 256, 256);
+      return [...ctx.getImageData(0, 0, 256, 256).data];
+    });
+    expect(jsQR(Uint8ClampedArray.from(image), 256, 256)?.data).toBe('GEO:52,4');
+    await expect(portal.locator('figcaption')).toHaveText('GEO:52,4');
+    expect(await portal.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+    await selectPortal(page, 'beta');
+    await expect(portal.getByRole('img', {name: 'Portal location QR code'})).toHaveCount(0);
+    await portal.locator('summary').filter({hasText: /^Map links$/}).click();
+    await portal.getByRole('button', {name: 'QR code', exact: true}).click();
+    await expect(portal.locator('figcaption')).toHaveText('GEO:52.001,4.001');
+  });
 }

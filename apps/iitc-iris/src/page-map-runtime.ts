@@ -80,9 +80,10 @@ const diagnostics = createMapDiagnostics({
 });
 const {postEntityStatus, repostLatestEntityStatus, getIitcRequestDiagnostics, beginIitcRequest,
   recordStaleGenerationCacheWarmTileKeys} = diagnostics;
-const {postAgentState} = createAgentRuntime(() => inventory.getSubscriptionState());
+const {postAgentState, getIitcAgentState} = createAgentRuntime(() => inventory.getSubscriptionState());
 const {fetchIitcEndpointText, postIntelEndpoint} = createIntelRequest({getLifetime: () => mapLifetime, beginRequest: beginIitcRequest});
 const portalDetails = createPortalDetailsRuntime({
+  getPlayer: getIitcAgentState,
   getSelectedPortalGuid: () => selection.getSelectedPortalGuid(),
   getSelectedPortal: () => selection.getSelectedPortal(),
   portalHistoryByGuid, fetchIitcEndpointText, repostLatestEntityStatus,
@@ -90,6 +91,7 @@ const portalDetails = createPortalDetailsRuntime({
 });
 const {cancelActivePortalDetailsFetch} = portalDetails;
 const selection = createMapSelectionRuntime({
+  getPortalDetails: portalDetails.getState,
   getMap: () => window.__iitcIrisMap,
   getEntities: () => latestEntities,
   getPortalRadius: (level, placeholder) => getPortalRadius(level, placeholder),
@@ -453,6 +455,9 @@ function handleMessage(event: MessageEvent<IitcIrisMessage>): void {
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.clearPortalSelection) {
     clearPortalSelection();
+  }
+  if (event.data?.type === IITC_IRIS_MESSAGES.zoomPortalRange) {
+    selection.zoomSelectedPortalRange();
   }
   if (event.data?.type === IITC_IRIS_MESSAGES.cancelPanelRequests) {
     cancelActivePanelRequests();

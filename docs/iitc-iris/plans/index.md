@@ -14,6 +14,34 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**Core-feature acceptance (2026-11-13):** user tested the requested XPI and reports that everything looks fine,
+then authorized main integration and a new UI-improvements branch. This accepts the current core-feature and
+dependency/smoke batch for integration; no additional device-specific edge-case results are inferred. The next UI
+pass focuses first on Map navigation, selected-portal summary/actions and regional-score information order.
+
+**Requested XPI test build (2026-11-13):** Firefox XPI `iitc-iris-firefox-0.1.2-2026-11-13T21-11-47.xpi`
+is packaged from the verified, tested web output on `feat/missing-core-features`, including the uncommitted core
+features and dependency refresh. All 24 archive files match dist; QR notice and new feature code are present.
+SHA-256: `065cda2f1319daf9d454242028cec4ebdde82d5cfa17b7574a576220e622887e`.
+User testing is pending before main integration. Only the requested XPI was packaged; no APK or Chrome ZIP rebuild.
+
+**Dependency/smoke final validation (2026-11-13):** user authorized LCM and smoke-test review on the same
+`feat/missing-core-features` branch before live testing. Compatible dependencies are updated, with a scoped
+minimatch override resolving the remaining development-tool advisory; a clean install passes and npm audit reports
+zero advisories. Feature smoke tests are split by workflow with strict RPC/network fixtures and durable popup/reload
+error tracking; rendered QR decoding, range geometry/zoom and Scores cancellation/reload are covered. A search
+fixture race found by the full suite is fixed without relaxing assertions/timeouts. Final checks pass 758 app/core
+tests and all 85 browser cases; Android passes 15 JavaScript tests, 33 native tests and lint without APK assembly.
+[The review](dependency-smoke-review.md) records versions, scope, deferred major migrations and evidence. No
+downloadable artifacts were packaged. Changes remain uncommitted; live user testing is pending.
+
+**Missing core features (2026-11-13):** destinations is committed as `66017f2` and fast-forward merged into local
+`main`. The five newly authorized features are implemented, uncommitted on `feat/missing-core-features`: Prime portal
+link copying, selected-portal access/link-range circles, richer portal statistics, full regional scoreboard and local
+QR sharing. [The implementation plan](missing-core-features.md) owns reference sources, behavior, validation and
+intentional differences. Checks pass: 754 app/core tests, all 75 browser cases and repository gates. Live Intel/device
+acceptance remains pending. No new XPI/APK was packaged; build only when requested. No remote push was performed.
+
 **Portal map links (2026-11-13):** the user accepted the renderer-maintenance APK after extended use without issues.
 `refactor/renderer-maintenance` is fast-forward merged into local `main` at `a1dfb91`; work continues uncommitted on
 `feat/portal-directions`. No remote main push was performed. Portal map links provide Google Maps, Bing Maps,

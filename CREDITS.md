@@ -46,6 +46,7 @@ These inventory acknowledgements recognize behavioral references, not inclusion 
 
 ## Libraries and maps
 
+- [QR Code Generator](https://github.com/kazuhikoarase/qrcode-generator), by Kazuhiko Arase — MIT.
 - [Preact](https://preactjs.com/), by Jason Miller and contributors — MIT.
 - [Leaflet](https://leafletjs.com/), by Vladimir Agafonkin, CloudMade and contributors — BSD-2-Clause.
 - [MapLibre GL JS](https://github.com/maplibre/maplibre-gl-js), by MapLibre contributors and its Mapbox lineage —

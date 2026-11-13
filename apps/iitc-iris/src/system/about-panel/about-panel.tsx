@@ -4,6 +4,7 @@ import {Panel, PanelBody, PanelHeader, PanelTitle} from '../../ui/panel';
 import {Section} from '../../ui/section';
 import iitcLicense from '../../../assets/licenses/IITC-CE.txt?raw';
 import leafletLicense from '../../../assets/licenses/Leaflet.txt?raw';
+import qrLicense from '../../../assets/licenses/QR-Code-Generator.txt?raw';
 import preactLicense from '../../../../../node_modules/preact/LICENSE?raw';
 import maplibreLicense from '../../../../../node_modules/maplibre-gl/LICENSE.txt?raw';
 import maplibreLeafletLicense from '../../../../../node_modules/@maplibre/maplibre-gl-leaflet/LICENSE?raw';
@@ -54,6 +55,7 @@ export function AboutPanel({closeAbout}: {closeAbout: () => void}): h.JSX.Elemen
             ['IRIS — GPL-3.0', projectLicense],
             ['IITC / IITC-CE — ISC', iitcLicense],
             ['Leaflet — BSD-2-Clause', leafletLicense],
+            ['QR Code Generator — MIT', qrLicense],
             ['Preact — MIT', preactLicense],
             ['MapLibre GL JS — license and bundled notices', maplibreLicense],
             ['MapLibre GL Leaflet — ISC', maplibreLeafletLicense],

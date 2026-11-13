@@ -12,6 +12,10 @@ const portal = (guid: string, bits?: number, artifactBrief: unknown = null): Iit
 const response = (...gameEntities: IitcRawGameEntity[]): IitcGetEntitiesResponse => ({result: {map: {tile: {gameEntities}}}});
 
 describe('map response adaptation', () => {
+  it('carries explicit deletion separately from portals omitted by request coverage', () => {
+    expect(adaptMapEntities({result: {map: {tile: {deletedGameEntityGuids: ['removed-portal']}}}}, 2, new Map()).entities)
+      .toEqual({generation: 2, deletedEntityGuids: ['removed-portal'], portals: [], links: [], fields: []});
+  });
   it('projects portal, link and field payloads and preserves placeholders from core decoding', () => {
     const result = adaptMapEntities(response(portal('a'),
       ['link', 123, ['e', 'R', 'a', 52373000, 4895000, 'b', 52374000, 4896000]],

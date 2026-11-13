@@ -41,6 +41,7 @@ export function adaptMapEntities(
 
   const entities: IitcIrisRenderEntities = {
     generation,
+    ...(decoded.deletedGameEntityGuids.length ? {deletedEntityGuids: decoded.deletedGameEntityGuids} : {}),
     portals: Object.values(decoded.portals).map((portal) => {
       const history = portal.history ?? portalHistoryByGuid.get(portal.guid);
       if (portal.history) historyUpdates.set(portal.guid, portal.history);

@@ -70,6 +70,33 @@ remain independent. The System Panels sheet is also included in the landscape/cl
 [map-view.smoke.mjs](map-view.smoke.mjs) checks URL-over-storage precedence on boot, move-end storage/Intel
 cookie/history synchronization, and restored position after reload without URL position parameters.
 
+Feature suites group scenarios by the user workflow they exercise:
+
+- [portal-details.smoke.mjs](portal-details.smoke.mjs): portal statistics and access/link ranges, including incomplete portals.
+- [portal-sharing.smoke.mjs](portal-sharing.smoke.mjs): external map links, Prime clipboard links and rendered QR destinations.
+- [scores.smoke.mjs](scores.smoke.mjs): regional history, charts, projections and the complete agent list.
+- [map-lifecycle.smoke.mjs](map-lifecycle.smoke.mjs): selection-overlay cleanup and restoration after map replacement.
+
+These replace the mixed core-features suite and the separate portal-directions suite. Shared browser/error/network
+checks live in [smoke-fixtures.mjs](smoke-fixtures.mjs); [portal-fixture.mjs](portal-fixture.mjs) shares portal setup and
+selection helpers without registering tests. Theme/viewport cases remain with their relevant feature suites.
+
+Feature suites install endpoint fixtures before navigation/reload, use en-US/UTC for stable formatting, and reject
+unmocked RPCs or unexpected external requests. The shared guard watches popup page errors as well as the main page
+and attaches diagnostics on failure. Unexpected RPCs are logged in the test runner, surviving reloads and popup
+closure. Tile imagery and external map navigation are intentional stubs. Legacy suites
+keep their existing fixtures; this is not a claim that every suite uses strict RPC checks.
+
+Sharing tests rasterize and decode the rendered QR SVG. Portal details verifies geodesic circle geometry and large
+range visibility; Scores checks cancellation/reopen and full reload. The loaded-portal Search case uses an
+authoritative fixture response so startup/move-end refreshes cannot erase a one-shot injected portal.
+
+For focused validation after an existing web build:
+
+```sh
+npm run test:browser:reuse -- tests/browser/portal-details.smoke.mjs tests/browser/portal-sharing.smoke.mjs tests/browser/scores.smoke.mjs tests/browser/map-lifecycle.smoke.mjs
+```
+
 [map-requests.smoke.mjs](map-requests.smoke.mjs) runs the live request path with simulated Intel responses: TIMEOUT
 retries recover into real Leaflet layers, request metadata is retained, and a subsequent refresh reuses cached tiles.
 

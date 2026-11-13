@@ -46,8 +46,9 @@ Current status:
   send-plext verification, plugin hook compatibility, and richer interaction can be deferred.
 - Scores now has first-pass core wiring. The panel requests IITC-CE core endpoints `getGameScore` and
   `getRegionScoreDetails`, displays global faction MU totals/percentages plus compact regional score diagnostics, and
-  includes the scores state in copied dock diagnostics. Remaining work is the richer IITC region scoreboard view
-  (checkpoint table/chart/timers/top-agent details) and live validation against Intel responses.
+  includes the scores state in copied dock diagnostics. The 2026-11-13
+  [core-features pass](../plans/missing-core-features.md) adds checkpoint history/totals, linear/log charts with projected
+  averages, checkpoint/cycle timers, cycle projections and all top agents. Live validation against Intel remains pending.
 - UI polish pass: selected portal details now use compact IITC-like stat cells, health/resonator energy bars, richer
   resonator owner display, and less cramped history/mitigation details. COMM now keeps normal request diagnostics out of
   the way unless debug/error state is active and uses denser message rows with stronger portal/player affordances. Scores

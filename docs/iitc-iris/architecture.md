@@ -44,7 +44,8 @@ same visibility rule. Baseline panels always remain available.
 
 System → About owns visible project/plugin acknowledgements and offline license disclosures. Root `CREDITS.md`
 records upstream feature sources; packaging copies it and the project license with IITC, Leaflet, Preact and MapLibre
-notices into the shared `licenses/` assets used by extensions and Android.
+notices into the shared `licenses/` assets used by extensions and Android. The app also owns the local
+`qrcode-generator` encoder and its MIT notice; the independent `jsqr` decoder is used only in tests.
 
 `content.tsx` assembles the app, bridges page messages, and coordinates shared camera/entity/auth state.
 `shell/use-shell-navigation.ts` owns active sheet/side panel, portal-image visibility, persisted sheet transitions,
@@ -284,6 +285,9 @@ request abortion and selected-GUID checks reject obsolete results. `map/map-cont
 hit-testing, context payloads, click suppression and gesture installation. Existing `map-context-runtime.ts` remains
 the gesture/listener cleanup helper. Inventory and Missions read selection through callbacks. Map disposal cancels
 detail requests and removes gestures/layers while retaining the existing selection/cache/history lifetime.
+Selection also owns access/link-range overlays and range fitting. Portal statistics and regional score parsing,
+cycle timing and projections live in core; their Leaflet/Preact presentation stays in the app. Derived portal stats
+use the current selection/topology/player snapshot, rather than persisting player-dependent values in the detail cache.
 
 `map/map-view.ts` owns map-view/base-layer preference serialization, URL synchronization and Intel cookies.
 `agent/agent-runtime.ts` reads the current static Intel PLAYER profile and subscription snapshot for publication.

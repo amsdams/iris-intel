@@ -29,8 +29,22 @@
     window.niantic_params = {CURRENT_VERSION: 'smoke-test'};
     document.cookie = 'csrftoken=smoke-test';
     const browserFetch = window.fetch.bind(window);
+    window.__irisRpcCalls = [];
+    window.__irisUnexpectedRpcs = [];
     window.fetch = async (url, options) => {
       const address = url instanceof Request ? url.url : String(url);
+      const endpoint = new URL(address, location.href).pathname.match(/^\/r\/([^/]+)$/)?.[1];
+      if (endpoint) {
+        window.__irisRpcCalls.push(endpoint);
+        const handler = window.__irisRpcHandlers?.[endpoint];
+        if (handler) return handler(options);
+        // The strict feature suites allow only these intentional empty startup/background responses.
+        if (window.__irisStrictRpcs && !['getEntities', 'getPlexts', 'getHasActiveSubscription'].includes(endpoint)) {
+          window.__irisUnexpectedRpcs.push(endpoint);
+          await window.__irisReportUnexpectedRpc?.(endpoint);
+          return Response.json({error: `Missing RPC fixture: ${endpoint}`}, {status: 500});
+        }
+      }
       if (address.includes('getPlexts')) return Response.json({result: []});
       if (address.includes('getInventory')) return Response.json({result: []});
       if (address.includes('getEntities')) return Response.json({result: {map: {}}});

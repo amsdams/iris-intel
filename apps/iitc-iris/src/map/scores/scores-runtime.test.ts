@@ -73,8 +73,8 @@ describe('Scores runtime requests', () => {
     expect(post.mock.calls.every(call => call[2]?.aborted)).toBe(true);
     request.resolve(game);
     await refresh;
-    expect(runtime.getState().status).toBe('loading');
-    expect(window.postMessage).toHaveBeenCalledOnce();
+    expect(runtime.getState().status).toBe('idle');
+    expect(window.postMessage).toHaveBeenCalledTimes(2);
   });
 
   it('keeps auth and ordinary request errors in both score status blocks', async () => {
@@ -84,5 +84,18 @@ describe('Scores runtime requests', () => {
     post.mockRejectedValue(new Error('offline'));
     await runtime.refreshScores();
     expect(runtime.getState()).toMatchObject({status: 'error', error: 'offline', region: {status: 'error', error: 'offline'}});
+  });
+
+  it('restores ready scores when a refresh is cancelled and rejects obsolete ordinary failures', async () => {
+    await runtime.refreshScores();
+    let reject!: (error: Error) => void;
+    const old = new Promise<unknown>((_resolve, fail) => {reject = fail;});
+    post.mockReturnValueOnce(old).mockReturnValueOnce(old);
+    const refresh = runtime.refreshScores();
+    runtime.cancelActiveScoresFetch();
+    expect(runtime.getState()).toMatchObject({status: 'ready', region: {name: 'Fixture region'}});
+    reject(new Error('obsolete failure'));
+    await refresh;
+    expect(runtime.getState()).toMatchObject({status: 'ready', region: {name: 'Fixture region'}});
   });
 });
