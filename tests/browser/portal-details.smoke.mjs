@@ -12,7 +12,7 @@ for (const theme of ['light', 'dark']) for (const width of [320, 1200]) {
     const primary = page.locator('.iitc-iris-sheet-tabbar-primary');
     await primary.getByRole('button', {name: 'Portal', exact: true}).click();
     const portal = page.getByRole('complementary', {name: 'Selected portal details'});
-    await portal.locator('summary').filter({hasText: /^Facts$/}).click();
+    await portal.locator('summary').filter({hasText: /^Advanced statistics$/}).click();
     await expect(portal).toContainText('320 m');
     await expect(portal).toContainText('4,000 / 8,000 XM');
     await expect(portal).toContainText('cooldown 1m 30s');
@@ -55,7 +55,6 @@ test('range zoom keeps a visible circle when wider map responses omit the select
   await selectPortal(page, 'alpha');
   await page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: 'Portal', exact: true}).click();
   const panel = page.getByRole('complementary', {name: 'Selected portal details'});
-  await panel.locator('summary').filter({hasText: /^Facts$/}).click();
   let wideResponses = 0;
   await context.route('**/portal-feature-map.json', async route => {
     if (await page.evaluate(() => window.__iitcIrisMap.getZoom()) >= 15) return route.fallback();

@@ -64,12 +64,15 @@ export function RegionScoreboard({region}: {region: NonNullable<IitcIrisScoresSt
       <b>Cycle and checkpoints</b>
       <span>Next CP {nextCheckpoint}: <time dateTime={new Date(nextTime).toISOString()}>{date(nextTime)}</time></span>
       <span>In {countdown(nextTime - now)}</span>
-      <span>Cycle ends: <time dateTime={new Date(end).toISOString()}>{date(end)}</time></span>
       {nextTime <= now && <StatusText>Refresh scores for the latest checkpoint or cycle.</StatusText>}
-      {region.receivedAt !== undefined && <StatusText>Updated {date(region.receivedAt)}</StatusText>}
+
     </div>
+    <details><summary className="iitc-iris-section-summary">Cycle timing</summary>
+      <p>Cycle ends: <time dateTime={new Date(end).toISOString()}>{date(end)}</time></p>
+      {region.receivedAt !== undefined && <StatusText>Updated {date(region.receivedAt)}</StatusText>}
+    </details>
     {!history.length ? <EmptyState>No checkpoint history returned.</EmptyState> : <>
-      <details open>
+      <details>
         <summary className="iitc-iris-section-summary">Checkpoint history</summary>
         <ScoreHistoryChart history={history} cycleStart={cycleStart} />
         <div className="iitc-iris-region-table-scroll">

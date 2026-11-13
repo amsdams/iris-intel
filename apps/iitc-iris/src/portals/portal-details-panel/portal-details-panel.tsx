@@ -1,4 +1,5 @@
 import {h} from 'preact';
+import {useState} from 'preact/hooks';
 import './portal-side-panel-stacked.css';
 import './agent-name.css';
 import './portal-side-panel.css';
@@ -16,12 +17,12 @@ import {ActionButton} from '../../ui/action-button';
 import {Badge} from '../../ui/badge';
 import {ClearButton} from '../../ui/clear-button';
 import {DiagnosticsChip} from '../../ui/diagnostics-chip';
-import {PanelFooter, PanelTitle} from '../../ui/panel';
+import {PanelFooter, PanelFrame, PanelSizeButton, PanelTitle} from '../../ui/panel';
 import {StatusText} from '../../ui/status-text';
 import {EmptyState} from '../../ui/empty-state';
 import './portal-summary-mini-track.css';
 import {PortalActivity} from '../../comm/portal-activity';
-import {PortalDirections} from '../portal-directions';
+import {PortalDirections, PortalSharing} from '../portal-directions';
 import {PortalStatistics} from '../portal-statistics';
 
 export interface IitcIrisPortalDetailsPanelProps {
@@ -31,6 +32,7 @@ export interface IitcIrisPortalDetailsPanelProps {
   copySelectedPortalLink: () => void;
   copySelectedPortalTitle: () => void;
   copyStatus: string;
+  keyCount?: number;
   focusSelectedPortal: () => void;
   inlineAuthActions: h.JSX.Element;
   openPortalImage: () => void;
@@ -137,11 +139,12 @@ const RESONATOR_PANEL_ORDER: (number | null)[] = [0, 1, 2, 3, null, 4, 5, 6, 7];
 
 export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProps): h.JSX.Element {
   const {portal, portalDetails, portalMissionState} = props;
+  const [action, setAction] = useState<'navigate' | 'share' | null>(null);
   const detailsStatus = portalDetails?.status ?? 'waiting';
   const portalLevel = !portal.isPlaceholder && portal.level !== undefined && Number.isFinite(portal.level) ? portal.level : undefined;
   const {hasMissions, summary: missionSummary} = getPortalMissionSummary(portal, portalDetails, portalMissionState);
 
-  return <aside className={`iitc-iris-portal-side-panel ${formatTeamClass(portal.team)} ${props.activeSidePanel ? 'iitc-iris-portal-side-panel-stacked' : ''}`} aria-label="Selected portal details">
+  return <PanelFrame className={`iitc-iris-portal-side-panel ${formatTeamClass(portal.team)} ${props.activeSidePanel ? 'iitc-iris-portal-side-panel-stacked' : ''}`} aria-label="Selected portal details">
     <div className="iitc-iris-portal-side-header">
       {portal.image ? (
         <button className="iitc-iris-selected-image-button" type="button" onClick={props.openPortalImage} title="Open portal image preview">
@@ -155,9 +158,9 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
           <PanelTitle title={portal.guid}>
             {portal.title || portal.guid}
           </PanelTitle>
-          <StatusText className={`iitc-iris-panel-state ${getPanelStatusClass(detailsStatus)}`}>
+          {detailsStatus !== 'ready' && <StatusText className={`iitc-iris-panel-state ${getPanelStatusClass(detailsStatus)}`}>
             {detailsStatus}
-          </StatusText>
+          </StatusText>}
         </span>
         {(portalLevel !== undefined || portalDetails?.owner) && (
           <span className="iitc-iris-portal-heading-details">
@@ -167,42 +170,37 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
                 L{portalLevel}
               </Badge>
             )}
-            {portalDetails?.owner && (
-              <span className="iitc-iris-portal-owner-prominent" title={`Owner: ${portalDetails.owner}`}>
-                <small>owner</small>
-                <b className={getCommTeamClass(portal.team)}>{portalDetails.owner}</b>
-              </span>
-            )}
+            <span className={getCommTeamClass(portal.team)}>
+              {{E: 'Enlightened', R: 'Resistance', M: 'Machina', N: 'Neutral'}[portal.team] ?? 'Neutral'}
+            </span>
           </span>
         )}
+        {portalDetails?.owner && <span className="iitc-iris-portal-header-owner">
+          <small>Owner</small><span className={getCommTeamClass(portal.team)}>{portalDetails.owner}</span>
+        </span>}
       </div>
       <span className="iitc-iris-panel-header-actions">
+        <PanelSizeButton />
         <ClearButton onClick={props.closePortalDetails} title="Close portal details" aria-label="Close portal details" />
       </span>
     </div>
     <div className="iitc-iris-portal-scroll-body">
       <div className="iitc-iris-portal-actions" aria-label="Selected portal actions">
         <ActionButton onClick={props.focusSelectedPortal} title="Center and zoom to this portal">Zoom</ActionButton>
-        <ActionButton onClick={props.copySelectedPortalTitle} title="Copy portal title">Title</ActionButton>
-        <ActionButton onClick={props.copySelectedPortalLink} title="Copy Intel portal link">Link</ActionButton>
-        <ActionButton onClick={props.copySelectedPortalGuid} title="Copy portal GUID">GUID</ActionButton>
-        {hasMissions && (
-          <ActionButton onClick={props.openSelectedPortalMissions} title="Fetch missions starting at this portal">Missions</ActionButton>
-        )}
-        {props.copyStatus && <StatusText>{props.copyStatus}</StatusText>}
+        <ActionButton aria-expanded={action === 'navigate'} onClick={() => setAction(action === 'navigate' ? null : 'navigate')}>Navigate</ActionButton>
+        <ActionButton aria-expanded={action === 'share'} onClick={() => setAction(action === 'share' ? null : 'share')}>Share</ActionButton>
       </div>
+      {action === 'navigate' && <section aria-label="Navigate to portal"><PortalDirections key={portal.guid} portal={portal} inline /></section>}
+      {action === 'share' && <PortalSharing key={portal.guid} portal={portal} copyTitle={props.copySelectedPortalTitle}
+        copyLink={props.copySelectedPortalLink} copyGuid={props.copySelectedPortalGuid} copyStatus={props.copyStatus} />}
       <SummaryGrid className="iitc-iris-portal-summary">
-        <SummaryCell label="level" value={
-          <span className="iitc-iris-portal-level-value" style={formatIitcColorVars(getIitcLevelColor(portal.level))}>
-            {portal.isPlaceholder || portal.level === undefined ? '-' : `L${portal.level}`}
-          </span>
-        } />
         <SummaryCell label="health" value={formatPortalHealth(portal)}>
           <span className="iitc-iris-summary-mini-track" aria-hidden="true">
             <span style={`width: ${formatPortalHealthPercent(portal)}%;`} />
           </span>
         </SummaryCell>
-        <SummaryCell label="res" value={portal.resCount !== undefined ? `${portal.resCount}/8` : '-'} />
+        <SummaryCell label="resonators" value={portal.resCount !== undefined ? `${portal.resCount}/8` : '-'} />
+        <SummaryCell label="keys" value={props.keyCount ?? 'Unknown'} />
         <SummaryCell label="links" value={portal.links.count} />
       </SummaryGrid>
       <div className="iitc-iris-portal-panel">
@@ -219,7 +217,9 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
         </div>
           {detailsStatus !== 'ready' && (
             <EmptyState>
-              {detailsStatus === 'loading' ? 'Fetching portal details...' : 'Waiting for portal details.'}
+              {detailsStatus === 'loading' ? 'Fetching portal details...'
+                : detailsStatus === 'error' || detailsStatus === 'auth' ? 'Portal details unavailable. Select the portal again to retry.'
+                  : 'Waiting for portal details.'}
             </EmptyState>
           )}
         {portalDetails?.status === 'ready' && (
@@ -284,9 +284,15 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
                 })}
               </div>
             </PortalDetailSection>
+            <div className="iitc-iris-portal-panel-grid iitc-iris-portal-glance" aria-label="Portal energy and range">
+              <PortalStatistics details={portalDetails} showMap={props.closePortalDetails} summary />
+            </div>
+            <details className="iitc-iris-portal-section">
+              <summary className="iitc-iris-section-summary">Advanced statistics</summary>
+              <div className="iitc-iris-portal-panel-grid"><PortalStatistics details={portalDetails} showMap={props.closePortalDetails} /></div>
+            </details>
             <PortalDetailSection sectionId="facts" portalSections={props.portalSections} setPortalSectionOpen={props.setPortalSectionOpen}>
               <div className="iitc-iris-portal-panel-grid iitc-iris-portal-facts">
-                <PortalStatistics details={portalDetails} showMap={props.closePortalDetails} />
                 <StatusText>owner</StatusText>
                 <span className={`iitc-iris-agent-name ${getCommTeamClass(portal.team)}`}>{portalDetails.owner || '-'}</span>
                 <StatusText>mitigation</StatusText>
@@ -358,5 +364,5 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
         )}
       </div>
     </div>
-  </aside>;
+  </PanelFrame>;
 }

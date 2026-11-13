@@ -4,13 +4,14 @@ import {AboutPanel} from './system/about-panel/about-panel';
 import {useShellNavigation, useShellNavigationEffects} from './shell/use-shell-navigation';
 import {usePanelVisibility} from './shell/panel-visibility';
 import {BaseLayerNotice} from './map/layers/base-layer-notice';
+import {ActiveMapFilters} from './map/layers/active-map-filters';
 import {useUiTheme} from './shell/ui-theme';
 import {getExtensionUrl} from './platform/assets';
 import {installIitcIrisHostBack} from './shell/host-navigation';
 import {Button} from './ui/button';
 import {h, render} from 'preact';
 import './auth/auth.css';
-import {useCallback, useEffect, useMemo, useState} from 'preact/hooks';
+import {useCallback, useEffect, useLayoutEffect, useMemo, useState} from 'preact/hooks';
 import './iitc-iris.css';
 import {PORTAL_HIGHLIGHTER_REGISTRY} from './map/layers/highlighter-registry';
 import {
@@ -702,7 +703,7 @@ function App(): h.JSX.Element {
     return (): void => window.removeEventListener('keydown', onKeyDown);
   }, [closeSheets, hasSelectedObject, openSearch, panMap, portalImageOpen, shortcutsEnabled, togglePrimaryMenu, toggleSheet, zoomMap, setPortalImageOpen]);
 
-  useEffect(() => installIitcIrisHostBack({
+  useLayoutEffect(() => installIitcIrisHostBack({
     portalImageOpen, activeSheet, hasSelectedObject,
     closePortalImage: () => setPortalImageOpen(false), closeSheets,
     clearSelection: () => {
@@ -721,6 +722,9 @@ function App(): h.JSX.Element {
           retryAuthRequest={retryAuthRequest}
         />
         <BaseLayerNotice message={baseLayerNotice} dismiss={dismissBaseLayerNotice} />
+        {activeSheet === 'map' && <ActiveMapFilters layerSettings={layerSettings} toggleLayerSetting={toggleLayerSetting}
+          inspect={() => openSheet('layers')} />}
+        {activeSheet === 'map' && geolocationStatus && <span className="iitc-iris-location-feedback" role="status">Location: {geolocationStatus}</span>}
       </div>
       {activeSheet === 'search' && (
         <IitcIrisSearchPanel
@@ -861,6 +865,7 @@ function App(): h.JSX.Element {
         missionsState={missionsState}
         commState={commState}
         selectCommTab={selectCommTab}
+        locate={locateBrowserPosition}
       />
       {showPortalSidePanel && entityFetch.selectedPortal && (
         <IitcIrisPortalDetailsPanel
@@ -875,6 +880,8 @@ function App(): h.JSX.Element {
           openPortalImage={() => setPortalImageOpen(true)}
           openSelectedPortalMissions={openSelectedPortalMissions}
           portal={entityFetch.selectedPortal}
+          keyCount={inventoryState.selectedPortalGuid === entityFetch.selectedPortal.guid
+            ? inventoryState.portalKeysForSelectedPortal?.total ?? 0 : undefined}
           openPublicComm={() => openCommPanel('all')}
           selectActivityPortal={selectCommPortal}
           portalDetails={selectedPortalDetails}

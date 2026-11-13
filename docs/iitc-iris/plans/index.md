@@ -14,6 +14,18 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**0.5.0 integrated into local main (2026-11-13):** the user accepted the final result and authorized local main integration
+of `feat/ui-improvements`, based on `fe7ff17`. Review, updated docs/version guidance and signed APK handoff pass. Root/app/manifest/lockfile are 0.5.0; Android is
+`0.5.0-alpha+fe7ff17-dirty` (1883). Review fixed selected-portal chooser visibility and native Back/Escape ordering.
+Validation passes: 758 app/core tests and repository gates, all 94 browser cases, 15 Android JavaScript + 33 native
+tests and release lint. App ID/certificate are preserved; all 23 embedded web assets and the served download match.
+[Download the signed APK](http://192.168.0.169:6969/downloads/iitc-iris-android.apk).
+See [changelog](../../../CHANGELOG.md), [version workflow](../../../README.md#versioning-and-releases) and [UI plan](ui-improvements.md).
+The release version-code baseline is now `1002 + git rev-list --count HEAD` to catch up with prior local overrides;
+next signed builds must exceed 1883. Earlier XPIs predate the review/version changes. The reviewed 0.5.0 source
+and simplified changelog are committed together and fast-forward integrated into local main. No tag, remote
+push or publication is requested. The existing APK remains the accepted pre-commit verification build.
+
 **Core-feature acceptance (2026-11-13):** user tested the requested XPI and reports that everything looks fine,
 then authorized main integration and a new UI-improvements branch. This accepts the current core-feature and
 dependency/smoke batch for integration; no additional device-specific edge-case results are inferred. The next UI

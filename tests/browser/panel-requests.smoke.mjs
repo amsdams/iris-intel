@@ -51,7 +51,7 @@ test('Scores, Inventory/Profile and Passcode panels use their real request workf
       return Promise.resolve(Response.json(responses[endpoint]));
     };
   });
-  let panel = await openPanel(page, 'Map', 'Scores');
+  let panel = await openPanel(page, 'Map', 'Regional scores');
   await expect(panel).toContainText('Fixture region');
   await expect(panel).toContainText('FixtureAgent');
   await expect(panel).toContainText('75%');

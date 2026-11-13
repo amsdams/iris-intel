@@ -1,3 +1,4 @@
+import {openMapGroupFor} from './navigation-fixture.mjs';
 import {test, expect} from '@playwright/test';
 
 const portal = (guid, team, level, offset = 0) => ({guid, team, level, isPlaceholder: false,
@@ -279,10 +280,11 @@ test('wide views explain missing map data and style only known portal details wi
   const open = async name => {
     const primary = page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: 'Map', exact: true});
     if (await primary.getAttribute('aria-pressed') !== 'true') await primary.click();
-    await page.locator('.iitc-iris-sheet-tabbar-secondary').getByRole('button', {name, exact: true}).click();
+    await openMapGroupFor(page, name);
+    await page.locator('.iitc-iris-sheet-tabbar').getByRole('button', {name, exact: true}).click();
   };
   const notice = page.getByLabel('Map data availability', {exact: true});
-  await open('Display');
+  await open('Layers');
   await expect(notice).toHaveCount(0);
   await page.getByRole('checkbox', {name: 'Level labels', exact: true}).check();
   await page.getByRole('radio', {name: 'Level color', exact: true}).check();
@@ -315,7 +317,7 @@ test('wide views explain missing map data and style only known portal details wi
   await page.getByRole('checkbox', {name: 'Level labels', exact: true}).uncheck();
   await expect(notice).not.toContainText('Enabled level labels');
   await expect.poll(() => levelLabels(page)).toEqual([]);
-  for (const name of ['Counts', 'List', 'Scoreboard']) {
+  for (const name of ['Counts', 'List', 'Viewport scores']) {
     await open(name);
     await expect(notice).toContainText('Results use loaded map data');
     await expect(notice).not.toContainText('Shorter links'); // zoom 13 includes all link lengths
@@ -325,7 +327,7 @@ test('wide views explain missing map data and style only known portal details wi
   await page.evaluate(() => window.__iitcIrisMap.setZoom(15, {animate: false}));
   await expect.poll(() => page.evaluate(() => window.entityFixture.status?.renderPolicy?.detailedPortals)).toBe(true);
   await expect(notice).toHaveCount(0);
-  for (const name of ['Counts', 'List', 'Display']) {
+  for (const name of ['Counts', 'List', 'Layers']) {
     await open(name);
     await expect(notice).toHaveCount(0);
   }

@@ -1,7 +1,8 @@
 # IRIS Android APK — Friends Alpha
 
-The existing native Android/WebView wrapper now has a small friends-testing interface. Version **0.4.1-alpha** loads bundled IRIS automatically on signed-in Intel,
-with a stock-Intel recovery mode. Phone confirmed mode persistence, IRIS startup after reopen, and stock-dashboard
+The existing native Android/WebView wrapper now has a small friends-testing interface. Version **0.5.0-alpha** loads bundled IRIS automatically on signed-in Intel,
+with a stock-Intel recovery mode. The 0.5.0 candidate adds the accepted core features and phone UI refinements;
+signed build 1883 is the current local verification build. See the [changelog](../../CHANGELOG.md). Phone confirmed mode persistence, IRIS startup after reopen, and stock-dashboard
 blocking on 0.3.0. Panel Back, rotation, restoring the open panel after Reload, and background/resume also passed.
 Version 0.3.1 location prompt, permission acceptance, and successful positioning passed on phone.
 Phone login and reopening without another login passed on 0.1.3;
@@ -76,11 +77,14 @@ npm run android:release
 
 Output: `app/build/outputs/apk/release/app-release.apk`; `npm run serve` offers it as `iitc-iris-android.apk`
 in a separate signed-APK section. Use this to update an installed GitHub release; `iris-intel-test.apk` remains the
-differently signed debug build. Release version codes are `1000 + git rev-list --count HEAD`;
+differently signed debug build. Release version codes are `1002 + git rev-list --count HEAD`;
 version names include the source commit. CI also publishes `iitc-iris-android-update.properties`, generated from
 the assembled APK’s `output-metadata.json`; the manual checker compares Android version codes rather than names or tags.
 The checker uses the explicit `latest` tag, including friends prereleases; tagged releases also carry the metadata. Complete Git history is required. Preserve main history so update codes
-keep increasing. `IRIS_ANDROID_VERSION_CODE` can explicitly override the code when necessary.
+keep increasing. The 0.5 baseline advances by two because earlier local overrides were ahead of Git history.
+`IRIS_ANDROID_VERSION_CODE` can explicitly override the code when necessary. The local 0.5.0 final-test candidate
+uses code **1883**; subsequent signed builds must exceed it. See the
+[version workflow](../../README.md#versioning-and-releases) before integration.
 Moving from the earlier local debug APK requires uninstall/reinstall once, losing its session/settings; later
 release builds use the same signing key and can update in place. Local debug builds retain their separate key.
 

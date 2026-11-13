@@ -225,3 +225,25 @@
         grid-template-columns: 58px minmax(0, 1fr);
     }
 }
+
+.iitc-iris-comm-filter-active {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.iitc-iris-comm-filter-active > .iitc-iris-status {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.iitc-iris-comm-body .iitc-iris-comm-send-form {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    padding-block: 6px;
+    background: var(--iitc-iris-canvas);
+}
+
+.iitc-iris-comm-body { scroll-padding-bottom: 56px; }

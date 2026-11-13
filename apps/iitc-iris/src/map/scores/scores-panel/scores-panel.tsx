@@ -45,15 +45,24 @@ function formatRegionCenter(scoresState: IitcIrisScoresState): string {
 
 export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelProps): h.JSX.Element {
   return <PanelBody className="iitc-iris-scores-body">
+      {(scoresState.error || scoresState.region?.error) && (
+        <StatusText role="alert" className="iitc-iris-warning" title={scoresState.error || scoresState.region?.error}>
+          {scoresState.status === 'auth' || scoresState.region?.status === 'auth'
+            ? 'Scores require an authenticated Intel session.'
+            : getAuthErrorMessage(scoresState.status, scoresState.error || scoresState.region?.error)}
+        </StatusText>
+      )}
+    {(scoresState.status === 'loading' || scoresState.status === 'error' || scoresState.status === 'auth') && scoresState.region?.name &&
+      <StatusText>Showing previously received scores while {scoresState.status === 'loading' ? 'refreshing' : 'the latest request is unavailable'}.</StatusText>}
     <ControlRow>
       <ActionButton onClick={() => refresh()} disabled={scoresState.status === 'loading'} title="Fetch global and regional scores for the current map center">
         {scoresState.status === 'loading' ? 'Loading' : 'Refresh'}
       </ActionButton>
-      <StatusText className={scoresState.status === 'error' || scoresState.status === 'auth' ? 'iitc-iris-warning' : ''}>
+      {scoresState.status !== 'ready' && scoresState.status !== 'idle' && <StatusText className={scoresState.status === 'error' || scoresState.status === 'auth' ? 'iitc-iris-warning' : ''}>
         {scoresState.status}
-      </StatusText>
+      </StatusText>}
     </ControlRow>
-    <div className="iitc-iris-score-block">
+    <section className="iitc-iris-score-block" aria-label="Global scores">
       <div className="iitc-iris-score-heading">
         <span>Global</span>
         <StatusText>{formatScoreLead(scoresState.game?.enlightened, scoresState.game?.resistance)}</StatusText>
@@ -66,7 +75,7 @@ export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelP
         <span className="is-enlightened">ENL <b>{formatInteger(scoresState.game?.enlightened)}</b> MU <small>{formatPercent(scoresState.game?.enlightenedPercent)}</small></span>
         <span className="is-resistance">RES <b>{formatInteger(scoresState.game?.resistance)}</b> MU <small>{formatPercent(scoresState.game?.resistancePercent)}</small></span>
       </div>
-    </div>
+    </section>
     <div className="iitc-iris-score-block">
       <div className="iitc-iris-score-heading">
         <span>{scoresState.region?.name || 'Region'}</span>
@@ -85,12 +94,12 @@ export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelP
       <StatusText>Region lead: {formatScoreLead(scoresState.region?.enlightenedAvg, scoresState.region?.resistanceAvg)}</StatusText>
     </div>
     {(scoresState.region?.status === 'ready' || Boolean(scoresState.region?.topAgentList?.length)) && (
-      <details>
-        <summary className="iitc-iris-section-summary">Top agents ({scoresState.region?.topAgents ?? 0})</summary>
+      <section className="iitc-iris-score-block" aria-label="Top agents">
+        <b>Top agents ({scoresState.region?.topAgents ?? 0})</b>
         {!scoresState.region?.topAgentList?.length ? <EmptyState>No top agents returned.</EmptyState> : <ol className="iitc-iris-region-agents">
           {scoresState.region.topAgentList.map((agent, index) => <li key={`${index}:${agent.nick}`} className={getCommTeamClass(agent.team)}>{agent.nick}</li>)}
         </ol>}
-      </details>
+      </section>
     )}
     {scoresState.region && <RegionScoreboard region={scoresState.region} />}
     <PanelFooter>
@@ -102,13 +111,6 @@ export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelP
       >
         {scoresState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(scoresState.elapsedMs)}s` : 'request'}
       </DiagnosticsChip>
-      {(scoresState.error || scoresState.region?.error) && (
-        <StatusText className="iitc-iris-warning" title={scoresState.error || scoresState.region?.error}>
-          {scoresState.status === 'auth' || scoresState.region?.status === 'auth'
-            ? 'Scores require an authenticated Intel session.'
-            : getAuthErrorMessage(scoresState.status, scoresState.error || scoresState.region?.error)}
-        </StatusText>
-      )}
     </PanelFooter>
   </PanelBody>;
 }

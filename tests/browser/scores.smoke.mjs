@@ -21,7 +21,7 @@ async function openScores(page, theme = 'dark') {
   const primary = page.locator('.iitc-iris-sheet-tabbar-primary');
   const mapTab = primary.getByRole('button', {name: 'Map', exact: true});
   if (await mapTab.getAttribute('aria-pressed') !== 'true') await mapTab.click();
-  await page.locator('.iitc-iris-sheet-tabbar-secondary').getByRole('button', {name: 'Scores', exact: true}).click();
+  await page.locator('.iitc-iris-sheet-tabbar-secondary').getByRole('button', {name: 'Regional scores', exact: true}).click();
 }
 
 test('cancelled score refreshes recover on reopen and fixtures survive a full reload', async ({page}) => {
@@ -41,7 +41,7 @@ test('cancelled score refreshes recover on reopen and fixtures survive a full re
   });
   await panel.getByRole('button', {name: 'Refresh', exact: true}).click();
   await expect.poll(() => page.evaluate(() => window.scoreReview.pending.length)).toBe(2);
-  const scoresButton = page.locator('.iitc-iris-sheet-tabbar-secondary').getByRole('button', {name: 'Scores', exact: true});
+  const scoresButton = page.locator('.iitc-iris-sheet-tabbar-secondary').getByRole('button', {name: 'Regional scores', exact: true});
   await scoresButton.click();
   await expect(scoreboard).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => window.scoreReview.pending.every(request => request.signal.aborted))).toBe(true);
@@ -57,7 +57,6 @@ test('cancelled score refreshes recover on reopen and fixtures survive a full re
   await expect(scoreboard).toBeVisible();
   await expect(page.getByText('Fixture Cell', {exact: true})).toBeVisible();
   await expect(scoreboard.locator('tbody tr')).toHaveCount(3);
-  await panel.locator('summary').filter({hasText: /^Top agents/}).click();
   await expect(panel.getByText('Agent 12', {exact: true})).toBeVisible();
 });
 
@@ -68,11 +67,23 @@ for (const theme of ['light', 'dark']) for (const width of [320, 1200]) {
     const scores = page.getByRole('region', {name: 'Regional scoreboard'});
     const panel = scores.locator('..');
     await expect(scores).toBeVisible();
-    await expect(panel.locator('summary')).toHaveText(['Top agents (12)', 'Checkpoint history', 'Cycle projection']);
-    await expect(panel.locator('summary.iitc-iris-section-summary')).toHaveCount(3);
+    await expect(panel.locator('summary')).toHaveText(['Cycle timing', 'Checkpoint history', 'Cycle projection', 'Technical details']);
+    await expect(panel.locator('summary.iitc-iris-section-summary')).toHaveCount(4);
     await expect(panel.getByText('Agent 1', {exact: true})).toHaveCount(1);
-    await expect(panel.getByText('Agent 1', {exact: true})).toBeHidden();
+    await expect(panel.getByText('Agent 1', {exact: true})).toBeVisible();
+    await expect(panel.getByRole('region', {name: 'Global scores', exact: true})).toBeVisible();
+    await expect(panel.getByRole('region', {name: 'Top agents', exact: true}).locator('ol > li')).toHaveCount(12);
+    expect(await panel.evaluate(element => {
+      const global = element.querySelector('[aria-label="Global scores"]');
+      const agents = element.querySelector('[aria-label="Top agents"]');
+      const history = element.querySelector('[aria-label="Regional scoreboard"]');
+      return Boolean((global.compareDocumentPosition(agents) & Node.DOCUMENT_POSITION_FOLLOWING)
+        && (agents.compareDocumentPosition(history) & Node.DOCUMENT_POSITION_FOLLOWING));
+    })).toBe(true);
     await expect(page.getByText('Fixture Cell', {exact: true})).toBeVisible();
+    await expect(scores.getByRole('img', {name: 'Regional checkpoint MU history'})).toBeHidden();
+    await scores.locator('summary').filter({hasText: /^Checkpoint history$/}).focus();
+    await page.keyboard.press('Enter');
     await expect(scores.getByRole('img', {name: 'Regional checkpoint MU history'})).toBeVisible();
     const typography = await panel.evaluate(element => {
       const style = selector => getComputedStyle(element.querySelector(selector));
@@ -94,9 +105,6 @@ for (const theme of ['light', 'dark']) for (const width of [320, 1200]) {
     expect(await line.getAttribute('points')).not.toBe(linear);
     await scores.locator('summary').filter({hasText: /^Cycle projection$/}).click();
     await expect(scores).toContainText('Estimated final average: RES 200 MU · ENL 100 MU');
-    const agents = panel.locator('summary').filter({hasText: /^Top agents/});
-    await agents.focus();
-    await page.keyboard.press('Enter');
     await expect(panel.getByText('Agent 12', {exact: true})).toBeVisible();
     await expect(panel.locator('ol > li')).toHaveCount(12);
     await expect(scores.getByRole('img', {name: 'Regional checkpoint MU history'})).toBeVisible();

@@ -3,17 +3,16 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    min-height: 20px;
+    min-height: 30px;
     width: fit-content;
     padding: 2px 7px;
     border: 1px solid rgb(var(--iitc-iris-border-rgb) / 18%);
     border-radius: 4px;
     background: rgb(var(--iitc-iris-control-rgb) / 42%);
     color: var(--iitc-iris-color-text);
-    font-size: var(--iitc-iris-text-sm);
+    font-size: var(--iitc-iris-text-md);
     font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
+    letter-spacing: normal;
     cursor: pointer;
 }
 
@@ -31,3 +30,7 @@
 details > .iitc-iris-section-summary::before { content: '▸'; }
 
 details[open] > .iitc-iris-section-summary::before { content: '▾'; }
+
+@media (pointer: coarse) {
+    .iitc-iris-section-summary { min-height: 40px; }
+}

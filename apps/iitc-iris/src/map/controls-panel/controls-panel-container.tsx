@@ -30,7 +30,7 @@ import {
   type IitcIrisPortalHighlighterId,
 } from '../../messages';
 import {ClearButton} from '../../ui/clear-button';
-import {PanelTitle} from '../../ui/panel';
+import {PanelFrame, PanelHeader, PanelTitle} from '../../ui/panel';
 import {MapDataNotice} from '../map-data-notice';
 
 export interface IitcIrisMapControlsPanelContainerProps {
@@ -111,7 +111,7 @@ export function getMapControlsPanelTitle(sheet: IitcIrisSheetId): string {
     case 'selectedField':
       return 'Field';
     case 'layers':
-      return 'Display';
+      return 'Layers';
     case 'drawLinks':
       return 'Draw Links';
     case 'drawMarkers':
@@ -121,7 +121,7 @@ export function getMapControlsPanelTitle(sheet: IitcIrisSheetId): string {
     case 'portalsList':
       return 'Portals List';
     case 'scoreboard':
-      return 'Scoreboard';
+      return 'Viewport scores';
     default:
       return '';
   }
@@ -203,9 +203,9 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
     activeSheet === 'selectedField';
 
   return (
-    <aside className="iitc-iris-map-controls" aria-label="Map controls">
+    <PanelFrame className="iitc-iris-map-controls" aria-label="Map controls">
       {showTopBar && (
-        <div className="iitc-iris-panel-topbar">
+        <PanelHeader>
           <PanelTitle>
             {getMapControlsPanelTitle(activeSheet)}
           </PanelTitle>
@@ -216,7 +216,7 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
               aria-label={`Close ${getMapControlsPanelTitle(activeSheet)}`}
             />
           </span>
-        </div>
+        </PanelHeader>
       )}
       {activeSheet === 'view' && (
         <IitcIrisMapNavigationPanel
@@ -347,6 +347,6 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
           toggleLayerSetting={toggleLayerSetting}
         />
       )}
-    </aside>
+    </PanelFrame>
   );
 }

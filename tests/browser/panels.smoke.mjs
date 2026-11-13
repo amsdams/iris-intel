@@ -1,3 +1,4 @@
+import {openMapGroupFor} from './navigation-fixture.mjs';
 import {test, expect} from '@playwright/test';
 test.setTimeout(30_000);
 
@@ -5,7 +6,8 @@ async function openPanel(page, menu, name) {
   const primary = page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: menu, exact: true});
   if (await primary.getAttribute('aria-pressed') !== 'true') await primary.click();
   if (!name) return page.locator('aside:visible');
-  const secondary = page.locator('.iitc-iris-sheet-tabbar-secondary').getByRole('button', {name, exact: true});
+  await openMapGroupFor(page, name);
+  const secondary = page.locator('.iitc-iris-sheet-tabbar').getByRole('button', {name, exact: true});
   if (await secondary.getAttribute('aria-pressed') !== 'true') await secondary.click();
   return page.locator('aside:visible');
 }
@@ -40,8 +42,8 @@ for (const viewport of [{width: 780, height: 360}, {width: 780, height: 280}, {w
 
     for (const [menu, name] of [
       ['Map', 'Missions'], ['Map', 'Links'], ['Map', 'Markers'], ['Agent', 'Profile'], ['Agent', 'Inventory'],
-      ['Map', 'Display'], ['Map', 'Controls'], ['Map', 'Scores'], ['Map', 'Counts'], ['Map', 'List'],
-      ['Map', 'Scoreboard'], ['Map', 'Search'], ['Agent', 'Passcode'], ['COMM', null],
+      ['Map', 'Layers'], ['Map', 'Controls'], ['Map', 'Regional scores'], ['Map', 'Counts'], ['Map', 'List'],
+      ['Map', 'Viewport scores'], ['Map', 'Search'], ['Agent', 'Passcode'], ['COMM', null],
       ['System', 'Appearance'], ['System', 'Panels'], ['System', 'Diagnostics'], ['System', 'Shortcuts'], ['System', 'About'],
     ]) {
       await test.step(name ?? menu, async () => {

@@ -58,7 +58,16 @@ export function CommFilters({filters, saved, change, save, remove, shown, total}
     setFeedback('');
     change(normalizeIitcCommFilters({...filters, [key]: value}));
   };
-  return <details className="iitc-iris-comm-filters">
+  const reset = (): void => {
+    change({...DEFAULT_IITC_COMM_FILTERS}); setSelected(''); setFeedback('Filters reset.');
+  };
+  const description = [filters.query && `Search: ${filters.query}`, filters.kind !== 'all' && filters.kind,
+    filters.team !== 'all' && filters.team, filters.action !== 'all' && filters.action,
+    filters.agent && `Agent: ${filters.agent}`, filters.portal && `Portal: ${filters.portal}`].filter(Boolean).join(' · ');
+  return <div className="iitc-iris-comm-filter-bar">
+    {active > 0 && <div className="iitc-iris-comm-filter-active"><StatusText>{description}</StatusText>
+      <ActionButton onClick={reset}>Reset filters</ActionButton></div>}
+    <details className="iitc-iris-comm-filters">
     <summary className="iitc-iris-section-summary">Filters <Badge>{shown} / {total}</Badge>{active > 0 && <span>· {active} active</span>}</summary>
     <Section className="iitc-iris-comm-filter-content">
       <p><StatusText>Search and filters use loaded messages only.</StatusText></p>
@@ -106,12 +115,8 @@ export function CommFilters({filters, saved, change, save, remove, shown, total}
         </ControlRow>
         <StatusText>Up to 8 views; saving a ninth replaces the oldest.</StatusText>
       </details>
-      <ControlRow>
-        <ActionButton disabled={active === 0} onClick={() => {
-          change({...DEFAULT_IITC_COMM_FILTERS}); setSelected(''); setFeedback('Filters reset.');
-        }}>Reset filters</ActionButton>
-      </ControlRow>
+      {active === 0 && <ActionButton disabled onClick={reset}>Reset filters</ActionButton>}
       {feedback && <p><StatusText role="status">{feedback}</StatusText></p>}
     </Section>
-  </details>;
+  </details></div>;
 }

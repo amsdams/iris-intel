@@ -111,9 +111,9 @@ export function IitcIrisRequestSidePanelContainer(props: IitcIrisRequestSidePane
       <PanelHeader>
         <PanelTitle>{activeSidePanelOption.label}</PanelTitle>
         <span className="iitc-iris-panel-header-actions">
-          <StatusText className={`iitc-iris-panel-state ${getPanelStatusClass(activeSidePanelStatus)}`}>
+          {activeSidePanelStatus !== 'ready' && activeSidePanelStatus !== 'idle' && <StatusText className={`iitc-iris-panel-state ${getPanelStatusClass(activeSidePanelStatus)}`}>
             {activeSidePanelStatus}
-          </StatusText>
+          </StatusText>}
           {activePanelNeedsAuth && inlineAuthActions}
           <ClearButton
             onClick={closeSidePanel}

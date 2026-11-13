@@ -1,5 +1,7 @@
 /* shell */
 .iitc-iris-shell {
+    --iitc-iris-tabbar-clearance: 120px;
+
     position: absolute;
     inset: 0;
     background: var(--iitc-iris-canvas);
@@ -25,7 +27,7 @@
 }
 
 .iitc-iris-sheet-tabbar {
-    --iitc-iris-tabbar-clearance: 96px;
+    --iitc-iris-tabbar-clearance: 120px;
 
     position: absolute;
     right: 12px;
@@ -56,8 +58,13 @@
     grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
-.iitc-iris-sheet-tabbar-secondary {
+.iitc-iris-sheet-tabbar-secondary-wrap {
+    position: relative;
     grid-row: 1;
+    min-width: 0;
+}
+
+.iitc-iris-sheet-tabbar-secondary {
     grid-auto-columns: minmax(72px, max-content);
     grid-auto-flow: column;
     grid-template-columns: none;
@@ -67,6 +74,29 @@
     border-bottom: 1px solid rgb(var(--iitc-iris-border-rgb) / 16%);
     scrollbar-width: thin;
     white-space: nowrap;
+}
+
+.iitc-iris-menu-scroll-hint {
+    position: absolute;
+    top: 0;
+    bottom: 6px;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 20px;
+    color: var(--iitc-iris-color-secondary);
+    font-size: 20px;
+    pointer-events: none;
+}
+
+.iitc-iris-menu-scroll-hint.is-start {
+    left: 0;
+    background: linear-gradient(to right, rgb(var(--iitc-iris-panel-rgb) / 98%) 30%, transparent);
+}
+
+.iitc-iris-menu-scroll-hint.is-end {
+    right: 0;
+    background: linear-gradient(to left, rgb(var(--iitc-iris-panel-rgb) / 98%) 30%, transparent);
 }
 
 .iitc-iris-sheet-tabbar-secondary::-webkit-scrollbar {
@@ -82,7 +112,7 @@
     appearance: none;
     position: relative;
     min-width: 0;
-    min-height: 32px;
+    min-height: 44px;
     padding: 3px 2px;
     border: 1px solid rgb(var(--iitc-iris-border-rgb) / 18%);
     border-radius: 5px;
@@ -93,10 +123,10 @@
 }
 
 .iitc-iris-sheet-subtab {
-    min-height: 26px;
+    min-height: 36px;
     background: rgb(var(--iitc-iris-button-subtle-rgb) / 74%);
     color: var(--iitc-iris-color-secondary);
-    font-size: 9px;
+    font-size: var(--iitc-iris-text-sm);
 }
 
 .iitc-iris-sheet-tab.is-active {
@@ -133,14 +163,14 @@
 .iitc-iris-system-panel {
     top: auto;
     right: 12px;
-    bottom: 104px;
+    bottom: var(--iitc-iris-tabbar-clearance);
     left: 12px;
     z-index: 10002;
     display: none;
     width: min(560px, calc(100vw - 24px));
 
-    /* Leave room for the 104px navigation clearance and a 12px top gap on short screens. */
-    max-height: min(64vh, 520px, calc(100% - 116px));
+    /* Leave room for navigation and a 12px top gap on short screens. */
+    max-height: min(64vh, 520px, calc(100% - 132px));
     margin: 0 auto;
     border-radius: 8px 8px 6px 6px;
 }
@@ -187,7 +217,7 @@
         z-index: 10002;
         display: none;
         width: auto;
-        max-height: min(58vh, 420px, calc(100% - 116px));
+        max-height: min(58vh, 420px, calc(100% - 132px));
         border-radius: 8px 8px 6px 6px;
     }
 
@@ -199,12 +229,12 @@
         z-index: 10002;
         display: none;
         width: auto;
-        max-height: min(64vh, 480px, calc(100% - 116px));
+        max-height: min(64vh, 480px, calc(100% - 132px));
         border-radius: 8px 8px 6px 6px;
     }
 
     .iitc-iris-portal-side-panel-stacked {
-        max-height: min(64vh, 480px, calc(100% - 116px));
+        max-height: min(64vh, 480px, calc(100% - 132px));
     }
 
     .iitc-iris-request-side-panel {
@@ -214,7 +244,7 @@
         z-index: 10002;
         display: none;
         width: auto;
-        max-height: min(64vh, 480px, calc(100% - 116px));
+        max-height: min(64vh, 480px, calc(100% - 132px));
         border-radius: 8px 8px 6px 6px;
     }
 }
@@ -232,9 +262,44 @@
     .iitc-iris-request-side-panel,
     .iitc-iris-search {
         right: 8px;
-        bottom: var(--iitc-iris-tabbar-clearance, 96px);
+        bottom: var(--iitc-iris-tabbar-clearance, 120px);
         left: 8px;
         width: auto;
-        max-height: min(64vh, 480px, calc(100% - 116px));
+        max-height: min(64vh, 480px, calc(100% - 132px));
     }
 }
+
+.iitc-iris-menu-choices {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 8px);
+    left: 0;
+    display: grid;
+    gap: 6px;
+    max-height: calc(100dvh - var(--iitc-iris-tabbar-clearance) - 12px);
+    box-sizing: border-box;
+    overflow-y: auto;
+    padding: 8px;
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 40%);
+    border-radius: 6px;
+    background: var(--iitc-iris-canvas);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 38%);
+}
+
+.iitc-iris-menu-choices > button { min-height: 44px; }
+
+.iitc-iris-shell .is-expanded:is(.iitc-iris-map-controls, .iitc-iris-request-side-panel, .iitc-iris-portal-side-panel, .iitc-iris-system-panel) {
+    height: calc(100% - 132px);
+    max-height: calc(100% - 132px);
+}
+
+.iitc-iris-location-feedback {
+    padding: 6px 8px;
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 35%);
+    border-radius: 5px;
+    background: var(--iitc-iris-canvas);
+    color: var(--iitc-iris-color-text);
+}
+
+.iitc-iris-map-controls,
+.iitc-iris-system-panel { align-content: start; }

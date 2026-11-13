@@ -8,10 +8,10 @@ function seconds(value: number): string {
   return `${minutes}m ${Math.round(value % 60)}s`;
 }
 
-export function PortalStatistics({details, showMap}: {details: IitcIrisPortalDetailsState; showMap: () => void}): h.JSX.Element | null {
+export function PortalStatistics({details, showMap, summary = false}: {details: IitcIrisPortalDetailsState; showMap: () => void; summary?: boolean}): h.JSX.Element | null {
   const stats = details.statistics;
   if (!stats) return null;
-  return <>
+  if (summary) return <>
     <span>link range</span>
     <span title={`Base: ${number(stats.range.base)} m; link amp boost: ×${number(stats.range.boost)}`}>
       <ActionButton disabled={stats.range.range <= 0} title="Zoom to portal link range"
@@ -23,6 +23,8 @@ export function PortalStatistics({details, showMap}: {details: IitcIrisPortalDet
       </ActionButton>{!stats.range.isLinkable && ' (needs 8 resonators)'}
     </span>
     <span>energy</span><span>{number(stats.currentEnergy)} / {number(stats.totalEnergy)} XM</span>
+  </>;
+  return <>
     <span>outgoing capacity</span><span>{number(stats.maxOutgoingLinks)} links</span>
     <span>AP gain</span>
     <span title={`Destroy resonators: ${stats.ap.resoAp}; links: ${stats.ap.linkAp}; fields: ${stats.ap.fieldAp}; capture and deploy: ${stats.ap.captureAp}`}>

@@ -73,6 +73,8 @@ cookie/history synchronization, and restored position after reload without URL p
 Feature suites group scenarios by the user workflow they exercise:
 
 - [portal-details.smoke.mjs](portal-details.smoke.mjs): portal statistics and access/link ranges, including incomplete portals.
+- [panel-headers.smoke.mjs](panel-headers.smoke.mjs): title/control alignment and wrapped portal names on touch, desktop and short landscape layouts.
+- [phone-ui.smoke.mjs](phone-ui.smoke.mjs): touch actions, panel expansion/scroll restoration, grouped navigation, menu overflow indicators, persisted filter reset, and native Back/Escape priority for tool choosers.
 - [portal-sharing.smoke.mjs](portal-sharing.smoke.mjs): external map links, Prime clipboard links and rendered QR destinations.
 - [scores.smoke.mjs](scores.smoke.mjs): regional history, charts, projections and the complete agent list.
 - [map-lifecycle.smoke.mjs](map-lifecycle.smoke.mjs): selection-overlay cleanup and restoration after map replacement.

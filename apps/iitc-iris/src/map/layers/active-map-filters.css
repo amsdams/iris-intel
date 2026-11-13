@@ -1,0 +1,15 @@
+.iitc-iris-active-map-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    padding: 6px 8px;
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 35%);
+    border-radius: 5px;
+    background: var(--iitc-iris-canvas);
+    color: var(--iitc-iris-color-text);
+    font-size: var(--iitc-iris-text-md);
+    pointer-events: auto;
+}
+
+.iitc-iris-active-map-filters > :is(span, details) { flex-basis: 100%; }

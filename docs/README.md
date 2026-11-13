@@ -2,6 +2,7 @@
 
 | Document | Purpose |
 | --- | --- |
+| [Changelog](../CHANGELOG.md) | Versions, dates and notable user-visible changes. |
 | [Root README](../README.md) | Install, develop, verify, and package the extension. |
 | [Roadmap](iitc-iris/plans/index.md) | Current status and next work. |
 | [Application architecture](iitc-iris/architecture.md) | Package, component/CSS, workflow, and runtime ownership. |

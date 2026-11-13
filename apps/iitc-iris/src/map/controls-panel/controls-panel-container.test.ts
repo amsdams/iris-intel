@@ -28,11 +28,11 @@ describe('map-controls-panel-container', () => {
     expect(getMapControlsPanelTitle('view')).toBe('Controls');
     expect(getMapControlsPanelTitle('selectedLink')).toBe('Link');
     expect(getMapControlsPanelTitle('selectedField')).toBe('Field');
-    expect(getMapControlsPanelTitle('layers')).toBe('Display');
+    expect(getMapControlsPanelTitle('layers')).toBe('Layers');
     expect(getMapControlsPanelTitle('drawLinks')).toBe('Draw Links');
     expect(getMapControlsPanelTitle('drawMarkers')).toBe('Draw Markers');
     expect(getMapControlsPanelTitle('portalCounts')).toBe('Portal Counts');
     expect(getMapControlsPanelTitle('portalsList')).toBe('Portals List');
-    expect(getMapControlsPanelTitle('scoreboard')).toBe('Scoreboard');
+    expect(getMapControlsPanelTitle('scoreboard')).toBe('Viewport scores');
   });
 });

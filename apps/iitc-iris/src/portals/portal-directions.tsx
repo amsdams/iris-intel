@@ -35,15 +35,11 @@ export function getPortalDirections(portal: Pick<IitcIrisPortalSummary, 'latE6' 
   };
 }
 
-export function PortalDirections({portal}: {portal: IitcIrisPortalSummary}): h.JSX.Element | null {
-  const [showQr, setShowQr] = useState(false);
-  const [copyStatus, setCopyStatus] = useCopyFeedbackStatus();
+export function PortalDirections({portal, inline = false}: {portal: IitcIrisPortalSummary; inline?: boolean}): h.JSX.Element | null {
   const links = getPortalDirections(portal);
   if (!links) return null;
   const android = isAndroidHost();
-  return <details className="iitc-iris-portal-section">
-    <summary className="iitc-iris-section-summary">Map links</summary>
-    <div className="iitc-iris-portal-map-links" aria-label="Portal map links">
+  const choices = <div className="iitc-iris-portal-map-links" aria-label="Portal map links">
       {([['Google Maps', links.google], ['Bing Maps', links.bing], ['OpenStreetMap', links.osm]] as const)
         .map(([name, href]) => <a key={name} className="iitc-iris-button iitc-iris-portal-action" href={href}
           target={android ? '_self' : '_blank'} rel="noopener noreferrer" title={`Open this portal location in ${name}`}>
@@ -55,12 +51,35 @@ export function PortalDirections({portal}: {portal: IitcIrisPortalSummary}): h.J
       </a>
       {android && <a className="iitc-iris-button iitc-iris-portal-action" href={links.geo}
         title="Open this portal location in a compatible maps app">Other maps…</a>}
-      <ActionButton title="Copy Ingress Prime portal link" onClick={() => copyIitcIrisText(getPortalPrimeLink(portal.guid),
-        {setStatus: setCopyStatus, successStatus: 'Prime portal link copied'})}>Copy Prime link</ActionButton>
+    </div>;
+  return inline ? choices : <details className="iitc-iris-portal-section">
+    <summary className="iitc-iris-section-summary">Map links</summary>{choices}
+  </details>;
+}
+
+export function PortalSharing({portal, copyTitle, copyLink, copyGuid, copyStatus}: {
+  portal: IitcIrisPortalSummary; copyTitle: () => void; copyLink: () => void; copyGuid: () => void; copyStatus: string;
+}): h.JSX.Element {
+  const [showQr, setShowQr] = useState(false);
+  const [primeStatus, setPrimeStatus] = useCopyFeedbackStatus();
+  const [copySource, setCopySource] = useState<'prime' | 'other'>('other');
+  const copy = (action: () => void): void => {setCopySource('other'); action();};
+  const feedback = copySource === 'prime' ? primeStatus : copyStatus;
+  return <section aria-label="Share portal">
+    <div className="iitc-iris-portal-map-links">
+      <ActionButton onClick={() => copy(copyTitle)} title="Copy portal title">Copy title</ActionButton>
+      <ActionButton onClick={() => copy(copyLink)} title="Copy Intel portal link">Copy Intel link</ActionButton>
+      <ActionButton title="Copy Ingress Prime portal link" onClick={() => {
+        setCopySource('prime');
+        copyIitcIrisText(getPortalPrimeLink(portal.guid), {setStatus: setPrimeStatus, successStatus: 'Prime portal link copied'});
+      }}>Copy Prime link</ActionButton>
       <ActionButton aria-expanded={showQr} title="Show a QR code for this portal location"
         onClick={() => setShowQr(!showQr)}>{showQr ? 'Hide QR' : 'QR code'}</ActionButton>
     </div>
-    {copyStatus && <StatusText role="status">{copyStatus}</StatusText>}
+    {feedback && <StatusText role="status">{feedback}</StatusText>}
     {showQr && <PortalQr payload={`GEO:${portal.latE6 / 1e6},${portal.lngE6 / 1e6}`} />}
-  </details>;
+    <details><summary className="iitc-iris-section-summary">Advanced sharing</summary>
+      <ActionButton onClick={() => copy(copyGuid)} title="Copy portal GUID">Copy GUID</ActionButton>
+    </details>
+  </section>;
 }

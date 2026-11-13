@@ -3,7 +3,7 @@ import './comm.css';
 import {formatCommBounds} from '../comm-display';
 import {IitcIrisCommMessageList} from './comm-message-list';
 import {IitcIrisCommPanelBody} from './comm-panel-body';
-import {IitcIrisCommPanelControls} from './comm-panel-controls';
+import {IitcIrisCommLoadedSummary, IitcIrisCommPanelControls} from './comm-panel-controls';
 import type {IitcIrisCommState, IitcIrisCommTab} from '../../messages';
 import {formatElapsedSeconds, getAuthErrorMessage} from '../../ui-status';
 import {DiagnosticsChip} from '../../ui/diagnostics-chip';
@@ -36,7 +36,13 @@ export function IitcIrisCommPanel(props: IitcIrisCommPanelProps): h.JSX.Element 
   const views = useCommFilters();
   const visible = (commState.recent ?? []).filter(message => matchesIitcCommFilters(message, views.filters));
   const visibleState = {...commState, recent: visible};
-  return <PanelBody>
+  return <PanelBody className="iitc-iris-comm-body">
+      {commState.error && (
+        <StatusText role="alert" className="iitc-iris-warning" title={commState.error}>
+          {commState.status === 'auth' ? 'COMM requires an authenticated Intel session.' : getAuthErrorMessage(commState.status, commState.error)}
+        </StatusText>
+      )}
+    {commState.error && Boolean(commState.recent?.length) && <StatusText>Showing previously received messages. Refresh to try again.</StatusText>}
     <IitcIrisCommPanelControls
       commNewBelow={props.commNewBelow}
       commState={commState}
@@ -62,6 +68,7 @@ export function IitcIrisCommPanel(props: IitcIrisCommPanelProps): h.JSX.Element 
         {commState.sendError ? `Send failed: ${getAuthErrorMessage(commState.sendStatus, commState.sendError)} Your text is kept in this channel; check COMM before retrying.` : 'Message sent.'}
       </StatusText>
     )}
+    <IitcIrisCommLoadedSummary commState={commState} />
     <PanelFooter>
       <DiagnosticsChip
         title={[
@@ -73,11 +80,6 @@ export function IitcIrisCommPanel(props: IitcIrisCommPanelProps): h.JSX.Element 
       >
         {commState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(commState.elapsedMs)}s` : 'request'}
       </DiagnosticsChip>
-      {commState.error && (
-        <StatusText className="iitc-iris-warning" title={commState.error}>
-          {commState.status === 'auth' ? 'COMM requires an authenticated Intel session.' : getAuthErrorMessage(commState.status, commState.error)}
-        </StatusText>
-      )}
     </PanelFooter>
   </PanelBody>;
 }

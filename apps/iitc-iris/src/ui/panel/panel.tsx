@@ -1,4 +1,8 @@
-import {h, ComponentChildren, type HTMLAttributes} from 'preact';
+import {createContext, h, isValidElement, toChildArray, ComponentChildren, type HTMLAttributes, type VNode} from 'preact';
+import {useContext, useState} from 'preact/hooks';
+import {ActionButton} from '../action-button';
+import {DiagnosticsChip, type DiagnosticsChipProps} from '../diagnostics-chip';
+import '../shared/section-summary.css';
 import './panel.css';
 
 export interface PanelProps extends Omit<HTMLAttributes<HTMLElement>, 'className'> {
@@ -8,11 +12,26 @@ export interface PanelProps extends Omit<HTMLAttributes<HTMLElement>, 'className
 
 export function Panel({children, className, ...props}: PanelProps): h.JSX.Element {
   const classes = ['iitc-iris-request-side-panel', className || ''].filter(Boolean).join(' ');
+  return <PanelFrame className={classes} {...props}>{children}</PanelFrame>;
+}
+
+const PanelSize = createContext<{expanded: boolean; toggle: () => void} | null>(null);
+
+export function PanelFrame({children, className, ...props}: PanelProps): h.JSX.Element {
+  const [expanded, setExpanded] = useState(false);
   return (
-    <aside className={classes} {...props}>
-      {children}
+    <aside className={`${className ?? ''} ${expanded ? 'is-expanded' : ''}`} {...props}>
+      <PanelSize.Provider value={{expanded, toggle: () => setExpanded(!expanded)}}>{children}</PanelSize.Provider>
     </aside>
   );
+}
+
+export function PanelSizeButton(): h.JSX.Element | null {
+  const size = useContext(PanelSize);
+  return size && <ActionButton className="iitc-iris-panel-size" aria-expanded={size.expanded}
+    title={size.expanded ? 'Reduce panel height' : 'Expand panel height'} onClick={size.toggle}>
+    {size.expanded ? 'Reduce' : 'Expand'}
+  </ActionButton>;
 }
 
 export interface PanelHeaderProps extends Omit<HTMLAttributes<HTMLDivElement>, 'className'> {
@@ -22,9 +41,11 @@ export interface PanelHeaderProps extends Omit<HTMLAttributes<HTMLDivElement>, '
 
 export function PanelHeader({children, className, ...props}: PanelHeaderProps): h.JSX.Element {
   const classes = ['iitc-iris-request-panel-header', className || ''].filter(Boolean).join(' ');
+  const [title, ...actions] = toChildArray(children);
   return (
     <div className={classes} {...props}>
-      {children}
+      {title}
+      <span className="iitc-iris-panel-header-actions"><PanelSizeButton />{actions}</span>
     </div>
   );
 }
@@ -64,9 +85,18 @@ export interface PanelFooterProps extends Omit<HTMLAttributes<HTMLDivElement>, '
 
 export function PanelFooter({children, className, ...props}: PanelFooterProps): h.JSX.Element {
   const classes = ['iitc-iris-panel-footer', className || ''].filter(Boolean).join(' ');
+  const items = toChildArray(children);
+  const technical = items.filter((item): item is VNode<DiagnosticsChipProps> => isValidElement(item) && item.type === DiagnosticsChip);
+  const visible = items.filter(item => !isValidElement(item) || item.type !== DiagnosticsChip);
   return (
     <div className={classes} {...props}>
-      {children}
+      {visible}
+      {technical.length > 0 && <details className="iitc-iris-technical-details">
+        <summary className="iitc-iris-section-summary">Technical details</summary>
+        {technical.map((item, index) => <div key={index}>{item}
+          {item.props.title && <pre>{item.props.title}</pre>}
+        </div>)}
+      </details>}
     </div>
   );
 }

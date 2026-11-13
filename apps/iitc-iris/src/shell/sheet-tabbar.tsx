@@ -1,4 +1,6 @@
 import {h} from 'preact';
+import {useCallback, useEffect, useLayoutEffect, useRef, useState} from 'preact/hooks';
+import {IITC_IRIS_HOST_BACK} from './host-navigation';
 import {
   AGENT_MENU_SHEET_REGISTRY,
   MAP_MENU_SHEET_REGISTRY,
@@ -25,6 +27,7 @@ interface IitcIrisSheetTabBarProps {
   missionsState: IitcIrisMissionsState;
   commState: IitcIrisCommState;
   selectCommTab: (tab: IitcIrisCommTab) => void;
+  locate: () => void;
 }
 
 export function IitcIrisSheetTabBar({
@@ -41,7 +44,52 @@ export function IitcIrisSheetTabBar({
   missionsState,
   commState,
   selectCommTab,
+  locate,
 }: IitcIrisSheetTabBarProps): h.JSX.Element {
+  const [group, setGroup] = useState<'analysis' | 'draw' | null>(null);
+  const choicesRef = useRef<HTMLDivElement>(null);
+  const secondaryRef = useRef<HTMLDivElement>(null);
+  const [overflow, setOverflow] = useState({start: false, end: false});
+  const groupButtonRef = useRef<HTMLButtonElement | null>(null);
+  const closeGroup = useCallback((): void => {setGroup(null); groupButtonRef.current?.focus();}, []);
+  // Closing a sheet may restore the selected-portal menu; an open chooser still belongs to Map.
+  const displayedPrimaryMenu = group && activeSheet === 'map' ? 'map' : activePrimaryMenu;
+  useEffect(() => {if (activeSheet !== 'map') setGroup(null);}, [activeSheet]);
+  useEffect(() => {if (group) choicesRef.current?.querySelector('button')?.focus();}, [group]);
+  useLayoutEffect(() => {
+    if (!group) return undefined;
+    const close = (event: Event): void => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      closeGroup();
+    };
+    const onKeyDown = (event: KeyboardEvent): void => {if (event.key === 'Escape') close(event);};
+    window.addEventListener(IITC_IRIS_HOST_BACK, close, true);
+    window.addEventListener('keydown', onKeyDown, true);
+    return (): void => {
+      window.removeEventListener(IITC_IRIS_HOST_BACK, close, true);
+      window.removeEventListener('keydown', onKeyDown, true);
+    };
+  }, [group, closeGroup]);
+  useEffect(() => {
+    const row = secondaryRef.current;
+    if (!row) return undefined;
+    const update = (): void => {
+      const start = row.scrollLeft > 1;
+      const end = row.scrollWidth - row.clientWidth - row.scrollLeft > 1;
+      setOverflow(current => current.start === start && current.end === end ? current : {start, end});
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(row);
+    for (const child of row.children) observer.observe(child);
+    row.addEventListener('scroll', update, {passive: true});
+    return (): void => {observer.disconnect(); row.removeEventListener('scroll', update);};
+  }, [displayedPrimaryMenu, selectedKind, isPanelVisible]);
+  const groups = {
+    analysis: {label: 'Analysis', sheets: ['portalCounts', 'portalsList', 'scoreboard']},
+    draw: {label: 'Draw tools', sheets: ['drawLinks', 'drawMarkers']},
+  } as const;
   const renderSheetTab = (
     sheet: IitcIrisSheetId,
     label: string,
@@ -53,7 +101,7 @@ export function IitcIrisSheetTabBar({
       <button
         className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${active ? 'is-active' : ''}`}
         type="button"
-        onClick={onClick ?? ((): void => toggleSheet(sheet))}
+        onClick={() => {setGroup(null); (onClick ?? ((): void => toggleSheet(sheet)))();}}
         aria-pressed={active}
         key={sheet}
       >
@@ -66,11 +114,14 @@ export function IitcIrisSheetTabBar({
     const label = menu.id === 'selected' ? selectedPrimaryLabel : menu.label;
     return (
       <button
-        className={`iitc-iris-sheet-tab ${activePrimaryMenu === menu.id ? 'is-active' : ''}`}
+        className={`iitc-iris-sheet-tab ${displayedPrimaryMenu === menu.id ? 'is-active' : ''}`}
         type="button"
-        onClick={() => togglePrimaryMenu(menu.id)}
+        onClick={() => {
+          if (menu.id === 'map' && group) closeGroup();
+          else {setGroup(null); togglePrimaryMenu(menu.id);}
+        }}
         disabled={menu.id === 'selected' && !hasSelectedObject}
-        aria-pressed={activePrimaryMenu === menu.id}
+        aria-pressed={displayedPrimaryMenu === menu.id}
         title={`${label} menu (${menu.shortcut})`}
         key={menu.id}
       >
@@ -92,25 +143,35 @@ export function IitcIrisSheetTabBar({
 
   return (
     <nav className="iitc-iris-sheet-tabbar" aria-label="Panels">
+      {displayedPrimaryMenu === 'map' && group && <div ref={choicesRef} className="iitc-iris-menu-choices" role="group" aria-label={groups[group].label}>
+        <button className="iitc-iris-sheet-tab" type="button" onClick={closeGroup}>Back to Map menu</button>
+        {MAP_MENU_SHEET_REGISTRY.filter(entry => (groups[group].sheets as readonly string[]).includes(entry.id) && isPanelVisible(entry.id))
+          .map(entry => renderSheetTab(entry.id, entry.label, () => {setGroup(null); toggleSheet(entry.id);} ))}
+      </div>}
       <div className="iitc-iris-sheet-tabbar-primary">
         {PRIMARY_MENU_REGISTRY.map(renderPrimaryMenuTab)}
       </div>
-      <div className="iitc-iris-sheet-tabbar-secondary">
-        {activePrimaryMenu === 'map' && (
+      <div className="iitc-iris-sheet-tabbar-secondary-wrap">
+      {overflow.start && <span className="iitc-iris-menu-scroll-hint is-start" aria-hidden="true">‹</span>}
+      <div className="iitc-iris-sheet-tabbar-secondary" ref={secondaryRef}>
+        {displayedPrimaryMenu === 'map' && (
           <>
-            {MAP_MENU_SHEET_REGISTRY.filter(entry => isPanelVisible(entry.id)).map((entry) =>
-              entry.id === 'missions'
-                ? renderSheetTab(
-                    entry.id,
-                    entry.label,
-                    () => toggleMissionsSheet('view'),
-                    activeSheet === 'missions' && missionsState.source !== 'portal'
-                  )
-                : renderSheetTab(entry.id, entry.label)
-            )}
+            {renderSheetTab('search', 'Search')}
+            {renderSheetTab('missions', 'Missions', () => toggleMissionsSheet('view'), activeSheet === 'missions' && missionsState.source !== 'portal')}
+            {renderSheetTab('scores', 'Regional scores')}
+            {renderSheetTab('layers', 'Layers')}
+            <button className="iitc-iris-sheet-tab iitc-iris-sheet-subtab" type="button" onClick={() => {setGroup(null); openSheet('map'); locate();}}>Locate</button>
+            {(['analysis', 'draw'] as const).filter(id => groups[id].sheets.some(sheet => isPanelVisible(sheet))).map(id =>
+              <button key={id} className={`iitc-iris-sheet-tab iitc-iris-sheet-subtab ${(groups[id].sheets as readonly string[]).includes(activeSheet) ? 'is-active' : ''}`}
+                type="button" aria-expanded={group === id} onClick={event => {
+                  groupButtonRef.current = event.currentTarget;
+                  if (group === id) closeGroup();
+                  else {openSheet('map'); setGroup(id);}
+                }}>{groups[id].label}</button>)}
+            {renderSheetTab('view', 'Controls')}
           </>
         )}
-        {activePrimaryMenu === 'selected' && (
+        {displayedPrimaryMenu === 'selected' && (
           <>
             {SELECTED_MENU_SHEET_REGISTRY.map(renderSelectedSheetTab)}
             {selectedKind === 'portal' && (
@@ -127,12 +188,12 @@ export function IitcIrisSheetTabBar({
             )}
           </>
         )}
-        {activePrimaryMenu === 'agent' && (
+        {displayedPrimaryMenu === 'agent' && (
           <>
             {AGENT_MENU_SHEET_REGISTRY.map((entry) => renderSheetTab(entry.id, entry.label))}
           </>
         )}
-        {activePrimaryMenu === 'comm' && (
+        {displayedPrimaryMenu === 'comm' && (
           <>
             {IITC_IRIS_COMM_TABS.map((tab) => (
               <button
@@ -150,11 +211,13 @@ export function IitcIrisSheetTabBar({
             ))}
           </>
         )}
-        {activePrimaryMenu === 'system' && (
+        {displayedPrimaryMenu === 'system' && (
           <>
             {SYSTEM_MENU_SHEET_REGISTRY.map((entry) => renderSheetTab(entry.id, entry.label))}
           </>
         )}
+      </div>
+      {overflow.end && <span className="iitc-iris-menu-scroll-hint is-end" aria-hidden="true">›</span>}
       </div>
     </nav>
   );

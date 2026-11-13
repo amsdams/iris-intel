@@ -32,6 +32,10 @@ configuration, lockfile and output fingerprints and fails if stale; run `npm run
 Default commands still build normally. See [the testing improvement plan](docs/iitc-iris/plans/comm-ui-testing.md)
 for evidence/follow-ups and [the browser guide](tests/browser/README.md) for commands and setup.
 
+For version bumps and release handoffs, follow [the version workflow](README.md#versioning-and-releases). Bump on
+the feature branch before final testing; do not tag the old HEAD while changing version files. Compare candidate APK
+version codes with prior artifacts, and record any override so the next main build can update the test installation.
+
 Preserve the Android application ID, release signing key, and increasing version codes when maintaining update compatibility.
 The permanent application ID is `io.github.amsdams.iris`; the user-approved 2026-10-29 change from
 `org.iris.intelspike` creates a separate installation with fresh session/settings. Keep this identity for future releases.

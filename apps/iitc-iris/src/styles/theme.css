@@ -2,6 +2,7 @@
 :root {
     --iitc-iris-mission-highlight-rgb: 64 64 0;
     --iitc-iris-panel-rgb: 2 10 16;
+    --iitc-iris-header-rgb: 24 32 40;
     --iitc-iris-control-rgb: 10 18 25;
     --iitc-iris-button-rgb: 7 31 45;
     --iitc-iris-button-subtle-rgb: 5 23 34;
@@ -48,6 +49,7 @@
 :root[data-iitc-iris-theme="light"] {
     --iitc-iris-mission-highlight-rgb: 255 232 142;
     --iitc-iris-panel-rgb: 248 251 254;
+    --iitc-iris-header-rgb: 248 251 254;
     --iitc-iris-control-rgb: 225 234 241;
     --iitc-iris-button-rgb: 222 235 243;
     --iitc-iris-button-subtle-rgb: 234 242 247;

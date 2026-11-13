@@ -14,6 +14,7 @@ import type {
 import { LayerChoice } from '../../../ui/layer-choice';
 import {Section} from '../../../ui/section';
 import {MapDataNotice} from '../../map-data-notice';
+import {ActiveMapFilters} from '../active-map-filters';
 
 interface BooleanLayerToggleEntry {
   id: IitcIrisBooleanLayerSettingKey;
@@ -72,8 +73,9 @@ export function IitcIrisDisplayPanel({
 
   return (
     <>
+      <ActiveMapFilters layerSettings={layerSettings} toggleLayerSetting={toggleLayerSetting} />
       <MapDataNotice cameraZoom={cameraZoom} enabledPortalDetails={layerSettings.portals && (layerSettings.labels || highlighterSettings.active !== 'none')} />
-      <Section titleHeading="Core overlays">
+      <Section titleHeading="Map data visibility">
         <div className="iitc-iris-layer-choice-grid" role="group" aria-label="Core overlay layers">
           {CORE_OVERLAY_LAYER_TOGGLE_LABELS.map(renderBooleanLayerCheckbox)}
         </div>

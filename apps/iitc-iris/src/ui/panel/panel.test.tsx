@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {describe, expect, it} from 'vitest';
-import {Panel, PanelHeader, PanelTitle, PanelBody, PanelFooter} from './panel';
+import {Panel, PanelFrame, PanelHeader, PanelTitle, PanelBody, PanelFooter} from './panel';
 
 describe('Panel Components', () => {
-  it('Panel renders aside with class', () => {
+  it('Panel supplies the shared frame with its request-panel class', () => {
     const vnode = Panel({ children: 'Content', className: 'extra' });
-    expect(vnode.type).toBe('aside');
+    expect(vnode.type).toBe(PanelFrame);
     expect(vnode.props.className).toBe('iitc-iris-request-side-panel extra');
   });
 

@@ -37,7 +37,7 @@ for (const android of [false, true]) {
       await page.evaluate(() => window.postMessage({type: 'IITC_IRIS_ENTITY_STATUS', portalDetails: {
         status: 'ready', guid: 'directions', mods: [], resonators: [],
       }}, '*'));
-      await expect(panel.locator('summary')).toHaveText(['Mods', 'Resonators', 'Facts', 'Map links', 'Portal activity']);
+      await expect(panel.locator('summary')).toHaveText(['Mods', 'Resonators', 'Advanced statistics', 'Facts', 'Map links', 'Portal activity', 'Technical details']);
       await expect(panel.locator('details').filter({has: page.locator('summary', {hasText: /^Map links$/})})).not.toHaveAttribute('open');
       await panel.locator('summary').filter({hasText: /^Map links$/}).click();
       const google = panel.getByRole('link', {name: 'Google Maps', exact: true});
@@ -98,9 +98,12 @@ for (const theme of ['light', 'dark']) for (const width of [320, 1200]) {
     const primary = page.locator('.iitc-iris-sheet-tabbar-primary');
     await primary.getByRole('button', {name: 'Portal', exact: true}).click();
     const portal = page.getByRole('complementary', {name: 'Selected portal details'});
-    await portal.locator('summary').filter({hasText: /^Map links$/}).click();
+    await portal.getByRole('button', {name: 'Share', exact: true}).click();
     await portal.getByRole('button', {name: 'Copy Prime link', exact: true}).click();
     await expect.poll(() => page.evaluate(() => window.portalFixture.clipboard)).toEqual(['https://link.ingress.com/portal/alpha']);
+    await portal.getByRole('button', {name: 'Copy title', exact: true}).click();
+    await expect(portal.getByRole('status')).toHaveText('portal title copied');
+    await expect.poll(() => page.evaluate(() => window.portalFixture.clipboard)).toEqual(['https://link.ingress.com/portal/alpha', 'Alpha']);
     await portal.getByRole('button', {name: 'QR code', exact: true}).click();
     const qr = portal.getByRole('img', {name: 'Portal location QR code'});
     await expect(qr).toBeVisible();
@@ -123,7 +126,6 @@ for (const theme of ['light', 'dark']) for (const width of [320, 1200]) {
     expect(await portal.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
     await selectPortal(page, 'beta');
     await expect(portal.getByRole('img', {name: 'Portal location QR code'})).toHaveCount(0);
-    await portal.locator('summary').filter({hasText: /^Map links$/}).click();
     await portal.getByRole('button', {name: 'QR code', exact: true}).click();
     await expect(portal.locator('figcaption')).toHaveText('GEO:52.001,4.001');
   });

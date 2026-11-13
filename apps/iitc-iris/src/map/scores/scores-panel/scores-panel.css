@@ -67,6 +67,14 @@
 }
 
 .iitc-iris-region-agents {
-    padding-left: 32px;
+    margin-block: 0;
+    padding-left: 28px;
     overflow-wrap: anywhere;
 }
+
+.iitc-iris-region-agents > li {
+    padding: 3px 4px;
+    border-bottom: 1px solid rgb(var(--iitc-iris-border-rgb) / 14%);
+}
+
+.iitc-iris-region-agents > li:last-child { border-bottom: 0; }

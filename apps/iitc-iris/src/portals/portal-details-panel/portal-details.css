@@ -8,12 +8,6 @@
     }
 }
 
-/* portal-level-summary */
-.iitc-iris-portal-level-value {
-    color: var(--iitc-iris-item-color, #fff);
-    text-shadow: 0 0 10px color-mix(in srgb, var(--iitc-iris-item-color, #fff) 42%, transparent);
-}
-
 /* portal-details-actions */
 .iitc-iris-health-track {
     position: relative;
@@ -67,19 +61,13 @@
     white-space: nowrap;
 }
 
-/* portal-level-cell */
-
-
-
 .iitc-iris-portal-actions {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 4px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
 }
 
-:root[data-iitc-iris-theme="light"] .iitc-iris-portal-level-value {
-    padding: 1px 4px;
-    border-radius: 3px;
-    background: #102433;
-    text-shadow: none;
-}
+
+.iitc-iris-portal-actions > button { min-height: 44px; }
+
+.iitc-iris-portal-glance { padding-block: 4px; }

@@ -113,3 +113,16 @@ link range (click to fit), energy totals, maximum outgoing links, friendly/attac
 attack modifiers. Selection adds the IITC 40m access indicator and detail-based geodesic link range, dashed when
 not fully deployed. The [missing core features plan](../plans/missing-core-features.md) owns contracts, reference
 comparisons, testing and pending live acceptance. Previously accepted XPI/APK artifacts predate these additions.
+
+## Phone information hierarchy — 2026-11-13
+
+On `feat/ui-improvements`, portal details now lead with name/faction/level and Zoom, Navigate and Share. The compact
+summary shows health, resonators, known keys and links; energy and clickable range follow Mods and Resonators. Keys use already
+loaded inventory only, with Unknown distinguished from a known zero.
+
+Navigate opens the existing provider choices. The full Map links disclosure remains below details. Share contains
+copy title, Intel link, Prime link and QR, with GUID inside Advanced sharing. Mods and resonators remain directly
+available; AP/hack/attack breakdowns move from Facts to Advanced statistics. The header also shows a compact owner line; Facts retains owner/history/topology.
+Routine request diagnostics are disclosed separately. Expand/Reduce changes panel height; returning to the map and
+reopening the same selection preserves scroll, expansion and open sections. The [UI plan](../plans/ui-improvements.md)
+records all ten changes and validation. This UI batch still awaits user acceptance.

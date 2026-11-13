@@ -39,10 +39,14 @@ export function IitcIrisCommPanelControls(props: IitcIrisCommPanelControlsProps)
       <ActionButton onClick={() => props.requestOlder()} disabled={commState.status === 'loading' || commState.oldestTimestamp === undefined || commState.oldestTimestamp < 0} title="Fetch older COMM messages before the current oldest timestamp">Older</ActionButton>
       {(!commUserAtBottom || commNewBelow) && <ActionButton onClick={props.jumpToLatest} title="Jump to latest COMM message">{commNewBelow ? 'New' : 'Latest'}</ActionButton>}
     </ControlRow>
+  </>;
+}
+
+export function IitcIrisCommLoadedSummary({commState}: {commState: IitcIrisCommState}): h.JSX.Element {
+  return <details className="iitc-iris-comm-summary"><summary className="iitc-iris-section-summary">{formatInteger(commState.messages)} loaded messages</summary>
     <SummaryGrid>
       <SummaryCell value={formatInteger(commState.messages)} label="messages" />
       <SummaryCell value={formatInteger(commState.addedMessages)} label="added" />
       <SummaryCell value={commState.oldestTimestamp !== undefined && commState.newestTimestamp !== undefined ? `${formatCommTime(commState.oldestTimestamp)} - ${formatCommTime(commState.newestTimestamp)}` : '-'} label="range" />
-    </SummaryGrid>
-  </>;
+    </SummaryGrid></details>;
 }

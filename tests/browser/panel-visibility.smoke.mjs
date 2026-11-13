@@ -1,12 +1,14 @@
+import {openMapGroupFor} from './navigation-fixture.mjs';
 import {test, expect} from '@playwright/test';
 
-const optionalPanels = ['Counts', 'List', 'Scoreboard', 'Links', 'Markers'];
+const optionalPanels = ['Counts', 'List', 'Viewport scores', 'Links', 'Markers'];
 const optionalIds = ['portalCounts', 'portalsList', 'scoreboard', 'drawLinks', 'drawMarkers'];
-const secondary = page => page.locator('.iitc-iris-sheet-tabbar-secondary');
+const secondary = page => page.locator('.iitc-iris-sheet-tabbar');
 async function open(page, menu, panel) {
   const primary = page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: menu, exact: true});
   if (await primary.getAttribute('aria-pressed') !== 'true') await primary.click();
   if (panel) {
+    await openMapGroupFor(page, panel);
     const tab = secondary(page).getByRole('button', {name: panel, exact: true});
     if (await tab.getAttribute('aria-pressed') !== 'true') await tab.click();
   }
@@ -30,8 +32,12 @@ test('optional panels default to visible, persist independently of drawings/laye
     localStorage.setItem('iitc-iris:layer-settings', JSON.stringify({drawnLinks: true, drawnMarkers: true, labels: true}));
   });
   await page.goto('/');
-  await open(page, 'Map', 'Display');
-  for (const name of optionalPanels) await expect(secondary(page).getByRole('button', {name, exact: true})).toBeVisible();
+  await open(page, 'Map', 'Layers');
+  for (const name of optionalPanels) {
+    await openMapGroupFor(page, name);
+    await expect(secondary(page).getByRole('button', {name, exact: true})).toBeVisible();
+  }
+  await secondary(page).getByRole('button', {name: 'Back to Map menu'}).click();
   await expect.poll(() => page.evaluate(() => window.__iitcIrisLayers?.drawnItems.length)).toBe(2);
   const original = await page.evaluate(() => {
     return {drawings: localStorage.getItem('plugin-draw-tools-layer'), layers: localStorage.getItem('iitc-iris:layer-settings')};
@@ -56,7 +62,7 @@ test('optional panels default to visible, persist independently of drawings/laye
   await page.keyboard.press('m');
   await expect(page.locator('.iitc-iris-shell')).toHaveClass(/iitc-iris-sheet-layers(?:\s|$)/);
   for (const name of optionalPanels) await expect(secondary(page).getByRole('button', {name, exact: true})).toHaveCount(0);
-  for (const name of ['Search', 'Display', 'Controls', 'Missions', 'Scores']) {
+  for (const name of ['Search', 'Layers', 'Controls', 'Missions', 'Regional scores']) {
     await expect(secondary(page).getByRole('button', {name, exact: true})).toBeVisible();
   }
   await expect.poll(() => page.evaluate(() => window.__iitcIrisLayers?.drawnItems.length)).toBe(2);
@@ -64,9 +70,13 @@ test('optional panels default to visible, persist independently of drawings/laye
   await settings.getByRole('button', {name: 'Restore defaults'}).click();
   for (const name of optionalPanels) await expect(settings.getByRole('checkbox', {name, exact: true})).toBeChecked();
   await page.reload();
-  await open(page, 'Map', 'Display');
-  for (const name of optionalPanels) await expect(secondary(page).getByRole('button', {name, exact: true})).toBeVisible();
-  await secondary(page).getByRole('button', {name: 'Markers', exact: true}).click();
+  await open(page, 'Map', 'Layers');
+  for (const name of optionalPanels) {
+    await openMapGroupFor(page, name);
+    await expect(secondary(page).getByRole('button', {name, exact: true})).toBeVisible();
+  }
+  await secondary(page).getByRole('button', {name: 'Back to Map menu'}).click();
+  await open(page, 'Map', 'Markers');
   await expect(page.getByText('Saved marker', {exact: true})).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -79,7 +89,7 @@ test('a hidden saved panel falls back to the map and malformed preferences canno
   await page.goto('/');
   await expect(page.locator('.iitc-iris-shell')).toHaveClass(/iitc-iris-sheet-map(?:\s|$)/);
   await expect(page.locator('aside:visible')).toHaveCount(0);
-  await open(page, 'Map', 'Display');
+  await open(page, 'Map', 'Layers');
   await expect(secondary(page).getByRole('button', {name: 'Markers', exact: true})).toHaveCount(0);
   await open(page, 'System', 'Panels');
   const settings = page.getByRole('complementary', {name: 'Panel settings'});
