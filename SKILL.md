@@ -11,6 +11,7 @@ Use `npm run android:bundle` with release signing configured for a checked, sign
 Do not treat compilation as real-device authentication or IRIS injection evidence.
 
 Read `docs/iitc-iris/plans/index.md` for current scope and `docs/iitc-iris/port-plan.md` for behavior/parity work.
+Reference checkouts are optional; normal builds and tests must not require files from ignored `reference/` checkouts.
 The app owns Preact, Leaflet, and browser integration. Keep domain logic in `packages/iitc-core`.
 Dependency and lifecycle contracts live in `docs/iitc-iris/architecture.md`; ESLint enforces the selected import boundaries.
 

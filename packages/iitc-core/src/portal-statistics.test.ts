@@ -45,4 +45,25 @@ describe('IITC portal statistics', () => {
     expect(getIitcPortalApGain(portal(8), 0, 0, {nickname: 'Me', level: 8}).friendlyAp).toBe(0);
     expect(getIitcPortalApGain(input, 0, 0).friendlyAp).toBeUndefined();
   });
+
+  it('stacks attack mods and orders turret effectiveness by hit bonus rather than attack frequency', () => {
+    const input = {...portal(), mods: [mod('FORCE_AMPLIFIER', 2000), mod('FORCE_AMPLIFIER', 3000),
+      {...mod('HIT_BONUS', 100000), stats: {HIT_BONUS: 100000, ATTACK_FREQUENCY: 5000}},
+      {...mod('HIT_BONUS', 200000), stats: {HIT_BONUS: 200000, ATTACK_FREQUENCY: 1000}}]};
+    expect(getIitcPortalStatistics(input, 0, 0).attack)
+      .toEqual({forceAmplifier: 3.5, frequency: 2.25, hitBonus: 30});
+    expect(getIitcPortalStatistics(portal(), 0, 0).attack)
+      .toEqual({forceAmplifier: 0, frequency: 0, hitBonus: 0});
+  });
+
+  it.each([
+    {owner: 'Me', playerLevel: 8, upgradeCount: 0, friendlyAp: 0},
+    {owner: 'Other', playerLevel: 8, upgradeCount: 1, friendlyAp: 65},
+    {owner: 'Other', playerLevel: 7, upgradeCount: 0, friendlyAp: 0},
+  ])('limits upgrades for an L$playerLevel player with the L8 resonator owned by $owner',
+    ({owner, playerLevel, upgradeCount, friendlyAp}) => {
+      const input = {...portal(7), resonators: [{level: 8, owner, energy: 500}, ...portal(7).resonators.slice(1)]};
+      expect(getIitcPortalApGain(input, 0, 0, {nickname: 'Me', level: playerLevel}))
+        .toMatchObject({deployCount: 0, upgradeCount, friendlyAp, enemyAp: 2525});
+    });
 });

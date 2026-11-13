@@ -14,6 +14,13 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**CI test cleanup (2026-11-13):** main build `43520279505` failed because a portal-statistics parity test imported
+the ignored optional IITC checkout. The user chose to remove that VM comparison and the proposed copied fixture.
+Focused core tests preserve stacked attack-mod ordering and player-level/ownership upgrade cases; existing statistics
+and browser coverage remain. A fresh tracked-files checkout without `reference/` passes `npm ci`, source-version
+verification, `npm run check` (761 app/core tests and gates) and `npm run package`. GitHub verification follows the
+cleanup push; no runtime behavior changed. Logs: `/private/tmp/iris-ci-clean-{install,check,package}.log`.
+
 **0.5.0 integrated into local main (2026-11-13):** the user accepted the final result and authorized local main integration
 of `feat/ui-improvements`, based on `fe7ff17`. Review, updated docs/version guidance and signed APK handoff pass. Root/app/manifest/lockfile are 0.5.0; Android is
 `0.5.0-alpha+fe7ff17-dirty` (1883). Review fixed selected-portal chooser visibility and native Back/Escape ordering.
