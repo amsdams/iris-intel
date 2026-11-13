@@ -116,8 +116,8 @@ Required process for each new subsystem:
 8. Document every intentional divergence in this plan with the reason, expected effect, and how to compare it against
    IITC-CE.
 
-Validation rule: after validating IITC IRIS code changes, run `npm run package` from the repository root so
-the extension build and ZIP/XPI packaging are checked. Documentation-only changes do not require this package step.
+Validation rule: follow the root repository guide for checks. Build downloadable ZIP/XPI/APK artifacts when the user
+requests a test build or release handoff; routine code changes and reviews do not require repackaging.
 
 Current local reference checkout: `reference/ingress-intel-total-conversion`. Older notes may refer to the same IITC-CE
 lineage by repository name; new source references should use the local path above so searches and comparisons are

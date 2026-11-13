@@ -4,6 +4,27 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class NavigationPolicyTest {
+    @Test public void portalMapLinksRequireAnIntelUserGestureInTheMainFrame() {
+        String source = "https://intel.ingress.com/";
+        String target = "geo:52.370123,4.893123";
+        assertTrue(NavigationPolicy.mayOpenPortalLocation(source, target, true, true));
+        assertTrue(NavigationPolicy.mayOpenPortalLocation(source, "geo:-90,-180", true, true));
+        assertTrue(NavigationPolicy.mayOpenPortalLocation(source, "geo:0,0", true, true));
+        assertFalse(NavigationPolicy.mayOpenPortalLocation(source, target, false, true));
+        assertFalse(NavigationPolicy.mayOpenPortalLocation(source, target, true, false));
+        assertFalse(NavigationPolicy.mayOpenPortalLocation("https://accounts.google.com/", target, true, true));
+        assertFalse(NavigationPolicy.mayOpenPortalLocation("https://intel.ingress.com.attacker.test/", target, true, true));
+    }
+
+    @Test public void portalMapLinksRejectMalformedOrNonCoordinateTargets() {
+        for (String target : new String[]{null, "geo:91,0", "geo:0,-181", "geo:NaN,4",
+                "geo:52,4&other=value", "geo:0,0?q=52,4", "geo:somewhere", "geo:52,4#fragment",
+                "intent://maps", "javascript:alert(1)", "https://example.org/"}) {
+            assertFalse(String.valueOf(target), NavigationPolicy.mayOpenPortalLocation(
+                    "https://intel.ingress.com/", target, true, true));
+        }
+    }
+
     @Test public void intelPagesPermitQueriesAndHttpsDefaultPort() {
         assertTrue(NavigationPolicy.isIntel("https://intel.ingress.com/intel?ll=52,4&z=15"));
         assertTrue(NavigationPolicy.isIntel("https://INTEL.INGRESS.COM:443/"));

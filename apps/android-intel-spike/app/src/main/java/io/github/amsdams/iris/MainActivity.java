@@ -298,6 +298,11 @@ public final class MainActivity extends Activity {
 
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
+                if (NavigationPolicy.mayOpenPortalLocation(view.getUrl(), url,
+                        request.isForMainFrame(), request.hasGesture())) {
+                    openPortalLocation(url);
+                    return true;
+                }
                 if (NavigationPolicy.isEmbedded(url)) return false;
                 if (request.isForMainFrame()) openBrowser(url);
                 return true;
@@ -372,6 +377,14 @@ public final class MainActivity extends Activity {
         loadStatus = message;
         showStatus(message);
         progress.setVisibility(android.view.View.GONE);
+    }
+
+    private void openPortalLocation(String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (ActivityNotFoundException error) {
+            showStatus(getString(R.string.maps_unavailable));
+        }
     }
 
     private void openBrowser(String url) {

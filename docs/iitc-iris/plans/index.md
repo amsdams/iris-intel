@@ -14,6 +14,26 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**Portal map links (2026-11-13):** the user accepted the renderer-maintenance APK after extended use without issues.
+`refactor/renderer-maintenance` is fast-forward merged into local `main` at `a1dfb91`; work continues uncommitted on
+`feat/portal-directions`. No remote main push was performed. Portal map links provide Google Maps, Bing Maps,
+OpenStreetMap and Android's generic maps-app handoff. The user confirmed Google's corrected coordinate-only URL
+works in the XPI and OSM shows the portal pin. Follow-up moves the collapsed Map links below Facts, before Portal
+activity, and adds a separate OSM directions link with its destination prefilled. The user tested APK 1879 and the
+earlier XPI and considers the feature okay. Other maps opens an app without a preselected route target; comparison
+with IITC confirms this is a location-viewing handoff, with app-specific behavior. See
+[portal details](../features/portal-details.md#portal-map-links-2026-11-13) for validation and compatibility limits.
+Successful OSM route calculation and individual navigation apps remain unverified. Signed APK `0.4.1-alpha+a1dfb91` (1879) includes the uncommitted
+feature and is served on port 6969; release checks, certificate, bundled assets and served download are verified.
+
+**Destinations completion review (2026-11-13):** feature scope is complete and ready to merge, with Android's generic
+location-viewing limitation accepted. Review fixed an OpenStreetMap button-label overflow at 320px by giving Map
+links its own two-column grid. Checks pass: 736 app/core tests, all 70 browser cases and repository gates. The
+[feature note](../features/portal-details.md#portal-map-links-2026-11-13) owns review evidence and compatibility limits.
+Changes remain uncommitted on `feat/portal-directions`; main integration has not been performed for this feature.
+Reviewed downloads are XPI/ZIP `2026-11-13T19-45-40` and signed APK `0.4.1-alpha+a1dfb91` (1880), superseding 1879.
+Release validation and signing/assets/download verification pass; the new two-column layout has browser coverage.
+
 **Current branch test checkpoint (2026-11-06):** user authorized commit/push and longer APK testing before merging.
 ARCH-10–18 are committed on `refactor/renderer-maintenance` as `9e93185`, `83cd5e9` and `af248e3`.
 Signed APK **`0.4.1-alpha+af248e3` (1877)** includes the complete code batch, superseding APK 1874.
@@ -696,7 +716,8 @@ Use brief, combined implementation/validation batches. Create a detailed plan wh
 small authorized changes do not need another numbered slice or standalone planning document. For parity work, record
 reference sources, ownership/lifecycle, observable behavior, intentional divergences, and validation evidence.
 
-For code changes, run focused tests, `npm run check`, `npm run package`, and `git diff --check`.
+For code changes, run focused tests, `npm run check`, and `git diff --check`; include browser checks for relevant UI/map changes.
+Package XPI/ZIP/APK artifacts when the user requests a test build or release handoff, not after every change or review.
 Documentation-only changes need link/path/command checks and `git diff --check`.
 Do not commit, tag, push, merge, or publish without user authorization.
 

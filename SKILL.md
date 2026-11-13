@@ -19,8 +19,9 @@ Use Node 24 and `npm ci`. While editing, run focused tests and affected lint/typ
 the full `npm run test:browser` suite. Repeat broad checks only when subsequent changes, failures, or unresolved
 concerns justify them. Documentation-only changes do not require application checks.
 
-When preparing a downloadable build, package/sign once after final validation (`npm run package` and the relevant
-Android build command). Avoid rebuilding artifacts during every layout iteration. Browser tests, extension packaging,
+Build downloadable XPI/ZIP/APK artifacts when the user requests a test build or a release handoff, not after every
+change or review. When preparing that build, package/sign once after final validation (`npm run package` and the relevant
+Android build command). Browser tests, extension packaging,
 and Android builds rebuild the same web assets; run those commands sequentially.
 
 Local browser runs use two workers after repeated full-suite benchmarks; CI keeps one. Re-benchmark runtime,

@@ -1,3 +1,10 @@
+/** The Android wrapper publishes this marker before loading the UI. */
+export function isAndroidHost(): boolean {
+  return typeof document !== 'undefined'
+    && document.querySelector<HTMLMetaElement>('meta[name="iitc-iris-asset-base"]')?.content
+      === 'https://intel.ingress.com/__iris_android__/';
+}
+
 /** Resolve bundled assets through the extension or an explicit host-provided asset base. */
 export function getExtensionUrl(path: string): string {
   if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) return chrome.runtime.getURL(path);

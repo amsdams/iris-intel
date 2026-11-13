@@ -21,6 +21,7 @@ import {StatusText} from '../../ui/status-text';
 import {EmptyState} from '../../ui/empty-state';
 import './portal-summary-mini-track.css';
 import {PortalActivity} from '../../comm/portal-activity';
+import {PortalDirections} from '../portal-directions';
 
 export interface IitcIrisPortalDetailsPanelProps {
   activeSidePanel: string | null;
@@ -338,6 +339,7 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
             </PortalDetailSection>
           </>
         )}
+        <PortalDirections key={portal.guid} portal={portal} />
         {props.openPublicComm && props.selectActivityPortal && <PortalActivity portal={portal}
           openPublicComm={props.openPublicComm} selectPortal={props.selectActivityPortal} />}
         {portalDetails?.status === 'ready' && (
