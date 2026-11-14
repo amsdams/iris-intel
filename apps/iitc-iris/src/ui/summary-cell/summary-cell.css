@@ -6,10 +6,10 @@
     align-content: start;
     min-width: 0;
     padding: var(--iitc-iris-space-3);
-    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 18%);
+    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 10%);
     border-radius: 4px;
     overflow: hidden;
-    background: rgb(var(--iitc-iris-control-rgb) / 62%);
+    background: rgb(var(--iitc-iris-control-rgb) / 38%);
 }
 
 :where(.iitc-iris-summary-cell) > b {
@@ -39,6 +39,6 @@
     }
 
     :where(.iitc-iris-summary-cell) > b {
-        font-size: 14px;
+        font-size: calc(var(--iitc-iris-text-xl) - 2px);
     }
 }

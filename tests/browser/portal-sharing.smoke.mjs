@@ -37,7 +37,7 @@ for (const android of [false, true]) {
       await page.evaluate(() => window.postMessage({type: 'IITC_IRIS_ENTITY_STATUS', portalDetails: {
         status: 'ready', guid: 'directions', mods: [], resonators: [],
       }}, '*'));
-      await expect(panel.locator('summary')).toHaveText(['Mods', 'Resonators', 'Advanced statistics', 'Facts', 'Map links', 'Portal activity', 'Technical details']);
+      await expect(panel.locator('summary')).toHaveText(['Mods', 'Resonators', 'Advanced statistics', 'Facts', 'Map links', 'Portal activity']);
       await expect(panel.locator('details').filter({has: page.locator('summary', {hasText: /^Map links$/})})).not.toHaveAttribute('open');
       await panel.locator('summary').filter({hasText: /^Map links$/}).click();
       const google = panel.getByRole('link', {name: 'Google Maps', exact: true});

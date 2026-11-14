@@ -53,15 +53,16 @@ for (const layout of layouts) test.describe(`${layout.width}px ${layout.theme} h
       }
       const panel = page.locator('aside:visible');
       await expect(panel).toBeVisible();
-      await aligned(panel.locator('.iitc-iris-request-panel-header'), ':scope > .iitc-iris-selected-title');
+      await aligned(panel.locator('.iitc-iris-request-panel-header'), ':scope > .iitc-iris-panel-heading');
+      const title = panel.locator('.iitc-iris-request-panel-header .iitc-iris-selected-title');
+      expect(await title.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
       if (menu === 'COMM') {
         const body = panel.locator('.iitc-iris-comm-body');
         const loaded = body.locator('.iitc-iris-comm-summary');
-        const technical = body.locator('.iitc-iris-technical-details');
-        expect(await body.evaluate(element => element.lastElementChild.classList.contains('iitc-iris-panel-footer'))).toBe(true);
-        expect((await loaded.boundingBox()).y).toBeLessThan((await technical.boundingBox()).y);
-        expect(await loaded.evaluate(element => Boolean(element.compareDocumentPosition(
-          element.parentElement.querySelector('.iitc-iris-technical-details')) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
+        await expect(loaded).toBeVisible();
+        await expect(body.locator('.iitc-iris-panel-footer')).toHaveCount(0);
+        expect(await loaded.evaluate(element => element === element.parentElement.firstElementChild)).toBe(true);
+        await expect(loaded.locator('summary')).toHaveCount(0);
       }
       if (name === 'Layers') await page.screenshot({path: `/private/tmp/iris-header-layers-${layout.width}.png`});
     }

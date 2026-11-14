@@ -42,3 +42,12 @@
     --iitc-iris-button-font-sm: var(--iitc-iris-font-bold) var(--iitc-iris-text-sm) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
     --iitc-iris-label-font: var(--iitc-iris-font-extrabold) var(--iitc-iris-text-sm) / var(--iitc-iris-line-tight) var(--iitc-iris-font-ui);
 }
+
+:root[data-iitc-iris-text-size="larger"] {
+    --iitc-iris-text-xxs: 9px;
+    --iitc-iris-text-xs: 11px;
+    --iitc-iris-text-sm: 12px;
+    --iitc-iris-text-md: 13px;
+    --iitc-iris-text-lg: 14px;
+    --iitc-iris-text-xl: 18px;
+}

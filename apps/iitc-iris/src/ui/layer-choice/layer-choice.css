@@ -33,6 +33,6 @@
     overflow: hidden;
     color: inherit;
     font: var(--iitc-iris-font-semibold) var(--iitc-iris-text-sm) / 1.15 var(--iitc-iris-font-ui);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }

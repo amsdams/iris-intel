@@ -148,7 +148,6 @@
 
 .iitc-iris-portals-list-table-wrap {
     overflow: auto;
-    max-height: min(50vh, 430px);
 }
 
 .iitc-iris-portal-analysis-table {

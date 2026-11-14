@@ -62,24 +62,30 @@ export function PortalSharing({portal, copyTitle, copyLink, copyGuid, copyStatus
 }): h.JSX.Element {
   const [showQr, setShowQr] = useState(false);
   const [primeStatus, setPrimeStatus] = useCopyFeedbackStatus();
-  const [copySource, setCopySource] = useState<'prime' | 'other'>('other');
-  const copy = (action: () => void): void => {setCopySource('other'); action();};
-  const feedback = copySource === 'prime' ? primeStatus : copyStatus;
+  const [copySource, setCopySource] = useState<'prime' | 'title' | 'intel' | 'guid' | null>(null);
+  const feedback = copySource === 'prime' ? primeStatus : copySource ? copyStatus : '';
+  const copyButton = (source: NonNullable<typeof copySource>, label: string, action: () => void): h.JSX.Element => (
+    <span className="iitc-iris-copy-action">
+      <ActionButton aria-label={label} onClick={() => {setCopySource(source); action();}}>
+        {copySource === source && feedback.includes('copied') ? 'Copied ✓' : label}
+      </ActionButton>
+      {copySource === source && feedback && <StatusText role="status">{feedback}</StatusText>}
+    </span>
+  );
   return <section aria-label="Share portal">
     <div className="iitc-iris-portal-map-links">
-      <ActionButton onClick={() => copy(copyTitle)} title="Copy portal title">Copy title</ActionButton>
-      <ActionButton onClick={() => copy(copyLink)} title="Copy Intel portal link">Copy Intel link</ActionButton>
-      <ActionButton title="Copy Ingress Prime portal link" onClick={() => {
-        setCopySource('prime');
+      {copyButton('title', 'Copy title', copyTitle)}
+      {copyButton('intel', 'Copy Intel link', copyLink)}
+      {copyButton('prime', 'Copy Prime link', () => {
+        setPrimeStatus('');
         copyIitcIrisText(getPortalPrimeLink(portal.guid), {setStatus: setPrimeStatus, successStatus: 'Prime portal link copied'});
-      }}>Copy Prime link</ActionButton>
+      })}
       <ActionButton aria-expanded={showQr} title="Show a QR code for this portal location"
         onClick={() => setShowQr(!showQr)}>{showQr ? 'Hide QR' : 'QR code'}</ActionButton>
     </div>
-    {feedback && <StatusText role="status">{feedback}</StatusText>}
     {showQr && <PortalQr payload={`GEO:${portal.latE6 / 1e6},${portal.lngE6 / 1e6}`} />}
     <details><summary className="iitc-iris-section-summary">Advanced sharing</summary>
-      <ActionButton onClick={() => copy(copyGuid)} title="Copy portal GUID">Copy GUID</ActionButton>
+      {copyButton('guid', 'Copy GUID', copyGuid)}
     </details>
   </section>;
 }

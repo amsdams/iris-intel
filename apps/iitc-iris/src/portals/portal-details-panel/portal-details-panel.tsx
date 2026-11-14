@@ -16,8 +16,7 @@ import {formatElapsedSeconds, getAuthErrorMessage, getPanelStatusClass} from '..
 import {ActionButton} from '../../ui/action-button';
 import {Badge} from '../../ui/badge';
 import {ClearButton} from '../../ui/clear-button';
-import {DiagnosticsChip} from '../../ui/diagnostics-chip';
-import {PanelFooter, PanelFrame, PanelSizeButton, PanelTitle} from '../../ui/panel';
+import {PanelFrame, PanelSizeButton, PanelTitle} from '../../ui/panel';
 import {StatusText} from '../../ui/status-text';
 import {EmptyState} from '../../ui/empty-state';
 import './portal-summary-mini-track.css';
@@ -147,7 +146,9 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
   return <PanelFrame className={`iitc-iris-portal-side-panel ${formatTeamClass(portal.team)} ${props.activeSidePanel ? 'iitc-iris-portal-side-panel-stacked' : ''}`} aria-label="Selected portal details">
     <div className="iitc-iris-portal-side-header">
       {portal.image ? (
-        <button className="iitc-iris-selected-image-button" type="button" onClick={props.openPortalImage} title="Open portal image preview">
+        <button className="iitc-iris-selected-image-button" type="button" onClick={event => {
+          event.currentTarget.focus({preventScroll: true}); props.openPortalImage();
+        }} title="Open portal image preview">
           <img className="iitc-iris-selected-image" src={portal.image} alt="" />
         </button>
       ) : (
@@ -158,9 +159,6 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
           <PanelTitle title={portal.guid}>
             {portal.title || portal.guid}
           </PanelTitle>
-          {detailsStatus !== 'ready' && <StatusText className={`iitc-iris-panel-state ${getPanelStatusClass(detailsStatus)}`}>
-            {detailsStatus}
-          </StatusText>}
         </span>
         {(portalLevel !== undefined || portalDetails?.owner) && (
           <span className="iitc-iris-portal-heading-details">
@@ -178,6 +176,9 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
         {portalDetails?.owner && <span className="iitc-iris-portal-header-owner">
           <small>Owner</small><span className={getCommTeamClass(portal.team)}>{portalDetails.owner}</span>
         </span>}
+        {detailsStatus !== 'ready' && <StatusText className={`iitc-iris-panel-state ${getPanelStatusClass(detailsStatus)}`}>
+          {detailsStatus}
+        </StatusText>}
       </div>
       <span className="iitc-iris-panel-header-actions">
         <PanelSizeButton />
@@ -185,6 +186,7 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
       </span>
     </div>
     <div className="iitc-iris-portal-scroll-body">
+      {portalDetails?.cached && <StatusText>Cached portal details</StatusText>}
       <div className="iitc-iris-portal-actions" aria-label="Selected portal actions">
         <ActionButton onClick={props.focusSelectedPortal} title="Center and zoom to this portal">Zoom</ActionButton>
         <ActionButton aria-expanded={action === 'navigate'} onClick={() => setAction(action === 'navigate' ? null : 'navigate')}>Navigate</ActionButton>
@@ -350,18 +352,6 @@ export function IitcIrisPortalDetailsPanel(props: IitcIrisPortalDetailsPanelProp
         <PortalDirections key={portal.guid} portal={portal} />
         {props.openPublicComm && props.selectActivityPortal && <PortalActivity portal={portal}
           openPublicComm={props.openPublicComm} selectPortal={props.selectActivityPortal} />}
-        {portalDetails?.status === 'ready' && (
-          <PanelFooter>
-            <DiagnosticsChip
-              title={[
-                'request: /r/getPortalDetails',
-                `guid: ${portal.guid}`,
-              ].join('\n')}
-            >
-              {portalDetails.cached ? 'cached' : portalDetails.elapsedMs !== undefined ? `request ${formatElapsedSeconds(portalDetails.elapsedMs)}s` : 'request'}
-            </DiagnosticsChip>
-          </PanelFooter>
-        )}
       </div>
     </div>
   </PanelFrame>;

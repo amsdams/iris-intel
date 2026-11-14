@@ -9,3 +9,8 @@
     color: var(--iitc-iris-color-strong);
     pointer-events: none;
 }
+
+#iitc-iris-root :where(button, a, input, textarea, select, summary):focus-visible {
+    outline: 2px solid rgb(var(--iitc-iris-focus-rgb) / 95%);
+    outline-offset: -2px;
+}

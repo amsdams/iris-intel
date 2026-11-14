@@ -63,8 +63,8 @@
 .iitc-iris-mission-details-head b,
 .iitc-iris-mission-waypoint strong {
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .iitc-iris-mission-row small,
@@ -72,8 +72,10 @@
 .iitc-iris-mission-waypoint small {
     overflow: hidden;
     color: var(--iitc-iris-color-muted);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: var(--iitc-iris-text-md);
+    line-height: var(--iitc-iris-line-readable);
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .iitc-iris-mission-details {
@@ -159,9 +161,8 @@
 }
 
 .iitc-iris-mission-description {
-    max-height: 72px;
-    margin: 0;
-    overflow: auto;
+    margin: 6px 0 0;
+    overflow-wrap: anywhere;
     color: var(--iitc-iris-color-secondary);
     line-height: 1.35;
 }
@@ -188,8 +189,21 @@
 /* Authoring link override */
 
 .iitc-iris-mission-create-link {
-    border-color: rgb(255 209 102 / 58%);
-    color: var(--iitc-iris-color-warning);
+    display: inline-block;
+    margin-top: 6px;
+    padding: 8px;
+}
+
+.iitc-iris-mission-summary { display: grid; gap: 3px; overflow-wrap: anywhere; }
+.iitc-iris-mission-source { flex: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.iitc-iris-mission-row:not(:has(> img)) { grid-template-columns: minmax(0, 1fr); }
+.iitc-iris-mission-row:not(:has(> img)) > span { grid-column: 1; }
+
+@media (pointer: coarse) {
+    .iitc-iris-mission-row,
+    .iitc-iris-mission-waypoint,
+    .iitc-iris-mission-source > button,
+    .iitc-iris-mission-controls > button { min-height: 44px; }
 }
 
 @media (width <= 760px) {

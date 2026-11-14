@@ -6,10 +6,9 @@ import '../../../ui/shared/list-item.css';
 import {getCommTeamClass} from '../../../comm/comm-display';
 import type {IitcIrisSearchResult, IitcIrisSearchState} from '../../../messages';
 import {Panel, PanelHeader, PanelTitle, PanelBody, PanelFooter} from '../../../ui/panel';
-import {formatElapsedSeconds, getPanelStatusClass} from '../../../ui-status';
+import {getPanelStatusClass} from '../../../ui-status';
 import {TextInput} from '../../../ui/text-input';
 import {ClearButton} from '../../../ui/clear-button';
-import {DiagnosticsChip} from '../../../ui/diagnostics-chip';
 import {ChipButton} from '../../../ui/chip-button';
 import {StatusText} from '../../../ui/status-text';
 
@@ -66,10 +65,10 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
   };
 
   return <Panel className="iitc-iris-search-panel" role="search" aria-label="Search">
-    <PanelHeader>
+    <PanelHeader description={props.searchState.status !== 'ready' && props.searchState.status !== 'idle' &&
+      <StatusText className={`iitc-iris-panel-state ${getPanelStatusClass(props.searchState.status)}`}>{props.searchState.status}</StatusText>}>
       <PanelTitle>Search</PanelTitle>
       <span className="iitc-iris-panel-header-actions">
-        <StatusText className={`iitc-iris-panel-state ${getPanelStatusClass(props.searchState.status)}`}>{props.searchState.status}</StatusText>
         <ClearButton onClick={props.closeSearch} title="Close search" aria-label="Close search" />
       </span>
     </PanelHeader>
@@ -144,22 +143,11 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
           {props.searchState.error && <StatusText className="iitc-iris-warning">{props.searchState.error}</StatusText>}
         </div>
       )}
-      <PanelFooter>
-        <DiagnosticsChip
-          title={[
-            props.searchState.confirmed ? 'request: Nominatim search' : 'request: local portal search only',
-            `local: ${props.searchState.localResults}`,
-            `online: ${props.searchState.onlineResults ?? '-'}`,
-          ].join('\n')}
-        >
-          {props.searchState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(props.searchState.elapsedMs)}s` : 'request'}
-        </DiagnosticsChip>
-        {props.searchState.results.length > 0 && (
-          <ChipButton onClick={props.clearSearch} title="Clear search results and map overlay">
-            clear overlay
-          </ChipButton>
-        )}
-      </PanelFooter>
+      {props.searchState.results.length > 0 && <PanelFooter>
+        <ChipButton onClick={props.clearSearch} title="Clear search results and map overlay">
+          clear overlay
+        </ChipButton>
+      </PanelFooter>}
     </PanelBody>
   </Panel>;
 }

@@ -96,7 +96,7 @@ test('Search, COMM, Passcode, and Diagnostics share input surfaces and aligned a
 test('Diagnostics keeps disclosure preferences, timing settings and JSON export after cleanup', async ({page}) => {
   await openPanel(page, 'System', 'Diagnostics');
   const panel = page.getByRole('complementary', {name: 'System controls'});
-  const details = panel.locator('details');
+  const details = panel.locator('.iitc-iris-system-debug');
   await expect(details).not.toHaveAttribute('open');
   await expect(details.locator('.iitc-iris-debug-row').first()).not.toBeVisible();
   for (const name of ['Start Fast', 'Start Delay', 'Copy Runs', 'AMS 10', 'AMS 15', 'DAM 15', 'Debug']) {

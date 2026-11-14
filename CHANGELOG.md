@@ -3,6 +3,17 @@
 Notable changes, newest first. Dates mark development/test milestones, not necessarily public releases.
 Earlier version numbers refer to the Android prototype/alpha; 0.5.0 aligns Android and browser version numbering.
 
+## 0.6.0 — 2026-11-14
+
+Local alpha test candidate; Android version: 0.6.0-alpha.
+
+- More room in panels: request timings and technical metadata are grouped under System → Diagnostics → Panel details.
+- Compact panel headers, an always-visible COMM summary, consistent scrollbars and simpler scrolling.
+- Clearer Inventory totals/selected keys, mission source selection and list priorities; quieter surfaces and better long-name wrapping.
+- Keyboard/safe-area-aware panels, a larger-text preference and clearer section headings.
+- Compact Layers controls, focused Profile progress and meaningful initial/reward states.
+- Data freshness/cache labels, feedback beside portal copy actions, and improved image-preview focus/closing behavior.
+
 ## 0.5.0 — 2026-11-13
 
 Local alpha verification build; Android version: 0.5.0-alpha.

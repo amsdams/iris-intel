@@ -160,6 +160,8 @@ test('saved filters search loaded messages, persist across reload, and do not re
   await panel.getByLabel('Filter COMM portal', {exact: true}).fill('fountain');
   await panel.getByLabel('Search loaded COMM', {exact: true}).fill('Fountain');
   await expect(panel.locator('.iitc-iris-comm-row')).toHaveCount(1);
+  await expect(panel.getByLabel('COMM summary')).toContainText('3 loaded messages · 1 shown');
+  await expect(panel.getByLabel('COMM summary').locator('summary')).toHaveCount(0);
   await page.evaluate(settings => window.postMessage({type: 'IITC_IRIS_LAYER_SETTINGS',
     layerSettings: {...settings, playerTrackerResistance: true}}, '*'), DEFAULT_LAYER_SETTINGS);
   await expect(page.locator('.leaflet-marker-icon[title*="AgentA"]')).toHaveCount(1);
@@ -324,7 +326,19 @@ test('out-of-range timestamps preserve loaded history and cursor; presentation a
   await page.evaluate(() => {delete window.commReviewFixture.invalidTime;});
   await panel.getByRole('button', {name: 'Refresh', exact: true}).click();
   await expect.poll(() => page.evaluate(() => window.commReviewFixture.lastComm.status)).toBe('ready');
-  expect(await page.evaluate(() => window.commReviewFixture.calls.at(-1).minTimestampMs)).toBe(cursor);
+  // Automatic history loading may follow the refresh; inspect the latest newer-message request.
+  expect(await page.evaluate(() => window.commReviewFixture.calls.findLast(call => call.maxTimestampMs === -1).minTimestampMs)).toBe(cursor);
+  // Stop the live publisher before testing malformed presentation data, so an automatic
+  // history request cannot replace the injected snapshot. All transport checks above remain live.
+  await page.evaluate(() => new Promise(resolve => {
+    const acknowledged = ({data}) => {
+      if (data.type !== 'IITC_IRIS_COMM_VISIBILITY' || data.commVisible !== false) return;
+      window.removeEventListener('message', acknowledged);
+      resolve();
+    };
+    window.addEventListener('message', acknowledged);
+    window.postMessage({type: 'IITC_IRIS_COMM_VISIBILITY', commVisible: false}, '*');
+  }));
   // A malformed internal bridge message must not throw in date presentation either.
   await page.evaluate(() => {
     const comm = window.commReviewFixture.lastComm;

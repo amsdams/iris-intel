@@ -87,6 +87,7 @@ test('map grouping supports keyboard return and visibility reset preserves decor
   await openMapGroupFor(page, 'Counts');
   await page.getByRole('group', {name: 'Analysis', exact: true}).getByRole('button', {name: 'Counts', exact: true}).click();
   await tabs.getByRole('button', {name: 'Layers', exact: true}).click();
+  await page.locator('.iitc-iris-layer-secondary > summary').filter({hasText: /^Detail overlays$/}).click();
   await page.getByRole('checkbox', {name: 'Level labels', exact: true}).check();
   await page.getByRole('checkbox', {name: 'Fields', exact: true}).uncheck();
   await page.getByRole('checkbox', {name: 'Resistance portals', exact: true}).uncheck();
@@ -98,12 +99,14 @@ test('map grouping supports keyboard return and visibility reset preserves decor
   await expect(page.getByRole('group', {name: 'Active map filters'})).toHaveCount(0);
   await expect(page.getByRole('checkbox', {name: 'Fields', exact: true})).toBeChecked();
   await expect(page.getByRole('checkbox', {name: 'Resistance portals', exact: true})).toBeChecked();
+  await page.locator('.iitc-iris-layer-secondary > summary').filter({hasText: /^Detail overlays$/}).click();
   await expect(page.getByRole('checkbox', {name: 'Level labels', exact: true})).toBeChecked();
   await expect.poll(() => page.evaluate(() => {
     const stored = JSON.parse(localStorage.getItem('iitc-iris:layer-settings'));
     return {fields: stored.fields, resistance: stored.resistance, labels: stored.labels};
   })).toEqual({fields: true, resistance: true, labels: true});
   await page.reload();
+  await page.locator('.iitc-iris-layer-secondary > summary').filter({hasText: /^Detail overlays$/}).click();
   await expect(page.getByRole('checkbox', {name: 'Fields', exact: true})).toBeChecked();
   await expect(page.getByRole('checkbox', {name: 'Level labels', exact: true})).toBeChecked();
 });

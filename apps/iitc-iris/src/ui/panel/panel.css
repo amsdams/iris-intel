@@ -14,10 +14,10 @@
     padding: var(--iitc-iris-panel-padding);
     border: 1px solid rgb(var(--iitc-iris-border-rgb) / 34%);
     border-radius: 6px;
-    background: rgb(var(--iitc-iris-panel-rgb) / 88%);
+    background: rgb(var(--iitc-iris-panel-rgb) / 96%);
     box-shadow: 0 8px 24px rgb(0 0 0 / 35%);
     color: var(--iitc-iris-color-text);
-    font-size: 12px;
+    font-size: var(--iitc-iris-text-lg);
     letter-spacing: 0;
     pointer-events: auto;
 }
@@ -39,6 +39,21 @@
 
 .iitc-iris-request-panel-header .iitc-iris-selected-title {
     min-width: 0;
+    max-width: none;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.iitc-iris-panel-heading { min-width: 0; }
+
+.iitc-iris-panel-description {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 6px;
+    align-items: center;
+    margin-top: 3px;
+    color: var(--iitc-iris-color-muted);
+    font-size: var(--iitc-iris-text-md);
 }
 
 .iitc-iris-panel-header-actions {
@@ -63,13 +78,19 @@
     border-top: 1px solid rgb(var(--iitc-iris-border-rgb) / 18%);
 }
 
-/* Keep controls intact and list content reachable when the viewport is short.
- * Lists retain their own scrolling; the body can scroll when controls alone exceed its height. */
+/* The body owns ordinary panel scrolling. COMM retains its history scroller and
+ * a body fallback for expanded filters on short screens. */
 .iitc-iris-request-panel-body > * {
     flex-shrink: 0;
 }
 
-.iitc-iris-request-panel-body > .iitc-iris-scroll-region {
+.iitc-iris-request-panel-body:not(.iitc-iris-comm-body) > .iitc-iris-scroll-region {
+    flex: none;
+    overflow: visible;
+    padding-right: 0;
+}
+
+.iitc-iris-comm-body > .iitc-iris-scroll-region {
     flex-shrink: 1;
     min-height: 64px;
 }
@@ -130,14 +151,12 @@
 
 .iitc-iris-panel-header-actions > .iitc-iris-panel-header-actions { display: contents; }
 
-.iitc-iris-panel-size { min-height: 30px; }
-
-.iitc-iris-technical-details { min-width: 0; max-width: 100%; }
-
-.iitc-iris-technical-details pre {
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    font-size: var(--iitc-iris-text-sm);
+.iitc-iris-panel-size {
+    display: inline-grid;
+    place-items: center;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 4px;
 }
 
 .iitc-iris-request-panel-header {
@@ -147,8 +166,9 @@
     background: rgb(var(--iitc-iris-header-rgb) / 96%);
 }
 
-.iitc-iris-panel-header-actions > .iitc-iris-clear-selection { min-width: 30px; min-height: 30px; }
+.iitc-iris-panel-header-actions > .iitc-iris-clear-selection { min-width: 32px; min-height: 32px; }
 
 @media (pointer: coarse) {
     .iitc-iris-panel-header-actions > .iitc-iris-button { min-height: 44px; min-width: 44px; }
+    .iitc-iris-request-panel-body > .iitc-iris-map-control-row > .iitc-iris-button { min-height: 44px; }
 }

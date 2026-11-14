@@ -3,10 +3,14 @@
 .iitc-iris-image-preview-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 10002;
+    top: var(--iitc-iris-viewport-top, 0);
+    bottom: auto;
+    height: var(--iitc-iris-viewport-height, 100dvh);
+    box-sizing: border-box;
+    z-index: 10004;
     display: grid;
     place-items: center;
-    padding: 18px;
+    padding: max(18px, var(--iitc-iris-safe-top)) max(18px, var(--iitc-iris-safe-right)) max(18px, var(--iitc-iris-safe-bottom)) max(18px, var(--iitc-iris-safe-left));
     background: rgb(0 0 0 / 70%);
     pointer-events: auto;
 }
@@ -16,7 +20,10 @@
     grid-template-rows: auto minmax(0, 1fr);
     gap: 8px;
     width: min(520px, calc(100vw - 36px));
-    max-height: calc(100vh - 36px);
+    max-height: calc(var(--iitc-iris-viewport-height, 100dvh) - 36px - var(--iitc-iris-safe-top) - var(--iitc-iris-safe-bottom));
+    box-sizing: border-box;
+    min-height: 0;
+    overflow: auto;
     padding: 8px;
     border: 1px solid rgb(var(--iitc-iris-border-rgb) / 28%);
     border-radius: 6px;
@@ -27,7 +34,7 @@
 .iitc-iris-image-preview img {
     display: block;
     width: 100%;
-    max-height: calc(100vh - 116px);
+    max-height: calc(var(--iitc-iris-viewport-height, 100dvh) - 150px - var(--iitc-iris-safe-top) - var(--iitc-iris-safe-bottom));
     border-radius: 5px;
     object-fit: contain;
     background: rgb(0 0 0 / 34%);

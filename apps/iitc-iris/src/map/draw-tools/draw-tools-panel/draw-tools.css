@@ -49,8 +49,6 @@
 .iitc-iris-draw-tools-list {
     display: grid;
     gap: var(--iitc-iris-space-2);
-    max-height: 180px;
-    overflow: auto;
 }
 
 .iitc-iris-draw-tools-list-controls {

@@ -1,20 +1,18 @@
 import {getExtensionUrl} from '../../../platform/assets';
 import {h} from 'preact';
-import '../../../ui/shared/selection-summary.css';
+import '../../../ui/shared/section-summary.css';
 import './missions.css';
 import '../../../ui/shared/scroll-region.css';
 import '../../../ui/shared/list-item.css';
 import {getCommTeamClass} from '../../../comm/comm-display';
 import type {IitcIrisMissionSource, IitcIrisMissionsState} from '../../../messages';
-import {formatElapsedSeconds, getAuthErrorMessage} from '../../../ui-status';
+import {getAuthErrorMessage} from '../../../ui-status';
 import {ActionButton} from '../../../ui/action-button';
 import {ControlRow} from '../../../ui/control-row';
-import {DiagnosticsChip} from '../../../ui/diagnostics-chip';
+import {SegmentedRow, SegmentedButton} from '../../../ui/segmented-control';
 import {StatusText} from '../../../ui/status-text';
-import {SummaryCell} from '../../../ui/summary-cell';
-import {SummaryGrid} from '../../../ui/summary-grid';
 import {EmptyState} from '../../../ui/empty-state';
-import {PanelBody, PanelFooter} from '../../../ui/panel';
+import {PanelBody} from '../../../ui/panel';
 
 const IITC_TM_ICON_BASE = 'https://commondatastorage.googleapis.com/ingress.com/img/tm_icons';
 const MISSION_TYPE_IMAGE_BY_TYPE_NUM: Record<number, string> = {
@@ -75,20 +73,15 @@ function formatMissionRowMeta(missionsState: IitcIrisMissionsState, mission: Iit
   const selected = missionsState.selectedMission?.guid === mission.guid ? missionsState.selectedMission : undefined;
   if (selected) {
     return [
-      `${formatMissionRating(mission.ratingE6)} rating`,
+      mission.ratingE6 === undefined ? undefined : `${formatMissionRating(mission.ratingE6)} rating`,
       formatMissionDuration(mission.medianCompletionTimeMs, mission.durationLabel),
     ].filter((part) => part && part !== '-').join(' · ');
   }
-  const parts = [
-    `${formatMissionRating(mission.ratingE6)} rating`,
+  return [
+    mission.ratingE6 === undefined ? undefined : `${formatMissionRating(mission.ratingE6)} rating`,
     formatMissionDuration(mission.medianCompletionTimeMs, mission.durationLabel),
-  ];
-  if (mission.authorNickname) parts.push(`by ${mission.authorNickname}`);
-  if (mission.routeLengthMeters !== undefined) parts.push(formatDistance(mission.routeLengthMeters));
-  if (mission.numUniqueCompletedPlayers !== undefined) parts.push(`${formatInteger(mission.numUniqueCompletedPlayers)} agents`);
-  if (mission.waypointCount !== undefined) parts.push(`${mission.waypointCount} waypoints`);
-  if (mission.type) parts.push(formatMissionOrderLabel(mission.type));
-  return parts.filter((part) => part && part !== '-').join(' · ');
+    mission.waypointCount === undefined ? undefined : `${mission.waypointCount} waypoints`,
+  ].filter(part => part && part !== '-').join(' · ');
 }
 
 function MissionDetails(props: {
@@ -179,31 +172,27 @@ export function IitcIrisMissionsPanel(props: IitcIrisMissionsPanelProps): h.JSX.
   const {missionsState} = props;
 
   return <PanelBody>
-    <ControlRow>
-      <ActionButton onClick={() => props.refreshMissions('view')} disabled={missionsState.status === 'loading'} title="Fetch top missions in the current map view">
-        View
-      </ActionButton>
-      <ActionButton onClick={() => props.refreshMissions('portal')} disabled={!props.hasSelectedPortal || missionsState.status === 'loading'} title="Fetch top missions starting at the selected portal">
-        Portal
-      </ActionButton>
-      <a className="iitc-iris-portal-action iitc-iris-mission-create-link" href="https://missions.ingress.com/" target="_blank" rel="noreferrer" title="Open the Ingress Mission Authoring Tool">
-        Create
-      </a>
+    <div className="iitc-iris-mission-summary" aria-label="Mission summary">
+      <b>{formatInteger(missionsState.missions.length)} {missionsState.source === 'portal' ? 'portal missions' : 'view missions'}</b>
+      {missionsState.cached && <StatusText>Cached mission list</StatusText>}
+      {missionsState.caption && <StatusText>{missionsState.caption}</StatusText>}
+    </div>
+    <ControlRow className="iitc-iris-mission-controls">
+      <SegmentedRow className="iitc-iris-mission-source" role="group" aria-label="Mission source">
+        <SegmentedButton active={missionsState.source !== 'portal'} aria-pressed={missionsState.source !== 'portal'}
+          onClick={() => props.refreshMissions('view')} disabled={missionsState.status === 'loading'} title="Find missions in the current map view">View</SegmentedButton>
+        <SegmentedButton active={missionsState.source === 'portal'} aria-pressed={missionsState.source === 'portal'}
+          onClick={() => props.refreshMissions('portal')} disabled={!props.hasSelectedPortal || missionsState.status === 'loading'} title="Find missions starting at the selected portal">Portal</SegmentedButton>
+      </SegmentedRow>
       <ActionButton onClick={() => props.refreshMissions()} disabled={missionsState.status === 'loading'} title="Refresh current mission source">
         {missionsState.status === 'loading' ? 'Loading' : 'Refresh'}
       </ActionButton>
     </ControlRow>
-    <SummaryGrid>
-      <SummaryCell value={formatInteger(missionsState.missions.length)} label={missionsState.source === 'portal' ? 'portal missions' : 'view missions'} />
-      <SummaryCell value={missionsState.selectedMission?.waypoints.length ?? '-'} label="waypoints" />
-      <SummaryCell value={formatDistance(missionsState.selectedMission?.routeLengthMeters)} label="length" />
-    </SummaryGrid>
-    {missionsState.caption && (
-      <div className="iitc-iris-inventory-selected" title={missionsState.portalGuid}>
-        <StatusText>{missionsState.source === 'portal' ? 'portal' : 'view'}</StatusText>
-        <b>{missionsState.caption}</b>
-      </div>
-    )}
+    {missionsState.error && <StatusText role="alert" className="iitc-iris-warning" title={missionsState.error}>
+      {missionsState.status === 'auth' || missionsState.detailsStatus === 'auth'
+        ? 'Missions require an authenticated Intel session.'
+        : getAuthErrorMessage(missionsState.status, missionsState.error)}
+    </StatusText>}
     {missionsState.status === 'loading' && (
       <EmptyState>
         {missionsState.source === 'portal' ? 'Fetching missions starting at this portal...' : 'Fetching missions in the current map view...'}
@@ -250,32 +239,10 @@ export function IitcIrisMissionsPanel(props: IitcIrisMissionsPanelProps): h.JSX.
         </div>
       )}
     </div>
-    <PanelFooter>
-      <DiagnosticsChip
-        title={[
-          missionsState.source === 'portal' ? 'request: /r/getTopMissionsForPortal' : 'request: /r/getTopMissionsInBounds',
-          `portal: ${missionsState.portalGuid ?? '-'}`,
-        ].join('\n')}
-      >
-        {missionsState.cached
-          ? 'cached'
-          : missionsState.elapsedMs !== undefined
-            ? `request ${formatElapsedSeconds(missionsState.elapsedMs)}s`
-            : 'request'}
-      </DiagnosticsChip>
-      {missionsState.detailsElapsedMs !== undefined && (
-        <DiagnosticsChip title="request: /r/getMissionDetails">
-          {missionsState.detailsCached ? 'details cached' : `details ${formatElapsedSeconds(missionsState.detailsElapsedMs)}s`}
-        </DiagnosticsChip>
-      )}
-      {missionsState.error && (
-        <StatusText className="iitc-iris-warning" title={missionsState.error}>
-          {missionsState.status === 'auth' || missionsState.detailsStatus === 'auth'
-            ? 'Missions require an authenticated Intel session.'
-            : getAuthErrorMessage(missionsState.status, missionsState.error)}
-        </StatusText>
-      )}
-    </PanelFooter>
+    <details className="iitc-iris-mission-more">
+      <summary className="iitc-iris-section-summary">Mission tools</summary>
+      <a className="iitc-iris-portal-action iitc-iris-mission-create-link" href="https://missions.ingress.com/" target="_blank" rel="noreferrer" title="Open the Ingress Mission Authoring Tool">Create mission</a>
+    </details>
   </PanelBody>;
 }
 

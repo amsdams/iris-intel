@@ -12,3 +12,16 @@
 .iitc-iris-inventory-item-row > b {
     color: inherit;
 }
+
+.iitc-iris-inventory-summary { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.iitc-iris-inventory-selected-keys {
+    display: grid;
+    gap: 4px;
+    padding-block: 6px;
+    border-bottom: 1px solid rgb(var(--iitc-iris-border-rgb) / 14%);
+}
+
+.iitc-iris-inventory-selected-keys > b { overflow-wrap: anywhere; }
+.iitc-iris-inventory-selected-keys > span { color: var(--iitc-iris-color-secondary); }
+.iitc-iris-inventory-selected-keys strong { color: var(--iitc-iris-color-heading); }

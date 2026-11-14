@@ -2,6 +2,7 @@
  * Components/features import their own appearance and responsive rules. */
 @import url('maplibre-gl/dist/maplibre-gl.css');
 @import url('./styles/globals.css');
+@import url('./styles/scrollbars.css');
 @import url('./map/map.css');
 @import url('./styles/team-colors.css');
 @import url('./styles/team-text-colors.css');

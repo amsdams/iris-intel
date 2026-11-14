@@ -109,14 +109,14 @@ live Intel data; retired fixture choices and empty fallback maps are no longer i
 
 Bump once a feature batch is ready for its final test, on the feature branch. Merge the tested version after user
 acceptance; tag the accepted commit on main when releasing. Use patch versions for fixes and minor versions for
-feature batches; 0.5.0 remains an Android friends alpha.
+feature batches; 0.6.0 remains an Android friends alpha.
 
 `npm run version:bump -- X.Y.Z --no-tag` updates root/application versions, the manifest, and lockfile together.
 Keep Android's version-name base in `app/build.gradle` in sync, retaining its alpha/source suffix. Always use
 `--no-tag` during preparation: the helper otherwise tags the old HEAD before the version changes are committed.
 Android updates also require the same app ID/signing key and increasing version codes; see the
 [Android build guidance](apps/android-intel-spike/README.md#signed-github-apks). Record local overrides and label
-uncommitted test builds `-dirty`; the 0.5.0 test APK uses code 1883, so the next signed build must exceed it.
+uncommitted test builds `-dirty`; the 0.6.0 test APK uses code 1887, so the next signed build must exceed it.
 
 CI checks, tests, and packages IITC IRIS; main pushes update the existing `latest` release, and version tags
 trigger the tagged release workflow. Both publish the signed Android APK alongside the extension packages.

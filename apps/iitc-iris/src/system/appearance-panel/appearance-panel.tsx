@@ -5,6 +5,7 @@ import {Panel, PanelHeader, PanelTitle, PanelBody} from '../../ui/panel';
 import {ControlRow} from '../../ui/control-row';
 import {Section} from '../../ui/section';
 import {type UiThemePreference} from '../../shell/ui-theme';
+import type {UiTextSize} from '../../shell/ui-text-size';
 import type {IitcIrisBaseLayerId} from '../../messages';
 import '../../ui/shared/layer-toggle.css';
 
@@ -14,7 +15,9 @@ const BASE_LAYER_OPTIONS: {id: IitcIrisBaseLayerId; label: string; title: string
   {id: 'osm', label: 'OpenStreetMap', title: 'OpenStreetMap'},
 ];
 
-export function AppearancePanel({uiTheme, setUiTheme, baseLayerId, selectBaseLayer, closeAppearance}: {
+export function AppearancePanel({uiTheme, setUiTheme, textSize, setTextSize, baseLayerId, selectBaseLayer, closeAppearance}: {
+  textSize: UiTextSize;
+  setTextSize: (size: UiTextSize) => void;
   uiTheme: UiThemePreference;
   setUiTheme: (theme: UiThemePreference) => void;
   baseLayerId: IitcIrisBaseLayerId;
@@ -41,6 +44,14 @@ export function AppearancePanel({uiTheme, setUiTheme, baseLayerId, selectBaseLay
             ))}
           </ControlRow>
           <p>System follows your device’s appearance.</p>
+        </Section>
+        <Section titleHeading="Text size">
+          <ControlRow>
+            {(['normal', 'larger'] as const).map(size => <Button key={size}
+              className={`iitc-iris-layer-toggle ${textSize === size ? 'iitc-iris-layer-toggle-active' : ''}`}
+              aria-pressed={textSize === size} onClick={() => setTextSize(size)}
+            >{size === 'larger' ? 'Larger' : 'Normal'}</Button>)}
+          </ControlRow>
         </Section>
         <Section titleHeading="Base map">
           <ControlRow>

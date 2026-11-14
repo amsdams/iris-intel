@@ -67,7 +67,7 @@ test('Scores, Inventory/Profile and Passcode panels use their real request workf
   });
   await expect.poll(() => page.evaluate(() => window.panelFixture.inventory?.portalKeysForSelectedPortal?.total)).toBe(1);
   panel = await openPanel(page, 'Agent', 'Profile');
-  await expect(panel).toContainText('C.O.R.E. active');
+  await expect(panel.getByLabel('C.O.R.E. active', {exact: true})).toBeVisible();
   panel = await openPanel(page, 'Agent', 'Passcode');
   await panel.getByPlaceholder('passcode', {exact: true}).fill(' test\u200bcode ');
   await panel.getByRole('button', {name: 'Redeem', exact: true}).click();
@@ -106,7 +106,7 @@ test('closing Inventory cancels its response while the shared subscription still
   await expect.poll(() => page.evaluate(() => window.panelFixture.agent?.subscription?.status)).toBe('active');
   expect(await page.evaluate(() => window.panelFixture.inventory.status)).toBe('idle');
   let panel = await openPanel(page, 'Agent', 'Profile');
-  await expect(panel).toContainText('C.O.R.E. active');
+  await expect(panel.getByLabel('C.O.R.E. active', {exact: true})).toBeVisible();
   panel = await openPanel(page, 'Agent', 'Inventory');
   await expect.poll(() => page.evaluate(() => Boolean(window.panelFixture.held.getInventory))).toBe(true);
   await page.getByRole('button', {name: 'Close Inventory', exact: true}).click();

@@ -29,8 +29,8 @@ if (release) {
     return result.stdout.trim();
   };
   if (gitValue(['rev-parse', '--is-shallow-repository']) === 'true') throw new Error('Release versioning requires complete Git history (fetch-depth: 0).');
-  // Previous local candidates used overrides ahead of Git history; 0.5 must update them and keep advancing on main.
-  buildEnv.IRIS_ANDROID_VERSION_CODE ||= String(1002 + Number(gitValue(['rev-list', '--count', 'HEAD'])));
+  // Advance beyond the 0.6 UI test APK (1887), including builds before the feature commit.
+  buildEnv.IRIS_ANDROID_VERSION_CODE ||= String(1005 + Number(gitValue(['rev-list', '--count', 'HEAD'])));
   buildEnv.IRIS_ANDROID_BUILD_SHA ||= gitValue(['rev-parse', '--short=7', 'HEAD']);
 }
 if (process.env.IRIS_REUSE_WEB_BUILD === '1') verifyWebBuild(root);

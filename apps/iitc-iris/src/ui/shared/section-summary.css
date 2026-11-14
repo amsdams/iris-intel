@@ -4,21 +4,22 @@
     align-items: center;
     gap: 6px;
     min-height: 30px;
-    width: fit-content;
-    padding: 2px 7px;
-    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 18%);
-    border-radius: 4px;
-    background: rgb(var(--iitc-iris-control-rgb) / 42%);
+    box-sizing: border-box;
+    width: 100%;
+    padding: 4px 2px;
+    border: 0;
+    border-bottom: 1px solid rgb(var(--iitc-iris-border-rgb) / 16%);
+    border-radius: 0;
+    background: transparent;
     color: var(--iitc-iris-color-text);
-    font-size: var(--iitc-iris-text-md);
+    font-size: var(--iitc-iris-text-lg);
     font-weight: 800;
     letter-spacing: normal;
     cursor: pointer;
+    list-style: none;
 }
 
-.iitc-iris-section-summary::marker {
-    color: var(--iitc-iris-color-accent);
-}
+.iitc-iris-section-summary::-webkit-details-marker { display: none; }
 
 .iitc-iris-section-summary:hover,
 .iitc-iris-section-summary:focus-visible {
@@ -27,7 +28,12 @@
     outline: none;
 }
 
-details > .iitc-iris-section-summary::before { content: '▸'; }
+details > .iitc-iris-section-summary::before {
+    order: 2;
+    margin-left: auto;
+    color: var(--iitc-iris-color-muted);
+    content: '▸';
+}
 
 details[open] > .iitc-iris-section-summary::before { content: '▾'; }
 

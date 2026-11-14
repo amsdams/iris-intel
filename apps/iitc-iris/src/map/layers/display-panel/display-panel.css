@@ -6,3 +6,16 @@
     gap: 5px;
     min-width: 0;
 }
+
+.iitc-iris-portal-level-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 5px;
+    min-width: 0;
+}
+
+.iitc-iris-layer-secondary > .iitc-iris-layer-choice-grid { margin-top: 6px; }
+
+@media (pointer: coarse) {
+    .iitc-iris-portal-level-grid .iitc-iris-layer-choice { min-height: 44px; box-sizing: border-box; }
+}

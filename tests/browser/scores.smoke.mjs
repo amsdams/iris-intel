@@ -67,8 +67,8 @@ for (const theme of ['light', 'dark']) for (const width of [320, 1200]) {
     const scores = page.getByRole('region', {name: 'Regional scoreboard'});
     const panel = scores.locator('..');
     await expect(scores).toBeVisible();
-    await expect(panel.locator('summary')).toHaveText(['Cycle timing', 'Checkpoint history', 'Cycle projection', 'Technical details']);
-    await expect(panel.locator('summary.iitc-iris-section-summary')).toHaveCount(4);
+    await expect(panel.locator('summary')).toHaveText(['Cycle timing', 'Checkpoint history', 'Cycle projection']);
+    await expect(panel.locator('summary.iitc-iris-section-summary')).toHaveCount(3);
     await expect(panel.getByText('Agent 1', {exact: true})).toHaveCount(1);
     await expect(panel.getByText('Agent 1', {exact: true})).toBeVisible();
     await expect(panel.getByRole('region', {name: 'Global scores', exact: true})).toBeVisible();

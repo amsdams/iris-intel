@@ -1,4 +1,6 @@
 import {h} from 'preact';
+import {useRef} from 'preact/hooks';
+import {useDialogFocus} from '../../ui/dialog/use-dialog-focus';
 import '../../ui/panel/panel.css';
 import './portal-image-preview.css';
 import type {IitcIrisSelectedPortal} from '../../messages';
@@ -16,15 +18,23 @@ export function IitcIrisPortalImageModal({
   portal,
   onClose,
 }: IitcIrisPortalImageModalProps): h.JSX.Element | null {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(dialogRef, Boolean(isOpen && portal?.image));
   if (!isOpen || !portal?.image) return null;
 
   return (
     <div
       className="iitc-iris-image-preview-backdrop"
+      ref={dialogRef}
+      tabIndex={-1}
       role="dialog"
       aria-modal="true"
       aria-label="Portal image preview"
       onClick={onClose}
+      onKeyDown={event => {
+        event.stopPropagation();
+        if (event.key === 'Escape') {event.preventDefault(); onClose();}
+      }}
     >
       <div className="iitc-iris-image-preview" onClick={(event) => event.stopPropagation()}>
         <PanelHeader>

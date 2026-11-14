@@ -1,0 +1,29 @@
+/* Scope scroll styling to IRIS; native overlay scrollbars remain available on touch devices. */
+.iitc-iris-shell,
+.iitc-iris-shell * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--iitc-iris-border-rgb) / 55%) transparent;
+}
+
+.iitc-iris-shell ::-webkit-scrollbar { width: 7px; height: 7px; }
+.iitc-iris-shell ::-webkit-scrollbar-track { background: transparent; }
+
+.iitc-iris-shell ::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgb(var(--iitc-iris-border-rgb) / 55%);
+}
+
+.iitc-iris-request-panel-body,
+.iitc-iris-scroll-region,
+.iitc-iris-portal-scroll-body,
+.iitc-iris-map-controls,
+.iitc-iris-system-panel {
+    overscroll-behavior: contain;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .iitc-iris-request-panel-body,
+    .iitc-iris-portal-scroll-body,
+    .iitc-iris-map-controls,
+    .iitc-iris-system-panel { scrollbar-gutter: stable; }
+}

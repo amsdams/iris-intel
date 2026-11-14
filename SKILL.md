@@ -19,6 +19,10 @@ Use Node 24 and `npm ci`. While editing, run focused tests and affected lint/typ
 `npm run check` (including CSS and workbench checks) and `git diff --check`; for relevant UI/map changes, also run
 the full `npm run test:browser` suite. Repeat broad checks only when subsequent changes, failures, or unresolved
 concerns justify them. Documentation-only changes do not require application checks.
+Group related UI edits before verification; do not treat each cosmetic adjustment as a new final-validation cycle.
+After a failed full run, rerun affected cases first. Repeat the full suite when fixes affect shared behavior or leave
+integration concerns, rather than automatically for an isolated test assertion correction. A requested artifact build
+from already validated, unchanged production inputs needs freshness/archive checks, not another full test round.
 
 Build downloadable XPI/ZIP/APK artifacts when the user requests a test build or a release handoff, not after every
 change or review. When preparing that build, package/sign once after final validation (`npm run package` and the relevant

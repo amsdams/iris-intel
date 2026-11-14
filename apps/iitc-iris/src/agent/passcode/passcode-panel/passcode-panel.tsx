@@ -7,14 +7,14 @@ import '../../../ui/shared/list-item.css';
 import {formatIitcColorVars, getIitcLevelColor} from '../../../iitc-colors';
 import type {IitcIrisPasscodeRewardItem, IitcIrisPasscodeState} from '../../../messages';
 import {ActionButton} from '../../../ui/action-button';
-import {PanelBody, PanelFooter} from '../../../ui/panel';
+import {PanelBody} from '../../../ui/panel';
 import {Badge} from '../../../ui/badge';
-import {DiagnosticsChip} from '../../../ui/diagnostics-chip';
 import {EmptyState} from '../../../ui/empty-state';
 import {TextInput} from '../../../ui/text-input';
 import {SummaryCell} from '../../../ui/summary-cell';
 import {SummaryGrid} from '../../../ui/summary-grid';
-import {formatElapsedSeconds, getAuthErrorMessage} from '../../../ui-status';
+import {getAuthErrorMessage} from '../../../ui-status';
+import {StatusText} from '../../../ui/status-text';
 
 export interface IitcIrisPasscodePanelProps {
   passcodeDraft: string;
@@ -34,7 +34,9 @@ function formatItemBadge(item: IitcIrisPasscodeRewardItem): string {
 
 export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.Element {
   const {passcodeDraft, passcodeState} = props;
+  const hasRewards = passcodeState.ap !== undefined || passcodeState.xm !== undefined || Boolean(passcodeState.items?.length || passcodeState.other?.length);
   return <PanelBody>
+    {passcodeState.status === 'idle' && !hasRewards && <StatusText>Enter a passcode to redeem rewards.</StatusText>}
     <form
       className="iitc-iris-passcode-form"
       onSubmit={(event) => {
@@ -47,6 +49,10 @@ export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.
         type="text"
         value={passcodeDraft}
         placeholder="passcode"
+        aria-label="Passcode"
+        autoCapitalize="off"
+        autoComplete="off"
+        spellcheck={false}
         disabled={passcodeState.status === 'loading'}
         onInput={(event) => props.onDraftChange(event.currentTarget.value)}
       />
@@ -54,11 +60,11 @@ export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.
         {passcodeState.status === 'loading' ? 'Redeeming' : 'Redeem'}
       </ActionButton>
     </form>
-    <SummaryGrid>
+    {hasRewards && <SummaryGrid aria-label="Passcode rewards">
       <SummaryCell value={formatInteger(passcodeState.ap)} label="AP" />
       <SummaryCell value={formatInteger(passcodeState.xm)} label="XM" />
       <SummaryCell value={formatInteger(passcodeState.items?.reduce((sum, item) => sum + (item.count ?? 1), 0))} label="items" />
-    </SummaryGrid>
+    </SummaryGrid>}
     {passcodeState.other && passcodeState.other.length > 0 && (
       <div className="iitc-iris-agent-item-list">
         {passcodeState.other.map((reward) => (
@@ -85,7 +91,7 @@ export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.
     )}
     {(passcodeState.status === 'empty' || passcodeState.error) && (
       passcodeState.error ? (
-        <div className="iitc-iris-warning">
+        <div className="iitc-iris-warning" role="alert">
           {passcodeState.status === 'auth'
             ? 'Passcode redemption requires an authenticated Intel session.'
             : getAuthErrorMessage(passcodeState.status, passcodeState.error)}
@@ -96,15 +102,5 @@ export function IitcIrisPasscodePanel(props: IitcIrisPasscodePanelProps): h.JSX.
         </EmptyState>
       )
     )}
-    <PanelFooter>
-      <DiagnosticsChip
-        title={[
-          'request: /r/redeemReward',
-          `passcode: ${passcodeState.passcode ?? '-'}`,
-        ].join('\n')}
-      >
-        {passcodeState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(passcodeState.elapsedMs)}s` : 'request'}
-      </DiagnosticsChip>
-    </PanelFooter>
   </PanelBody>;
 }

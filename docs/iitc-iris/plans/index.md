@@ -14,12 +14,40 @@ The retained ownership rules and known limits are in [Application Architecture](
 
 ## Next Session Handoff
 
+**Phone usability polish (2026-11-14):** the user accepted the preceding UI appearance and requested the next ten
+improvements plus XPI/APK testing builds. [The existing UI plan](ui-improvements.md#phone-usability-polish--060-candidate-2026-11-14)
+records keyboard/safe-area handling, larger text, freshness, initial states, Layers/Profile priorities, disclosures,
+copy feedback and dialog focus. Version 0.6.0 is prepared on the current branch; changes remain uncommitted.
+Checks pass: 761 app/core tests and gates; 106 browser cases covered by the full run plus focused fixture corrections,
+with 15 affected polish/navigation/header cases rechecked after final refinements. Test XPI
+`iitc-iris-firefox-0.6.0-2026-11-14T14-55-31.xpi` and signed APK `0.6.0-alpha+6730bc7-dirty` (1887) are verified:
+24 XPI files/23 embedded APK assets match dist, signing identity is preserved, and both downloads match.
+Android passes 15 JavaScript + 33 native tests and lint. Pre-merge review advances the default code baseline to
+`1005 + git rev-list --count HEAD` (1888 before committing), exceeding test APK 1887. Syntax/monotonicity checks pass;
+UI artifacts remain unchanged. The user authorized final review, commit and local main integration of 0.6.0.
+Next work is documentation cleanup on a new branch; no tag or remote publication is requested.
+
+**Next UI pass (2026-11-14):** [the existing UI plan](ui-improvements.md#small-screen-ui-pass--2026-11-14) records
+the user-authorized ten improvements: compact headers, an always-visible COMM summary, simpler scrolling, shared
+scrollbars and clearer Inventory/Missions priorities. Implementation passes `npm run check` (761 app/core tests and gates), all 100 browser cases and `git diff --check`;
+phone layouts were visually inspected in both themes. Changes remain uncommitted. The plan and repository guide clarify focused iteration, one final batch validation and
+artifact reuse. Requested test XPI `iitc-iris-firefox-0.5.0-2026-11-14T14-27-21.xpi` includes this UI pass;
+all 24 archive files match the verified build and served download. User testing is pending; no APK rebuilt.
+
+**Panel diagnostics (2026-11-14):** on `feat/centralize-panel-diagnostics`, request metadata moves out of everyday
+panels into System → Diagnostics → Panel details, grouped by panel. Errors, recovery actions, subscription badges
+and COMM loaded-message information remain with their panels. Diagnostics reads existing state without extra requests.
+Validation passes: `npm run check` (761 app/core tests and repository gates), all 97 browser cases and
+`git diff --check`; narrow-screen layout inspected at 320 px. Changes are uncommitted. Requested XPI
+`iitc-iris-firefox-0.5.0-2026-11-14T10-23-37.xpi` matches the verified web output (26 entries) and served download;
+user testing is pending. No APK rebuilt.
+
 **CI test cleanup (2026-11-13):** main build `43520279505` failed because a portal-statistics parity test imported
 the ignored optional IITC checkout. The user chose to remove that VM comparison and the proposed copied fixture.
 Focused core tests preserve stacked attack-mod ordering and player-level/ownership upgrade cases; existing statistics
 and browser coverage remain. A fresh tracked-files checkout without `reference/` passes `npm ci`, source-version
-verification, `npm run check` (761 app/core tests and gates) and `npm run package`. GitHub verification follows the
-cleanup push; no runtime behavior changed. Logs: `/private/tmp/iris-ci-clean-{install,check,package}.log`.
+verification, `npm run check` (761 app/core tests and gates) and `npm run package`. GitHub run [43521921631](https://github.com/amsdams/iris-intel/actions/runs/43521921631)
+passed validation, packaging and signed Android publication on main (`6730bc7`); no runtime behavior changed. Logs: `/private/tmp/iris-ci-clean-{install,check,package}.log`.
 
 **0.5.0 integrated into local main (2026-11-13):** the user accepted the final result and authorized local main integration
 of `feat/ui-improvements`, based on `fe7ff17`. Review, updated docs/version guidance and signed APK handoff pass. Root/app/manifest/lockfile are 0.5.0; Android is

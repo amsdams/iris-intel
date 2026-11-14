@@ -1,16 +1,16 @@
 import {h} from 'preact';
+import {DataFreshness} from '../../../ui/data-freshness';
 import {IITC_CHECKPOINT_COUNT} from '@iris/iitc-core';
 import {RegionScoreboard} from './region-scoreboard';
 import './scores-panel.css';
 import '../../../ui/shared/section-summary.css';
 import {getCommTeamClass} from '../../../comm/comm-display';
 import type {IitcIrisScoresState} from '../../../messages';
-import {formatElapsedSeconds, getAuthErrorMessage} from '../../../ui-status';
+import {getAuthErrorMessage} from '../../../ui-status';
 import {ActionButton} from '../../../ui/action-button';
 import {ControlRow} from '../../../ui/control-row';
-import {DiagnosticsChip} from '../../../ui/diagnostics-chip';
 import {EmptyState} from '../../../ui/empty-state';
-import {PanelBody, PanelFooter} from '../../../ui/panel';
+import {PanelBody} from '../../../ui/panel';
 import {StatusText} from '../../../ui/status-text';
 
 export interface IitcIrisScoresPanelProps {
@@ -37,10 +37,6 @@ function getRegionEnlightenedPercent(scoresState: IitcIrisScoresState): number {
   return scoresState.region?.enlightenedAvg !== undefined && scoresState.region.resistanceAvg !== undefined
     ? Math.round((scoresState.region.enlightenedAvg / Math.max(1, scoresState.region.enlightenedAvg + scoresState.region.resistanceAvg)) * 100)
     : 50;
-}
-
-function formatRegionCenter(scoresState: IitcIrisScoresState): string {
-  return scoresState.region?.center ? `${scoresState.region.center.latE6},${scoresState.region.center.lngE6}` : '-';
 }
 
 export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelProps): h.JSX.Element {
@@ -76,6 +72,7 @@ export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelP
         <span className="is-resistance">RES <b>{formatInteger(scoresState.game?.resistance)}</b> MU <small>{formatPercent(scoresState.game?.resistancePercent)}</small></span>
       </div>
     </section>
+    <DataFreshness receivedAt={scoresState.region?.receivedAt} label="Region updated" />
     <div className="iitc-iris-score-block">
       <div className="iitc-iris-score-heading">
         <span>{scoresState.region?.name || 'Region'}</span>
@@ -102,15 +99,5 @@ export function IitcIrisScoresPanel({scoresState, refresh}: IitcIrisScoresPanelP
       </section>
     )}
     {scoresState.region && <RegionScoreboard region={scoresState.region} />}
-    <PanelFooter>
-      <DiagnosticsChip
-        title={[
-          'request: /r/getGameScore + /r/getRegionScoreDetails',
-          `center: ${formatRegionCenter(scoresState)}`,
-        ].join('\n')}
-      >
-        {scoresState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(scoresState.elapsedMs)}s` : 'request'}
-      </DiagnosticsChip>
-    </PanelFooter>
   </PanelBody>;
 }

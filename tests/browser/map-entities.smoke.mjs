@@ -286,6 +286,8 @@ test('wide views explain missing map data and style only known portal details wi
   const notice = page.getByLabel('Map data availability', {exact: true});
   await open('Layers');
   await expect(notice).toHaveCount(0);
+  await page.locator('.iitc-iris-layer-secondary > summary').filter({hasText: /^Detail overlays$/}).click();
+  await page.locator('.iitc-iris-layer-secondary > summary').filter({hasText: /^Portal highlighter$/}).click();
   await page.getByRole('checkbox', {name: 'Level labels', exact: true}).check();
   await page.getByRole('radio', {name: 'Level color', exact: true}).check();
   await page.evaluate(() => window.__iitcIrisMap.setZoom(13, {animate: false}));

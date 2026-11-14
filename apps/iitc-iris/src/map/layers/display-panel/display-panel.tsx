@@ -1,5 +1,6 @@
 import { h } from 'preact';
 import './display-panel.css';
+import '../../../ui/shared/section-summary.css';
 import {
   CORE_LAYER_TOGGLE_REGISTRY,
   DETAIL_LAYER_TOGGLE_REGISTRY,
@@ -50,7 +51,7 @@ export function IitcIrisDisplayPanel({
     <LayerChoice
       type="checkbox"
       key={id}
-      label={title}
+      label={id.startsWith('level') ? title.replace('Level ', 'L').replace(' portals', '') : title}
       title={`${title}: ${layerSettings[id] ? 'on' : 'off'}`}
       checked={layerSettings[id]}
       onChange={() => toggleLayerSetting(id)}
@@ -80,21 +81,26 @@ export function IitcIrisDisplayPanel({
           {CORE_OVERLAY_LAYER_TOGGLE_LABELS.map(renderBooleanLayerCheckbox)}
         </div>
       </Section>
-      <Section titleHeading="Portal filters">
-        <div className="iitc-iris-layer-choice-grid" role="group" aria-label="Portal filter layers">
-          {PORTAL_FILTER_LAYER_TOGGLE_LABELS.map(renderBooleanLayerCheckbox)}
+      <Section titleHeading="Portal levels">
+        <div className="iitc-iris-portal-level-grid" role="group" aria-label="Portal level filters">
+          {PORTAL_FILTER_LAYER_TOGGLE_LABELS.filter(entry => entry.id.startsWith('level')).map(renderBooleanLayerCheckbox)}
         </div>
       </Section>
-      <Section titleHeading="Portal highlighter">
+      <Section titleHeading="Portal factions">
+        <div className="iitc-iris-layer-choice-grid" role="group" aria-label="Portal faction filters">
+          {PORTAL_FILTER_LAYER_TOGGLE_LABELS.filter(entry => !entry.id.startsWith('level')).map(renderBooleanLayerCheckbox)}
+        </div>
+      </Section>
+      <details className="iitc-iris-layer-secondary"><summary className="iitc-iris-section-summary">Portal highlighter</summary>
         <div className="iitc-iris-layer-choice-grid" role="radiogroup" aria-label="Portal highlighter">
           {PORTAL_HIGHLIGHTER_OPTIONS.map(renderHighlighterRadio)}
         </div>
-      </Section>
-      <Section titleHeading="Detail overlays">
+      </details>
+      <details className="iitc-iris-layer-secondary"><summary className="iitc-iris-section-summary">Detail overlays</summary>
         <div className="iitc-iris-layer-choice-grid" role="group" aria-label="Detail overlay layers">
           {DETAIL_LAYER_TOGGLE_LABELS.map(renderBooleanLayerCheckbox)}
         </div>
-      </Section>
+      </details>
     </>
   );
 }

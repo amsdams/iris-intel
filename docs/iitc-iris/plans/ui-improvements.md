@@ -4,7 +4,103 @@ Started 2026-11-13 on `feat/ui-improvements`, from accepted core-feature/mainten
 local main. The user authorized trying all ten recommendations together. Implementation used three internal slices
 (navigation and panel controls; portal details and actions; scores, filtering and COMM) for one combined phone review.
 
-## Current handoff — 0.5.0 integrated into local main
+## Phone usability polish — 0.6.0 candidate, 2026-11-14
+
+The user accepted the preceding XPI's appearance and authorized the next ten improvements plus an XPI and signed
+APK for testing. The user has now authorized the final review, commit and local main integration of
+`feat/centralize-panel-diagnostics`. Documentation cleanup continues separately afterward; no tag or remote publication
+is requested. Root/app/manifest/lock versions are 0.6.0; Android retains the alpha/source suffix.
+
+| Priority | Implemented behavior |
+| --- | --- |
+| UI-21 Keyboard | Visual viewport changes move sheets/navigation above the keyboard; focus stays reachable and the map retains its layout size. Browser pinch zoom retains native viewport translation. |
+| UI-22 Screen edges | Sheet/navigation bounds account for safe-area insets and viewport offset; image previews use the same available height. Android's existing native inset/IME handling remains intact. |
+| UI-23 Larger text | Appearance offers Normal/Larger text, stored independently of theme/map style. UI typography tokens scale together; labels wrap and list controls remain reachable. |
+| UI-24 Freshness | Region scores show age from their existing receivedAt timestamp; portal/mission cache flags identify cached data. Subscription check time stays explicitly labelled; no timestamps or requests are invented. |
+| UI-25 Initial states | Passcode instructions replace zero rewards before a response; Inventory distinguishes unloaded data from loaded zero counts. Retained results/errors remain visible. |
+| UI-26 Layers | Eight labelled level toggles form a compact four-column group; faction filters stay separate. Highlighters/detail overlays move into secondary disclosures, preserving existing settings. |
+| UI-27 Disclosures | Full-width quiet section headings replace button-like pills, with consistent right-hand chevrons and keyboard focus indication. Existing useful counts remain available. |
+| UI-28 Profile | Nickname/level, AP and XM lead; AP-to-next-level shares the progress section. XM uses one value/track presentation; invites and static-stat refresh guidance move into More agent information. |
+| UI-29 Copy feedback | Portal title/Intel/Prime/GUID copies show Copied beside the triggering action, with local feedback/error text. Existing operation ownership prevents stale promises/timers from replacing newer results. |
+| UI-30 Focus/dialogs | Shared visible focus styling; image preview traps focus and makes background siblings inert, restores the trigger, and closes on Escape without closing the portal panel. |
+
+Focused browser checks cover simulated keyboard/offset/safe areas for Search, COMM and Passcode, preference persistence,
+larger text and short-screen reachability, modal Tab/Escape/close behavior, copy feedback, freshness without score RPCs,
+profile priority and preserved layer settings. The affected 33-case browser run passes. Final validation, visual inspection
+and requested artifact identities are recorded below; simulated keyboard evidence does not replace real-device testing.
+
+Final validation and handoff:
+
+- `npm run check` passes: 761 app/core tests and release/build/architecture/lint/types/CSS/workbench gates.
+- Full browser coverage contains 106 cases: 103 passed initially; three assertion/fixture races were corrected
+  without production changes, then all 16 affected COMM/polish cases passed. The final local dialog-key and partial
+  Profile-data refinements pass affected app lint/types and all 15 polish/navigation/header cases. No broad rerun
+  was needed for those isolated corrections. Logs: `/private/tmp/iris-ui3-{check-final,browser-final,browser-corrections,final-details-browser}.log`.
+- Larger-text Layers/Profile and simulated-keyboard layouts were visually inspected at 320px in both themes.
+  The image dialog blocks background shortcuts and restores focus after Escape/Close; incomplete agent stats show
+  progress unavailable rather than a fabricated maximum-level bar.
+- Requested Firefox XPI: `iitc-iris-firefox-0.6.0-2026-11-14T14-55-31.xpi`; all 24 files match verified dist.
+  SHA-256: `16888174d04f58e555a44a1c5c8d0258f6575616fc0da741e776a8c321d3ae2a`.
+- Signed APK: `0.6.0-alpha+6730bc7-dirty`, code **1887**. Release checks pass 15 JavaScript and 33 native tests
+  plus lint; app ID/certificate are preserved and all 23 embedded web assets match dist.
+  SHA-256: `529e84f3628a9530dfcb475595138f3006ffd88824d1282c36fecb16a8ebb444`.
+  Both port-6969 downloads are byte-identical. Android log: `/private/tmp/iris-ui3-android-final.log`.
+- Code 1887 was an explicit override. Pre-merge review advances the default baseline to `1005 + git rev-list --count HEAD`
+  (1888 at the feature base, higher after committing), so main can update the installed candidate. Syntax and monotonicity
+  checks pass; UI assets/artifacts are unchanged. Local commit/main integration is authorized; no tag or remote publication.
+  Real Firefox/Android keyboard, safe-area and installation acceptance remain with the requested user testing.
+
+## Small-screen UI pass — 2026-11-14
+
+The user authorized all ten improvements on `feat/centralize-panel-diagnostics`, following the centralized
+Diagnostics change. The implementation is complete; final validation is recorded below. Preserve the previous
+0.5.0 integration history further down rather than create another plan document.
+
+Requested verification XPI: `iitc-iris-firefox-0.5.0-2026-11-14T14-27-21.xpi`, including this UI pass.
+Packaged from fingerprint-verified tested assets; all 24 archive files match dist and the port-6969 download.
+SHA-256: `0a8c233cc5046772b8c8833ce5ae93c929afbaa917d184949c427400f2a99372`.
+User testing is pending. No APK rebuilt; changes remain uncommitted.
+
+| Priority | Improvement | Small-screen outcome |
+| --- | --- | --- |
+| UI-11 | Header hierarchy | Compact labelled SVG expand/reduce control; title and descriptive status share a separate heading column. Portal owner and wrapped long names remain visible. |
+| UI-12 | COMM summary | Always-visible loaded/shown/added line above messages, with a secondary valid time range. Filtered counts appear only when relevant; no summary disclosure or metric cards. |
+| UI-13 | Scrolling ownership | Panel bodies own ordinary content scrolling, including Inventory, Missions and Search. Drawing lists use the map panel scroller; tables retain horizontal overflow. COMM retains history scrolling and its short-screen body fallback. |
+| UI-14 | Scrollbar consistency | Shared theme-aware scrollbar colors/width, desktop gutter and contained overscroll; navigation retains edge cues. Native touch overlay scrollbars are not hidden. |
+| UI-15 | Panel information order | COMM counts and Inventory/Missions totals/context lead their bodies; controls and actionable errors follow before content. Existing Portal actions and Scores information priorities remain intact. |
+| UI-16 | Contextual Inventory summary | Three overall totals, then selected-portal name/key count only when applicable; loose/capsule breakdown is disclosed. Missing keys show zero after inventory has loaded, Unknown beforehand. Portal count remains with Top keys. |
+| UI-17 | Missions browsing | Compact count/source context first; selected metrics stay with the selected mission. Empty metric cards and missing-rating placeholders are removed; Create lives under Mission tools. |
+| UI-18 | Visual hierarchy | Quieter shared row/card borders and surfaces; panel bodies use 96% opacity across portal/request/map panels. Primary actions, selection and faction/game colors remain distinct. |
+| UI-19 | List/text consistency | Mission/key/search names and support text wrap; mission rows prioritize rating/duration/waypoints. Supporting list text uses 11px; touch list, header and main control targets retain 44px minimums. |
+| UI-20 | Selected controls | Missions View/Portal uses segmented selected styling and aria-pressed; Refresh remains separate. Requests retain their existing explicit source-selection behavior. |
+
+Validation for this batch:
+
+- `npm run check` passes: 761 app/core tests, release/build/architecture gates, lint, types, CSS and workbench build.
+- Focused header, COMM and short-screen panel checks pass. Three workflow cases exercise mission source switching,
+  long-content scrolling, selected key zero/one counts and absence of another inventory fetch when selection changes.
+- Shared header geometry and overflow checks cover 320px/412px touch widths, desktop and short landscape. COMM
+  filtering still reports visible/loaded counts and retains history, drafts, older-message loading and composer checks.
+- Full `npm run test:browser:reuse` passes all 100 cases (1.1 minutes); `git diff --check` passes. Narrow-phone
+  Inventory/Missions surfaces were visually inspected in dark/light themes, along with COMM and long portal headers.
+  Browser evidence uses Chrome; Firefox/WebView interaction and native overlay scrollbar appearance still need
+  user/device verification. Logs: `/private/tmp/iris-ui2-{check,browser-final}.log`.
+
+## Testing cadence — clarified 2026-11-14
+
+- Plan/docs edits: `git diff --check`; no application tests or packages.
+- During implementation: affected lint/types and the smallest relevant browser files or named cases. Group related
+  visual edits before checking; do not run every check after every CSS adjustment. Shared header/scroll changes
+  warrant the panel/header/phone cases; COMM changes warrant its usability/history/composer cases.
+- Inspect representative narrow-phone and short-landscape layouts in both themes. Geometry/behavior tests and
+  visual inspection serve different purposes; avoid adding tests that merely restate markup or styling constants.
+- Once the batch settles: `npm run check`, the full browser suite and `git diff --check`. The latest 97-case browser
+  suite took 1.1 minutes. Repeat affected checks after fixes; repeat broad checks for unresolved integration risk or
+  shared behavior changes, rather than automatically after an isolated correction to a test assertion.
+- Reuse fingerprint-verified web assets when production inputs are unchanged. Package XPI/APK only when requested;
+  an artifact-only request after successful validation needs build/archive/download verification, not another full suite.
+
+## Previous handoff — 0.5.0 integrated into local main
 
 The user accepted the final session result, requested a concise changelog in place of per-version release notes,
 and authorized moving the reviewed branch into local main. Root/app/manifest/lockfile are 0.5.0; Android remains

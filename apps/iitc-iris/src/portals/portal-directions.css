@@ -24,3 +24,6 @@
     overflow-wrap: anywhere;
     font-size: var(--iitc-iris-text-sm);
 }
+
+.iitc-iris-copy-action { display: grid; gap: 4px; min-width: 0; }
+.iitc-iris-copy-action > .iitc-iris-status { overflow-wrap: anywhere; }

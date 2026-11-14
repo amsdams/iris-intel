@@ -1,13 +1,11 @@
 import {h, type RefObject} from 'preact';
 import './comm.css';
-import {formatCommBounds} from '../comm-display';
 import {IitcIrisCommMessageList} from './comm-message-list';
 import {IitcIrisCommPanelBody} from './comm-panel-body';
 import {IitcIrisCommLoadedSummary, IitcIrisCommPanelControls} from './comm-panel-controls';
 import type {IitcIrisCommState, IitcIrisCommTab} from '../../messages';
-import {formatElapsedSeconds, getAuthErrorMessage} from '../../ui-status';
-import {DiagnosticsChip} from '../../ui/diagnostics-chip';
-import {PanelBody, PanelFooter} from '../../ui/panel';
+import {getAuthErrorMessage} from '../../ui-status';
+import {PanelBody} from '../../ui/panel';
 import {StatusText} from '../../ui/status-text';
 import {EmptyState} from '../../ui/empty-state';
 import {matchesIitcCommFilters} from '@iris/iitc-core';
@@ -37,11 +35,12 @@ export function IitcIrisCommPanel(props: IitcIrisCommPanelProps): h.JSX.Element 
   const visible = (commState.recent ?? []).filter(message => matchesIitcCommFilters(message, views.filters));
   const visibleState = {...commState, recent: visible};
   return <PanelBody className="iitc-iris-comm-body">
-      {commState.error && (
-        <StatusText role="alert" className="iitc-iris-warning" title={commState.error}>
-          {commState.status === 'auth' ? 'COMM requires an authenticated Intel session.' : getAuthErrorMessage(commState.status, commState.error)}
-        </StatusText>
-      )}
+    <IitcIrisCommLoadedSummary commState={commState} shown={visible.length} />
+    {commState.error && (
+      <StatusText role="alert" className="iitc-iris-warning" title={commState.error}>
+        {commState.status === 'auth' ? 'COMM requires an authenticated Intel session.' : getAuthErrorMessage(commState.status, commState.error)}
+      </StatusText>
+    )}
     {commState.error && Boolean(commState.recent?.length) && <StatusText>Showing previously received messages. Refresh to try again.</StatusText>}
     <IitcIrisCommPanelControls
       commNewBelow={props.commNewBelow}
@@ -68,18 +67,5 @@ export function IitcIrisCommPanel(props: IitcIrisCommPanelProps): h.JSX.Element 
         {commState.sendError ? `Send failed: ${getAuthErrorMessage(commState.sendStatus, commState.sendError)} Your text is kept in this channel; check COMM before retrying.` : 'Message sent.'}
       </StatusText>
     )}
-    <IitcIrisCommLoadedSummary commState={commState} />
-    <PanelFooter>
-      <DiagnosticsChip
-        title={[
-          `request: /r/getPlexts ${commState.tab}`,
-          `bounds: ${formatCommBounds(commState.bounds)}`,
-          `response: ${commState.responseMessages ?? '-'}`,
-          `older: ${commState.requestOlder ? (commState.oldMessagesWereAdded ? 'added' : 'none') : '-'}`,
-        ].join('\n')}
-      >
-        {commState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(commState.elapsedMs)}s` : 'request'}
-      </DiagnosticsChip>
-    </PanelFooter>
   </PanelBody>;
 }

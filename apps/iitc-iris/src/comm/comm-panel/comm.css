@@ -9,6 +9,17 @@
 
 /* Messages */
 
+.iitc-iris-comm-summary {
+    display: grid;
+    gap: 2px;
+    color: var(--iitc-iris-color-secondary);
+    font-size: var(--iitc-iris-text-lg);
+    line-height: var(--iitc-iris-line-readable);
+}
+
+.iitc-iris-comm-summary b { color: var(--iitc-iris-color-heading); }
+.iitc-iris-comm-summary small { color: var(--iitc-iris-color-muted); }
+
 .iitc-iris-comm-filters {
     min-width: 0;
     color: var(--iitc-iris-color-text);

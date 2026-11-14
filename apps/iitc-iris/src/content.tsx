@@ -1,3 +1,5 @@
+import {useShellViewport} from './shell/use-shell-viewport';
+import {useUiTextSize} from './shell/ui-text-size';
 import {AppearancePanel} from './system/appearance-panel/appearance-panel';
 import {PanelsPanel} from './system/panels-panel/panels-panel';
 import {AboutPanel} from './system/about-panel/about-panel';
@@ -159,6 +161,8 @@ function injectScript(src: string): void {
 }
 
 function App(): h.JSX.Element {
+  useShellViewport();
+  const {textSize, setTextSize} = useUiTextSize();
   const {uiTheme, setUiTheme} = useUiTheme();
   const {isPanelVisible, togglePanel, restoreDefaults: restorePanelDefaults} = usePanelVisibility();
   const postIitcMessage = useCallback((message: IitcIrisMessage): void => {
@@ -372,14 +376,17 @@ function App(): h.JSX.Element {
 
 
   const copySelectedPortalLink = (): void => {
+    setPortalCopyStatus('');
     copySelectedPortalLinkHelper(entityFetch.selectedPortal, camera.zoom, setPortalCopyStatus);
   };
 
   const copySelectedPortalGuid = (): void => {
+    setPortalCopyStatus('');
     copySelectedPortalGuidHelper(entityFetch.selectedPortal, setPortalCopyStatus);
   };
 
   const copySelectedPortalTitle = (): void => {
+    setPortalCopyStatus('');
     copySelectedPortalTitleHelper(entityFetch.selectedPortal, setPortalCopyStatus);
   };
 
@@ -812,6 +819,8 @@ function App(): h.JSX.Element {
       />}
       {activeSheet === 'appearance' && <AppearancePanel
         closeAppearance={closeSheetToMap}
+        textSize={textSize}
+        setTextSize={setTextSize}
         uiTheme={uiTheme}
         setUiTheme={setUiTheme}
         baseLayerId={baseLayerId}
@@ -819,6 +828,8 @@ function App(): h.JSX.Element {
       />}
       {activeSheet === 'system' && (
         <IitcIrisDiagnosticsPanelContainer
+          panelDetails={{agentState, commState, inventoryState, missionsState, passcodeState,
+            portalDetails: selectedPortalDetails, portal: entityFetch.selectedPortal, scoresState, searchState}}
           closeDiagnostics={closeSheetToMap}
           camera={camera}
           debugDockVisible={debugDockVisible}

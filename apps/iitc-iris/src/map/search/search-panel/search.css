@@ -2,8 +2,8 @@
 .iitc-iris-search-result small {
     min-width: 0;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .iitc-iris-search-box {
@@ -44,12 +44,6 @@
 .iitc-iris-search-results {
     display: grid;
     gap: var(--iitc-iris-space-1);
-    max-height: min(42vh, 360px);
-    overflow: auto;
-    padding: 5px;
-    border: 1px solid rgb(var(--iitc-iris-border-rgb) / 24%);
-    border-radius: 6px;
-    background: rgb(var(--iitc-iris-search-input-rgb) / 70%);
 }
 
 .iitc-iris-search-status {
@@ -144,5 +138,10 @@
 
 .iitc-iris-search-result small {
     color: var(--iitc-iris-color-muted);
-    font-size: var(--iitc-iris-text-sm);
+    font-size: var(--iitc-iris-text-md);
+    line-height: var(--iitc-iris-line-readable);
+}
+
+@media (pointer: coarse) {
+    .iitc-iris-search-result { min-height: 44px; }
 }

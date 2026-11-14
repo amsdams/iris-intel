@@ -13,11 +13,12 @@ import {
 import {
   type IitcMapDataPlan,
 } from '@iris/iitc-core';
-import {StatusText} from '../../ui/status-text';
 import {PanelFrame, PanelHeader, PanelTitle} from '../../ui/panel';
 import {ClearButton} from '../../ui/clear-button';
+import {PanelDetails, type PanelDetailsProps} from './panel-details';
 
 export interface IitcIrisDiagnosticsPanelContainerProps {
+  panelDetails: PanelDetailsProps;
   closeDiagnostics: () => void;
   requestDiagnostics: IitcIrisRequestDiagnostics;
   camera: CameraState;
@@ -90,7 +91,6 @@ export function IitcIrisDiagnosticsPanelContainer(props: IitcIrisDiagnosticsPane
       <PanelHeader>
         <PanelTitle>Diagnostics</PanelTitle>
         <span className="iitc-iris-panel-header-actions">
-          <StatusText>UI and diagnostics</StatusText>
           <ClearButton onClick={closeDiagnostics} title="Close diagnostics" aria-label="Close diagnostics" />
         </span>
       </PanelHeader>
@@ -111,6 +111,7 @@ export function IitcIrisDiagnosticsPanelContainer(props: IitcIrisDiagnosticsPane
         openIntelLogin={openIntelLogin}
         toggleDebugDock={toggleDebugDock}
       />
+      <PanelDetails {...props.panelDetails} />
       <IitcIrisSystemControlsPanel
         copyDockText={copyDockText}
         copyIntelUrl={copyIntelUrl}

@@ -5,8 +5,6 @@ import {formatCommTime} from '../comm-display';
 import {SegmentedRow, SegmentedButton} from '../../ui/segmented-control';
 import {ControlRow} from '../../ui/control-row';
 import {ActionButton} from '../../ui/action-button';
-import {SummaryGrid} from '../../ui/summary-grid';
-import {SummaryCell} from '../../ui/summary-cell';
 
 import {IITC_IRIS_COMM_TABS} from '../tabs';
 
@@ -42,11 +40,13 @@ export function IitcIrisCommPanelControls(props: IitcIrisCommPanelControlsProps)
   </>;
 }
 
-export function IitcIrisCommLoadedSummary({commState}: {commState: IitcIrisCommState}): h.JSX.Element {
-  return <details className="iitc-iris-comm-summary"><summary className="iitc-iris-section-summary">{formatInteger(commState.messages)} loaded messages</summary>
-    <SummaryGrid>
-      <SummaryCell value={formatInteger(commState.messages)} label="messages" />
-      <SummaryCell value={formatInteger(commState.addedMessages)} label="added" />
-      <SummaryCell value={commState.oldestTimestamp !== undefined && commState.newestTimestamp !== undefined ? `${formatCommTime(commState.oldestTimestamp)} - ${formatCommTime(commState.newestTimestamp)}` : '-'} label="range" />
-    </SummaryGrid></details>;
+export function IitcIrisCommLoadedSummary({commState, shown}: {commState: IitcIrisCommState; shown: number}): h.JSX.Element {
+  return <div className="iitc-iris-comm-summary" aria-label="COMM summary">
+    <div><b>{formatInteger(commState.messages)}</b> loaded messages
+      {shown !== (commState.recent?.length ?? 0) && <> · <b>{formatInteger(shown)}</b> shown</>}
+      {Boolean(commState.addedMessages) && <> · <b>{formatInteger(commState.addedMessages)}</b> added</>}
+    </div>
+    {commState.oldestTimestamp !== undefined && commState.oldestTimestamp >= 0 && commState.newestTimestamp !== undefined && commState.newestTimestamp >= 0 &&
+      <small>{formatCommTime(commState.oldestTimestamp)} – {formatCommTime(commState.newestTimestamp)}</small>}
+  </div>;
 }

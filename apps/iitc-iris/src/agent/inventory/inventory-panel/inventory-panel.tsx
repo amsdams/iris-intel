@@ -1,17 +1,16 @@
 import {h} from 'preact';
-import '../../../ui/shared/selection-summary.css';
+import '../../../ui/shared/section-summary.css';
 import '../../item-list.css';
 import './inventory-panel.css';
 import '../../../ui/shared/scroll-region.css';
 import '../../../ui/shared/list-item.css';
 import {formatIitcColorVars, getIitcItemColor, getIitcLevelColor, getIitcRarityColor} from '../../../iitc-colors';
 import type {IitcIrisInventoryState} from '../../../messages';
-import {formatElapsedSeconds, formatSubscriptionLabel, getAuthErrorMessage, getSubscriptionStatusClass} from '../../../ui-status';
+import {formatSubscriptionLabel, getAuthErrorMessage, getSubscriptionStatusClass} from '../../../ui-status';
 import {ActionButton} from '../../../ui/action-button';
 import {Badge} from '../../../ui/badge';
 import {ControlRow} from '../../../ui/control-row';
-import {DiagnosticsChip} from '../../../ui/diagnostics-chip';
-import {PanelBody, PanelFooter} from '../../../ui/panel';
+import {PanelBody} from '../../../ui/panel';
 import {StatusText} from '../../../ui/status-text';
 import {SummaryCell} from '../../../ui/summary-cell';
 import {SummaryGrid} from '../../../ui/summary-grid';
@@ -28,14 +27,35 @@ function formatInteger(value: number | undefined): string {
 }
 
 export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPortal}: IitcIrisInventoryPanelProps): h.JSX.Element {
+  const hasInventory = inventoryState.rawItems !== undefined || inventoryState.status === 'ready' || inventoryState.status === 'empty';
+  const selectedKeys = inventoryState.portalKeysForSelectedPortal ?? (hasInventory
+    ? {total: 0, loose: 0, capsule: 0, capsules: {}}
+    : null);
   return <PanelBody>
+    {hasInventory ? <SummaryGrid className="iitc-iris-inventory-summary" aria-label="Inventory totals">
+      <SummaryCell value={`${formatInteger(inventoryState.items)} / 2500`} label="items" />
+      <SummaryCell value={formatInteger(inventoryState.keys)} label="keys" />
+      <SummaryCell value={formatInteger(inventoryState.capsules)} label="capsules" />
+    </SummaryGrid> : <StatusText>{inventoryState.status === 'loading' ? 'Loading inventory…' : 'Inventory has not been loaded.'}</StatusText>}
+    {inventoryState.selectedPortalGuid && <section className="iitc-iris-inventory-selected-keys" aria-label="Selected portal keys">
+      <b>{inventoryState.selectedPortalTitle || inventoryState.selectedPortalGuid}</b>
+      <span><strong>{selectedKeys?.total ?? 'Unknown'}</strong> selected keys</span>
+      {selectedKeys && <details>
+        <summary className="iitc-iris-section-summary">Key breakdown</summary>
+        <StatusText>{formatInteger(selectedKeys.loose)} loose · {formatInteger(selectedKeys.capsule)} in capsules</StatusText>
+        {Object.keys(selectedKeys.capsules).length > 0 && <div className="iitc-iris-agent-item-list">
+          {Object.entries(selectedKeys.capsules).map(([capsule, count]) => (
+            <div className="iitc-iris-list-item iitc-iris-agent-item-row" key={capsule}>
+              <span>{capsule}</span><b>{count}</b>
+            </div>
+          ))}
+        </div>}
+      </details>}
+    </section>}
     <ControlRow>
-      <ActionButton onClick={refresh} disabled={inventoryState.status === 'loading'} title="Fetch Intel inventory with lastQueryTimestamp 0">
+      <ActionButton onClick={refresh} disabled={inventoryState.status === 'loading'} title="Refresh inventory">
         {inventoryState.status === 'loading' ? 'Loading' : 'Refresh'}
       </ActionButton>
-      <StatusText className={inventoryState.status === 'error' || inventoryState.status === 'auth' ? 'iitc-iris-warning' : ''}>
-        {inventoryState.status}
-      </StatusText>
       <StatusText className={getSubscriptionStatusClass(inventoryState.subscription)}>
         {formatSubscriptionLabel(inventoryState.subscription)}
       </StatusText>
@@ -54,34 +74,7 @@ export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPo
         {inventoryState.rawItems !== undefined && inventoryState.rawItems > 0 && ' Showing previously loaded inventory.'}
       </StatusText>
     )}
-    <SummaryGrid>
-      <SummaryCell value={`${formatInteger(inventoryState.items)} / 2500`} label="items" />
-      <SummaryCell value={formatInteger(inventoryState.keys)} label={`${formatInteger(inventoryState.portalsWithKeys)} portals`} />
-      <SummaryCell value={formatInteger(inventoryState.capsules)} label="capsules" />
-      <SummaryCell value={inventoryState.portalKeysForSelectedPortal ? inventoryState.portalKeysForSelectedPortal.total : '-'} label="selected keys" />
-      <SummaryCell value={inventoryState.portalKeysForSelectedPortal ? inventoryState.portalKeysForSelectedPortal.loose : '-'} label="loose" />
-      <SummaryCell value={inventoryState.portalKeysForSelectedPortal ? inventoryState.portalKeysForSelectedPortal.capsule : '-'} label="capsule" />
-    </SummaryGrid>
-    {inventoryState.selectedPortalTitle && (
-      <div className="iitc-iris-inventory-selected" title={inventoryState.selectedPortalGuid}>
-        <StatusText>selected</StatusText>
-        <b>{inventoryState.selectedPortalTitle}</b>
-      </div>
-    )}
     <div className="iitc-iris-scroll-region iitc-iris-inventory-scroll">
-      {inventoryState.portalKeysForSelectedPortal && Object.keys(inventoryState.portalKeysForSelectedPortal.capsules).length > 0 && (
-        <div className="iitc-iris-inventory-section">
-          <StatusText>Selected key capsules</StatusText>
-          <div className="iitc-iris-agent-item-list">
-            {Object.entries(inventoryState.portalKeysForSelectedPortal.capsules).map(([capsule, count]) => (
-              <div className="iitc-iris-list-item iitc-iris-agent-item-row" key={capsule}>
-                <span>{capsule}</span>
-                <b>{count}</b>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
       {inventoryState.topItems && inventoryState.topItems.length > 0 && (
         <div className="iitc-iris-inventory-section">
           <StatusText>Top items</StatusText>
@@ -114,7 +107,7 @@ export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPo
       )}
       {inventoryState.topKeys && inventoryState.topKeys.length > 0 && (
         <div className="iitc-iris-inventory-section">
-          <StatusText>Top keys</StatusText>
+          <StatusText>Top keys · {formatInteger(inventoryState.portalsWithKeys)} portals</StatusText>
           <div className="iitc-iris-agent-item-list">
             {inventoryState.topKeys.map((key) => (
               <button className="iitc-iris-list-item iitc-iris-agent-item-row iitc-iris-inventory-key-row" type="button" key={key.portalGuid} title={key.portalGuid} onClick={() => zoomToAndShowPortal(key.portalGuid, undefined, undefined)}>
@@ -127,25 +120,5 @@ export function IitcIrisInventoryPanel({inventoryState, refresh, zoomToAndShowPo
         </div>
       )}
     </div>
-    <PanelFooter>
-      <DiagnosticsChip
-        title={[
-          'request: /r/getInventory lastQueryTimestamp=0',
-          'subscription request: /r/getHasActiveSubscription',
-          `subscription: ${formatSubscriptionLabel(inventoryState.subscription)}`,
-          `raw: ${formatInteger(inventoryState.rawItems)}`,
-          `selected portal: ${inventoryState.selectedPortalGuid ?? '-'}`,
-        ].join('\n')}
-      >
-        {inventoryState.elapsedMs !== undefined ? `request ${formatElapsedSeconds(inventoryState.elapsedMs)}s` : 'request'}
-      </DiagnosticsChip>
-      {inventoryState.subscription?.elapsedMs !== undefined && (
-        <DiagnosticsChip
-          title="request: /r/getHasActiveSubscription"
-        >
-          core {formatElapsedSeconds(inventoryState.subscription.elapsedMs)}s
-        </DiagnosticsChip>
-      )}
-    </PanelFooter>
   </PanelBody>;
 }

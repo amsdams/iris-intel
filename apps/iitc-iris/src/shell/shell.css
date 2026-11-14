@@ -1,6 +1,11 @@
 /* shell */
 .iitc-iris-shell {
     --iitc-iris-tabbar-clearance: 120px;
+    --iitc-iris-safe-top: env(safe-area-inset-top, 0px);
+    --iitc-iris-safe-right: env(safe-area-inset-right, 0px);
+    --iitc-iris-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --iitc-iris-safe-left: env(safe-area-inset-left, 0px);
+    --iitc-iris-sheet-space: calc(var(--iitc-iris-viewport-height, 100dvh) - var(--iitc-iris-tabbar-clearance) - var(--iitc-iris-safe-top) - var(--iitc-iris-safe-bottom) - 12px);
 
     position: absolute;
     inset: 0;
@@ -101,11 +106,6 @@
 
 .iitc-iris-sheet-tabbar-secondary::-webkit-scrollbar {
     height: 3px;
-}
-
-.iitc-iris-sheet-tabbar-secondary::-webkit-scrollbar-thumb {
-    border-radius: 999px;
-    background: rgb(var(--iitc-iris-border-rgb) / 32%);
 }
 
 .iitc-iris-sheet-tab {
@@ -288,10 +288,6 @@
 
 .iitc-iris-menu-choices > button { min-height: 44px; }
 
-.iitc-iris-shell .is-expanded:is(.iitc-iris-map-controls, .iitc-iris-request-side-panel, .iitc-iris-portal-side-panel, .iitc-iris-system-panel) {
-    height: calc(100% - 132px);
-    max-height: calc(100% - 132px);
-}
 
 .iitc-iris-location-feedback {
     padding: 6px 8px;
@@ -303,3 +299,23 @@
 
 .iitc-iris-map-controls,
 .iitc-iris-system-panel { align-content: start; }
+
+.iitc-iris-shell .iitc-iris-sheet-tabbar {
+    right: max(8px, var(--iitc-iris-safe-right));
+    bottom: calc(8px + var(--iitc-iris-viewport-bottom, 0px) + var(--iitc-iris-safe-bottom));
+    left: max(8px, var(--iitc-iris-safe-left));
+}
+
+.iitc-iris-shell :is(.iitc-iris-map-controls, .iitc-iris-portal-side-panel, .iitc-iris-request-side-panel, .iitc-iris-system-panel) {
+    right: max(8px, var(--iitc-iris-safe-right));
+    bottom: calc(var(--iitc-iris-tabbar-clearance) + var(--iitc-iris-viewport-bottom, 0px) + var(--iitc-iris-safe-bottom));
+    left: max(8px, var(--iitc-iris-safe-left));
+    max-height: min(calc(var(--iitc-iris-viewport-height, 100dvh) * 0.64), 520px, var(--iitc-iris-sheet-space));
+}
+
+.iitc-iris-shell .is-expanded:is(.iitc-iris-map-controls, .iitc-iris-request-side-panel, .iitc-iris-portal-side-panel, .iitc-iris-system-panel) {
+    height: var(--iitc-iris-sheet-space);
+    max-height: var(--iitc-iris-sheet-space);
+}
+
+.iitc-iris-shell .iitc-iris-menu-choices { max-height: var(--iitc-iris-sheet-space); }

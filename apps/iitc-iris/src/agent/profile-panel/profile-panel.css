@@ -31,8 +31,8 @@
 .iitc-iris-agent-level strong {
     min-width: 0;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .iitc-iris-core-badge {
@@ -96,3 +96,5 @@
     border-radius: inherit;
     background: #ffd34d;
 }
+
+.iitc-iris-agent-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
