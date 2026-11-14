@@ -1,18 +1,21 @@
 # Changelog
 
-Notable changes, newest first. Dates mark development/test milestones, not necessarily public releases.
-Earlier version numbers refer to the Android prototype/alpha; 0.5.0 aligns Android and browser version numbering.
+Notable changes, newest first. App changes use versions; website and maintenance work use dated entries.
+Unreleased is reserved for changes awaiting publication. Alpha app builds are shared through the rolling
+[latest release](https://github.com/amsdams/iris-intel/releases/tag/latest); these are not stable releases.
+Earlier prototype entries record development/testing milestones; 0.5.0 aligns Android and browser versions.
 
-## Unreleased
+## 2026-11-14 — Website and maintenance
 
-- Added a public project homepage with download, installation and privacy links.
-- Consolidated browser regression fixtures/navigation and organized suites by behavior; added quick browser smoke checks, docs-only CI gating, verified build reuse and Gradle dependency caching.
-- Simplified documentation around project goals, definition of done, roadmap and contributor procedures; retired redundant plans and feature inventories.
-- Made IITC-CE core and relevant plugins the explicit behavioral reference, with documented reasons and validation for intentional deviations.
+- Published the [project homepage](https://amsdams.github.io/iris-intel/) with download, installation and privacy links; added GitHub discovery topics.
+- Organized browser tests by behavior with shared strict request/error fixtures and navigation helpers; added quick smoke checks and browser-test linting while retaining regression coverage.
+- CI now runs browser smoke before packaging, reuses verified web assets and caches Gradle dependencies; documentation/site-only changes skip app builds and signing without overlooking earlier unbuilt changes.
+- Consolidated project goals, definition of done, roadmap and contributor procedures; retired redundant plans and feature inventories.
+- Preserved IITC-CE core and relevant plugins as the behavioral reference, with explicit reasons and validation for intentional deviations.
 
 ## 0.6.0 — 2026-11-14
 
-Local alpha test candidate; Android version: 0.6.0-alpha.
+Published friends alpha; Android version base: `0.6.0-alpha`.
 
 - More room in panels: request timings and technical metadata are grouped under System → Diagnostics → Panel details.
 - Compact panel headers, an always-visible COMM summary, consistent scrollbars and simpler scrolling.
@@ -21,24 +24,31 @@ Local alpha test candidate; Android version: 0.6.0-alpha.
 - Compact Layers controls, focused Profile progress and meaningful initial/reward states.
 - Data freshness/cache labels, feedback beside portal copy actions, and improved image-preview focus/closing behavior.
 
+## 2026-11-13 — CI portability
+
+- Fixed clean-checkout GitHub builds by replacing portal-statistics tests that required the ignored local IITC reference checkout with self-contained regression cases. IITC remains the behavioral reference.
+
 ## 0.5.0 — 2026-11-13
 
-Local alpha verification build; Android version: 0.5.0-alpha.
+Published alpha, now superseded; Android version base: `0.5.0-alpha`.
 
 - Clearer phone navigation, grouped Analysis/Draw tools, scroll hints and expandable panels.
 - Portal Zoom, Navigate and Share actions; compact owner/health/resonator/key summary and cleaner statistics.
 - Portal locations in Google Maps, Bing and OpenStreetMap, explicit OSM directions, and Android maps-app handoff.
 - Ingress Prime links and local QR sharing; portal access/link-range circles and richer AP, energy and hack statistics.
 - Full regional scoreboard with checkpoint history, charts and projections; global scores and ranked agents up front.
+- Cancelled Scores requests recover on reopen; late failures cannot replace newer score or portal-detail results.
 - More space for COMM, clearer active filters and errors, with technical information at the bottom.
 - Consistent header spacing, readable touch controls and softer dark headers; fixes for Back/menu behavior and portal reading-position restoration.
-- Dependency updates and broader regression coverage for browser and Android workflows.
+- Updated compatible dependencies and addressed development-tool advisories; expanded browser and Android regression coverage.
 
 ## 0.4.1-alpha — 2026-10-21 to 2026-11-06
 
 - Manual Android update checks and a direct link to the latest release.
 - Portal-linked COMM activity, search/filtering of loaded messages and saved COMM views.
 - Fresher map and player activity, improved search navigation, smoother labels and more reliable map recovery.
+- Corrected Machina agent-name colors in COMM, including messages tagged neutral.
+- Safer map replacement and late artifact responses, with clearer runtime ownership and more resilient local preference storage.
 - Optional panel visibility settings and expanded About/credits information.
 - Permanent Android app identity introduced on October 29; older prototype installations became a separate app.
 

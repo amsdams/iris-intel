@@ -6,14 +6,14 @@ Use Node 24 and `npm ci`; commit the root lockfile when dependency resolution ch
 
 ## Development
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Watch the extension build; load `apps/iitc-iris/dist` in the browser. |
-| `npm run dev:wb` / `npm run build:wb` | Serve/build the component workbench. |
-| `npm run build` | Build the active core and application workspaces. |
-| `npm run lint` / `npm run typecheck` | Workspace lint (including CSS) / types. |
-| `npm run test -w packages/iitc-core` | Example focused workspace check. |
-| `npm run clean` | Remove generated application output. |
+| Command                               | Purpose                                                               |
+| ------------------------------------- | --------------------------------------------------------------------- |
+| `npm run dev`                         | Watch the extension build; load `apps/iitc-iris/dist` in the browser. |
+| `npm run dev:wb` / `npm run build:wb` | Serve/build the component workbench.                                  |
+| `npm run build`                       | Build the active core and application workspaces.                     |
+| `npm run lint` / `npm run typecheck`  | Workspace lint (including CSS) / types.                               |
+| `npm run test -w packages/iitc-core`  | Example focused workspace check.                                      |
+| `npm run clean`                       | Remove generated application output.                                  |
 
 Keep appearance, message contracts, persisted keys and lifetimes stable unless the task explicitly changes them.
 CI workflow edits must pin external actions to verified commit SHAs with version comments, avoid persisted checkout
@@ -21,12 +21,12 @@ credentials, isolate signing secrets from unsigned/PR calls and validate syntax/
 
 ## Testing
 
-| Change | Required verification |
-| --- | --- |
-| Documentation only | `git diff --check`; local paths/anchors and incoming links to retired files. No app tests/builds. |
-| Application/core | Focused tests and affected lint/type checks during editing; `npm run check` when the batch settles. |
-| UI/map behavior | Use `npm run test:browser:smoke:reuse` or focused cases during iteration; also run the full `npm run test:browser` suite after the related edits settle. |
-| Native host | Appropriate debug/release Android check below; device checks for auth, permissions and WebView behavior. |
+| Change             | Required verification                                                                                                                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Documentation only | `git diff --check`; local paths/anchors and incoming links to retired files. No app tests/builds.                                                        |
+| Application/core   | Focused tests and affected lint/type checks during editing; `npm run check` when the batch settles.                                                      |
+| UI/map behavior    | Use `npm run test:browser:smoke:reuse` or focused cases during iteration; also run the full `npm run test:browser` suite after the related edits settle. |
+| Native host        | Appropriate debug/release Android check below; device checks for auth, permissions and WebView behavior.                                                 |
 
 `npm run check` includes release/build/architecture gates, workspace lint/types/tests, browser-test/CSS lint and workbench build.
 Run `git diff --check` before handoff. Group cosmetic edits before broad checks. After failures, rerun affected cases
@@ -39,12 +39,12 @@ Chrome fixtures do not prove live Intel, Firefox, native keyboard/auth, routing-
 
 Build downloadable artifacts when requested for testing or a release handoff, not after each edit/review.
 
-| Command | Result |
-| --- | --- |
-| `npm run package` (`npm run release` alias) | Build Chrome ZIP and Firefox XPI locally; does not publish. |
-| `npm run android:check` | Native tests/lint and debug APK. |
-| `npm run android:release` | Native release tests/lint and signed APK; signing setup required. |
-| `npm run android:bundle` | Native release tests/lint and signed Play AAB; does not submit it. |
+| Command                                         | Result                                                                                                           |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `npm run package` (`npm run release` alias)     | Build Chrome ZIP and Firefox XPI locally; does not publish.                                                      |
+| `npm run android:check`                         | Native tests/lint and debug APK.                                                                                 |
+| `npm run android:release`                       | Native release tests/lint and signed APK; signing setup required.                                                |
+| `npm run android:bundle`                        | Native release tests/lint and signed Play AAB; does not submit it.                                               |
 | `npm run serve` (`npm run android:serve` alias) | Existing ZIP/XPI/APK downloads on port 6969; prints a same-Wi-Fi URL, builds nothing. `PORT` overrides the port. |
 
 Extension packages are under `apps/iitc-iris/builds/`; unpacked output is `apps/iitc-iris/dist/`.
