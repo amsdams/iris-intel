@@ -3,6 +3,11 @@
 Notable changes, newest first. Dates mark development/test milestones, not necessarily public releases.
 Earlier version numbers refer to the Android prototype/alpha; 0.5.0 aligns Android and browser version numbering.
 
+## Unreleased
+
+- Simplified documentation around project goals, definition of done, roadmap and contributor procedures; retired redundant plans and feature inventories.
+- Made IITC-CE core and relevant plugins the explicit behavioral reference, with documented reasons and validation for intentional deviations.
+
 ## 0.6.0 — 2026-11-14
 
 Local alpha test candidate; Android version: 0.6.0-alpha.

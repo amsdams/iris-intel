@@ -1,7 +1,7 @@
 # IRIS Friends Testing
 
 IRIS is an independent Ingress Intel companion based on IITC, currently an early Android alpha.
-GitHub APKs and a Google Play internal test are available; broader Play distribution is still being prepared.
+Use GitHub APKs for testing; broader Play distribution is [paused](../ROADMAP.md#blocked--paused).
 Google sign-in uses an experimental embedded-browser workaround; saved-password support remains unresolved.
 
 ## Install And Try
@@ -20,9 +20,11 @@ new app work normally. Switching debug/release signing for the same ID requires 
 2. Try portal details, COMM, inventory, map styles, copying a portal title, and **Map → Controls → Locate**.
    Location permission is optional; denying it should keep the app usable.
 3. In **System → Appearance**, try System/Dark/Light for the interface and choose a base map.
-   The two choices are independent. Reload and check both choices persist.
+   Theme, text size and map style are independent. Try Larger text; reload and check preferences persist.
+   Open Search, COMM and Passcode with the phone keyboard, including landscape, and check that fields/actions remain reachable.
    The Android header/dialogs follow the device appearance. The initial interface theme remains Dark.
 4. Close/reopen, try Android Back, and use the app during normal play over a few days.
+   Check Back from an image, a panel and a selection; opening/closing an image should restore focus.
    If multiple tracked players share a last-seen location, try the count marker and each agent's history.
 
 ## Updates
@@ -32,7 +34,6 @@ An available update offers **Releases**, which opens the GitHub release page; do
 over the existing app. **App → Releases** opens that page directly. Updates are checked only when requested;
 there are no background checks, automatic APK downloads, or automatic installation.
 A local build may be newer than GitHub. If the check fails, use Releases or try again later.
-The first release containing this feature must be published before its version metadata is available.
 
 ## Recovery And Feedback
 

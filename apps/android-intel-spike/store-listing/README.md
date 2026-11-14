@@ -26,8 +26,8 @@ alongside the source so they can be uploaded directly. Requirements: [Google Pla
 
 ## Phone screenshots
 
-Captured directly from the connected Android phone on 2026-10-29, around the user-selected Berlin location
-`52.515187, 13.459904`. These are actual signed-in app screens with live Intel data, not browser fixtures.
+Existing screenshots are signed-in phone captures from 2026-10-29; refresh them for the current UI before submission.
+They are live Intel screens, not browser fixtures.
 
 Upload in this order:
 
@@ -38,18 +38,15 @@ Upload in this order:
 | 3 | [Dark map](phone/03-map-dark.png) | OpenFreeMap Dark with the dark interface |
 | 4 | [Appearance](phone/04-appearance-dark.png) | Independent interface-theme and base-map choices |
 
-All four are 1080 × 1920 PNGs (9:16), under 8 MB each. They retain the complete display, including native app chrome,
-system bars and map attribution. Public portal agent names appear in details; no profile or private COMM panel was
-captured. The phone display was temporarily configured to 1080 × 1920 at density 480 before capture, so the app laid
-itself out at this size; the images were not stretched or cropped. Original display settings (1272 × 2800, density
-560), light interface and OpenStreetMap were restored afterwards.
+Existing files are 1080 × 1920 PNGs, under 8 MB each, including native/system chrome and attribution.
+Review public portal names and avoid private COMM/account details. Capture at the intended device layout; do not
+stretch/crop images to force a ratio. The renderer regenerates artwork only, not phone screenshots.
 
 To recapture a prepared view with USB debugging authorized:
 
 ```sh
-/Users/jula/Library/Android/sdk/platform-tools/adb exec-out screencap -p > apps/android-intel-spike/store-listing/phone/01-map-osm-light.png
+adb exec-out screencap -p > apps/android-intel-spike/store-listing/phone/01-map-osm-light.png
 ```
 
-Check the current device resolution before replacing these files. The artwork renderer does not regenerate phone
-screenshots. Review captures before uploading, avoid private messages/account details, and do not crop away controls
-or attribution to force an aspect ratio. A video can remain empty.
+Use the SDK's `adb` on PATH; check device resolution before replacing captures. Review images before upload and retain
+controls/attribution. A video is optional.

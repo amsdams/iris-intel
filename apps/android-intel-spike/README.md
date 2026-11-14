@@ -1,249 +1,100 @@
-# IRIS Android APK — Friends Alpha
+# Android development and distribution
 
-The existing native Android/WebView wrapper now has a small friends-testing interface. Version **0.6.0-alpha** loads bundled IRIS automatically on signed-in Intel,
-with a stock-Intel recovery mode. The 0.6.0 candidate adds further phone UI and usability refinements;
-signed build 1887 is the current local verification build. See the [changelog](../../CHANGELOG.md). Phone confirmed mode persistence, IRIS startup after reopen, and stock-dashboard
-blocking on 0.3.0. Panel Back, rotation, restoring the open panel after Reload, and background/resume also passed.
-Version 0.3.1 location prompt, permission acceptance, and successful positioning passed on phone.
-Phone login and reopening without another login passed on 0.1.3;
-0.2.0 displayed IRIS on the phone and the user accepted a quick smoke of inventory, layers, COMM, portal details, and missions.
+The existing experimental WebView host bundles IRIS on authenticated Intel with Stock Intel recovery. Its historical
+folder name does not define app identity. [Friends testing](../../docs/iitc-iris/friends-testing.md) owns installation,
+updates and device smoke; [CONTRIBUTING](../../CONTRIBUTING.md) owns shared validation/release procedures.
 
-The launcher name is **IRIS**. A compact **App** menu holds About, Privacy/Feedback (inside About), Reload,
-Recovery, and Diagnostics. Successful startup hides the temporary status line. Native chrome follows Android appearance;
-**System → Appearance** controls the full web interface separately from the map style. Existing installations retain
-the dark UI until another theme is selected. See the [friends testing guide](../../docs/iitc-iris/friends-testing.md).
-**App → Check for updates** manually compares the installed version code with public metadata beside the latest
-main-build APK; **App → Releases** opens that GitHub release directly. No background check or APK installer is added.
-The technical project folder/application ID stay unchanged to preserve signed updates.
+## SDK and debug builds
 
-## Build And Download
+Use Node 24, `npm ci`, JDK 21, Android platform 36 and Build Tools 36.0.0. Gradle 8.14.3/AGP 8.13.2 are pinned.
+Root tooling discovers the normal macOS SDK/registered JDK; `JAVA_HOME` / `ANDROID_HOME` override discovery.
+Accept SDK licenses; Gradle can then install missing components. First build needs internet.
 
-Use JDK 21 and an Android SDK with platform 36 and Build Tools 36.0.0. The root commands discover the normal macOS SDK
-location and a registered JDK 21; `JAVA_HOME` and `ANDROID_HOME` override discovery. Gradle 8.14.3 and AGP 8.13.2 are pinned.
-Gradle can install missing SDK components when the SDK licenses have been accepted. First build needs internet access.
-
-```bash
+```sh
 npm run android:check
 npm run serve
 ```
 
-`android:check` runs the session/injection tests, native navigation/asset tests, Android lint, and debug APK assembly.
-Gradle builds the existing web bundles and packages their scripts, CSS, images, and licenses from generated output.
-Node 24 and `npm ci` are prerequisites; no generated web files are committed.
-For subsequent build-only runs, use `npm run android:build`.
-If a web build has already passed browser checks, `IRIS_REUSE_WEB_BUILD=1 npm run android:check` (or `android:release`
-with signing configured) verifies and copies those assets instead of rebuilding them. Stale/missing/modified web
-outputs fail with a rebuild instruction. Normal commands retain the existing Gradle incremental build behavior.
-Run browser tests, packaging and Android builds sequentially; see the root `SKILL.md`.
-
-The server prints a phone URL (port 6969 by default; set `PORT` to override). Connect the phone to the same Wi-Fi as the Mac, open that URL, download the APK, and
-allow installation from the browser when Android asks. If macOS asks about incoming connections, allow this local server.
-Guest networks/VPNs may prevent devices from reaching each other. Stop the server with Ctrl+C after downloading.
-The page lists generated Firefox XPI, Chrome ZIP, and APK artifacts only; repository and session files are not served.
-`npm run android:serve` remains an alias. Missing artifacts show their build command; starting the server does not build.
-
-Output: `app/build/outputs/apk/debug/app-debug.apk`. The download is named `iris-intel-test.apk`.
-It is automatically debug-signed using the local Android debug key; no release signing material is stored in the repo.
-Installable on Android 8.0/API 26 or newer. Later permanent-app minimum/version policy is undecided.
-Keep the local debug key to install subsequent builds over this one without losing app data.
+The check runs JavaScript/native tests, lint and debug assembly; `npm run android:build` only builds. Gradle packages
+web bundles, images and licenses from generated output. Reuse validated web assets as described in CONTRIBUTING.
+Debug output: `app/build/outputs/apk/debug/app-debug.apk`, served as `iris-intel-test.apk`. Minimum Android is 8/API 26.
+Keep the local debug key for in-place debug updates; debug and release keys differ. Switching requires uninstall/data loss.
+The download page lists existing XPI/ZIP/APK only, builds nothing and serves no repository/session files. Use the printed
+same-Wi-Fi URL; allow local incoming connections if prompted. Guest networks/VPNs may block access; stop with Ctrl+C.
 
 ## Signed GitHub APKs
 
-Main pushes publish `iitc-iris-android.apk` beside the XPI/ZIP in the `latest` GitHub release, after extension
-checks and Android release tests/lint pass. Future version tags include a version-named APK. Pull requests test a
-debug build without release-signing credentials. Release APKs are not debuggable; the wrapper remains experimental.
+Keep application ID / Java namespace **`io.github.amsdams.iris`** and the existing release key. The old
+`org.iris.intelspike` alpha installs separately; [migration help](../../docs/iitc-iris/friends-testing.md#install-and-try)
+is user-facing. The package change did not change the signing key.
 
-Signing uses a dedicated key in GitHub repository secrets: `ANDROID_SIGNING_KEYSTORE_BASE64`,
-`ANDROID_SIGNING_STORE_PASSWORD`, `ANDROID_SIGNING_KEY_ALIAS`, and `ANDROID_SIGNING_KEY_PASSWORD`.
-The private local backup is the ignored `signing/` directory, including `release.env`; back up the whole directory
-securely. It is not included in artifacts or Git. The public certificate digest is pinned in `release-certificate.sha256`.
-The user confirmed the signing directory is backed up (2026-10-21); restoration has not been tested.
-Do not replace the key: Android requires it to update existing installations. The permanent application ID and Java
-namespace are `io.github.amsdams.iris`. Keep this ID for future Play and GitHub releases.
+GitHub secrets: `ANDROID_SIGNING_KEYSTORE_BASE64`, `ANDROID_SIGNING_STORE_PASSWORD`, `ANDROID_SIGNING_KEY_ALIAS`,
+`ANDROID_SIGNING_KEY_PASSWORD`. The private ignored `signing/` backup includes `release.env`; back it up securely.
+The public digest is pinned in `release-certificate.sha256`. Backup restoration remains unverified; do not replace the key.
+PR/debug builds must not receive release credentials. Release APKs are not debuggable.
 
-The user approved replacing the prototype ID `org.iris.intelspike` on 2026-10-29, before creating the Play listing.
-This is a separate Android app, not an in-place update: existing alpha users must install the new APK and sign in
-again; local settings and drawings do not transfer automatically. They can keep the old app while exporting drawings
-through its existing clipboard controls. The signing key is unchanged. Old apps reject the new package's update
-metadata, so use the GitHub release page to download the new app manually. The project directory name remains
-`apps/android-intel-spike`; it does not determine the installed package identity.
-
-To build locally with the same key:
-
-```bash
+```sh
 source apps/android-intel-spike/signing/release.env
 npm run android:release
 ```
 
-Output: `app/build/outputs/apk/release/app-release.apk`; `npm run serve` offers it as `iitc-iris-android.apk`
-in a separate signed-APK section. Use this to update an installed GitHub release; `iris-intel-test.apk` remains the
-differently signed debug build. Release version codes are `1005 + git rev-list --count HEAD`;
-version names include the source commit. CI also publishes `iitc-iris-android-update.properties`, generated from
-the assembled APK’s `output-metadata.json`; the manual checker compares Android version codes rather than names or tags.
-The checker uses the explicit `latest` tag, including friends prereleases; tagged releases also carry the metadata. Complete Git history is required. Preserve main history so update codes
-keep increasing. The baseline accounts for local verification builds ahead of Git history.
-`IRIS_ANDROID_VERSION_CODE` can explicitly override the code when necessary. The local 0.6.0 UI-test candidate
-uses explicit code **1887**; subsequent signed builds must exceed it. The updated history baseline produces 1888
-at the current feature base and advances further when the feature is committed, preserving update compatibility.
-See the
-[version workflow](../../README.md#versioning-and-releases) before integration.
-Moving from the earlier local debug APK requires uninstall/reinstall once, losing its session/settings; later
-release builds use the same signing key and can update in place. Local debug builds retain their separate key.
+Output: `app/build/outputs/apk/release/app-release.apk`, served as `iitc-iris-android.apk`.
+Codes use `1005 + git rev-list --count HEAD`; complete Git history and preserved main history are required.
+`IRIS_ANDROID_VERSION_CODE` overrides this when necessary. The shared local 0.6.0 candidate used **1887**; subsequent
+signed builds must exceed it and any newer shared candidate. Record overrides here before the next integration.
+Names include source commit; mark uncommitted builds `-dirty`. Follow the [version procedure](../../CONTRIBUTING.md#versioning-and-releases).
+CI derives `iitc-iris-android-update.properties` from APK `output-metadata.json`; the manual checker compares codes,
+using the explicit `latest` tag (including prereleases). Tagged releases also carry update metadata.
 
-## Play Console App Bundle
+## Play Console app bundle
 
-The public policy source is `site/privacy/index.html`, with support/privacy contact `1sos.2play@gmail.com`.
-The expected URL is `https://amsdams.github.io/iris-intel/privacy/`. To host it, select **GitHub repository Settings →
-Pages → Source → GitHub Actions**, then push the page and `.github/workflows/pages.yml` to main. The workflow
-publishes only `site/`; it can also be run manually from Actions after Pages is enabled. Verify the URL loads without
-sign-in before entering it in Play Console. The native privacy dialog retains its offline summary and offers an
-Online policy button; System → About links to the same page in the shared UI.
+Play expansion is paused; use the [readiness checklist](../../docs/iitc-iris/plans/play-store-readiness.md) before resuming.
 
-For Play Console's **App bundles** upload, build an AAB instead of an APK:
-
-```bash
+```sh
 source apps/android-intel-spike/signing/release.env
 npm run android:bundle
 ```
 
-This runs the Android JavaScript tests, release unit tests and lint, then creates the signed
-`app/build/outputs/bundle/release/app-release.aab`. Select that file in the internal testing release's upload field.
-It uses the current release key to sign the bundle; that signature authenticates the upload and does not determine
-which key Google uses to sign delivered APKs. Configure Play App Signing to use the existing release app-signing key
-before rolling out to preserve GitHub/Play update compatibility. A separate upload key remains recommended; this
-initial local build uses the existing key. Never upload the keystore or `release.env` as an app bundle.
+This checks release tests/lint and signs `app/build/outputs/bundle/release/app-release.aab`; it does not submit/publish.
+An upload signature does not determine Google's delivered APK certificate. Verify Play App Signing uses the existing
+app-signing key for GitHub/Play update compatibility; a separate upload key remains an option. Never upload a keystore
+or `release.env` as the bundle. The local download page does not list AABs.
+Public privacy source: `site/privacy/index.html`. Enable Pages → GitHub Actions; `.github/workflows/pages.yml` publishes
+only `site/`. Verify the public URL in README without sign-in; native About retains an offline summary and online link.
 
-Creating the AAB does not submit or publish a Play release. Signing enrollment and live Play-delivered installation
-still need verification. The local download page continues to list APK/XPI/ZIP artifacts.
+## Native security and lifetime boundaries
 
-## Phone Check
+- The Activity owns WebView, injection, mode, Back and lifecycle. Cookies/DOM storage stay there and cookies flush on
+  pause. WebView timers/native probe polling pause in background; timer suspension is process-wide (one WebView).
+- Embedded pages are limited to HTTPS Intel, `login.ingress.com`, exact allowed regional Google accounts,
+  `accounts.youtube.com` and named Niantic sign-in hosts; other HTTPS links open externally. Reject userinfo,
+  non-default ports, unrelated subdomains/lookalikes. No mixed/file access or privileged native JavaScript bridge.
+- Login uses IITC Mobile's user-agent workaround: remove the WebView marker and change reduced Chrome `.0.0.0` to
+  `.0.0.1`, retaining installed major/device data. This is experimental, not a supported OAuth architecture;
+  [embedded authorization policy](https://developers.google.com/identity/protocols/oauth2/policies#use-secure-browsers)
+  is a distribution blocker. Saved-password support remains open; no credentials are copied to native code.
+- `GoogleAccountHosts.java` records the domain snapshot/source hash. To refresh, download
+  [Google's supported domains](https://www.google.com/supported_domains), prepend `accounts` to each leading-dot domain,
+  update snapshot/date/hash and run navigation tests. Exact host matching is required; do not fetch the list at runtime/build.
+- Geolocation is user-triggered, foreground coarse/fine only, restricted to exact HTTPS Intel origin with Intel on top.
+  Navigation/cancellation/disposal discard pending page callbacks. Never retain positive WebView grants. Retain denials
+  to avoid loops; clear on a new page or return with Android permission granted. Check prior decisions/rationale before
+  prompting again. No background location/tracking service.
+- Bundled assets use reserved HTTPS Intel path `/__iris_android__/` and host asset-base metadata; other requests keep
+  their network owner. No fake extension APIs. In IRIS mode, block only `gen_dashboard_<hash>.js`, retaining script-tag
+  version/inline player data/endpoints; Stock mode permits it. Recheck this bootstrap dependency when Intel changes.
+- Back is a cancelable DOM event, without native component-state access. Explicit user-gesture map-app launches require
+  Intel's main frame. Web clipboard handles drawings/titles; native clipboard is only explicit diagnostic Copy.
+  Import/export remains JSON text/clipboard, with no supported native file-picker/download bridge.
+- Session diagnostics run a bundled probe only at exact HTTPS Intel origin; page-owned requests retain credentials.
+  Navigation/disposal invalidate pending probe callbacks. Debug builds support Chrome DevTools/Android Logcat.
 
-1. Install **IRIS** with application ID `io.github.amsdams.iris`. The first installation with this ID starts with a fresh
-   session/settings alongside any old `org.iris.intelspike` app. Later updates with the same ID and signing key preserve
-   its session. Debug/release signing switches for the same ID still require uninstall/reinstall. Open the app; sign in if needed.
-   IRIS should start automatically; the loading/checking status line should disappear after success.
-2. Open **App → Diagnostics**. **Check session** starts the probe; reopen Diagnostics to see its result.
-   PASS requires a signed-in player plus a valid `getHasActiveSubscription` response.
-   In IRIS mode, Diagnostics should show **Stock dashboard: blocked**.
-3. Pan/zoom, select a portal, and open a panel. Android Back should close a portal image first, then the panel,
-   then the selection. Back on the plain map backgrounds the app rather than revisiting sign-in.
-4. Background/reopen the app and lock/unlock the phone; the map should remain usable. Try rotation too.
-5. Use **App → Recovery → Stock Intel** to recover the original map; choose **IRIS** there to switch back. Each opens a fresh page.
-   **Reload** and force-stop/reopen preserve the selected mode. Finish in IRIS mode and verify automatic startup again.
-6. On failure, use **App → Diagnostics → Copy**. It includes versions, hosts, mode, and fixed session/injection status messages;
-   no cookies, tokens, player identity, full URLs, or response bodies. Share visible errors without authentication URLs.
+Compare native changes against IITC Mobile `IITC_WebView.java`, `IITC_WebViewClient.java` and `IITC_Mobile.java` per
+[the doctrine](../../docs/iitc-iris/port-plan.md); adopting its entire mobile/plugin framework is outside current scope.
 
-For 0.3.1, use **Map → Controls → Locate** (the existing location action). The Android prompt should appear only
-when locating, not at startup. Deny and tap Locate repeatedly: the map should stay usable and report permission
-denied without repeated Android permission-Activity launches. A denial is retained for the page; an explicit Reload
-can retry if Android still permits prompting. To restore access after denial, enable Location in Android’s app
-permissions, return, and tap Locate. Expect the map to move to your location and show its accuracy.
-Location services must also be enabled on the phone. Check approximate access and rotation/navigation during a
-prompt when convenient; a cancelled page request should require another tap after returning.
+## Maintainer device checks
 
-The permission flow follows Android’s [runtime location guidance](https://developer.android.com/develop/sensors-and-location/location/permissions/runtime)
-and [WebChromeClient geolocation callback](https://developer.android.com/reference/android/webkit/WebChromeClient#onGeolocationPermissionsShowPrompt(java.lang.String,%20android.webkit.GeolocationPermissions.Callback)).
-
-Login compatibility keeps `accounts.youtube.com` and exact regional Google account hosts in the same WebView
-as Intel and its authorization page. Version 0.3.3 derives 187 exact `accounts.<domain>` hosts from
-[Google’s published supported domains](https://www.google.com/supported_domains), verified 2026-10-21.
-The checked-in `GoogleAccountHosts.java` records the source SHA-256. Every entry was compared against the downloaded
-source; individual account endpoints/login flows were not all exercised. Host matching is exact, HTTPS/default-port
-only, without userinfo; unrelated Google pages, subdomains, and lookalikes remain outside the WebView.
-To refresh, download that source, derive each hostname by prepending `accounts` to each leading-dot domain, update
-the snapshot/date/hash, and run the navigation tests. No domain list is downloaded at build time or runtime.
-It uses the updated IITC mobile user-agent workaround: remove the WebView marker and adjust a reduced Chrome version
-ending in `.0.0.0` to `.0.0.1`, preserving the installed browser major version and device information.
-This is a compatibility experiment, not a supported Google OAuth integration; Google's
-[embedded-user-agent policy](https://developers.google.com/identity/protocols/oauth2/policies#use-secure-browsers)
-prohibits this kind of embedded authorization, so it is not a permanent auth architecture or a distribution-ready solution.
-Version 0.1.3 reached stock Intel without Chrome and stayed logged in after force-stop; the earlier recovered
-0.1.2 session passed the authenticated probe. No credentials are copied to native code.
-USB is optional; debug builds can also be inspected with Chrome DevTools and Android Studio Logcat.
-
-## Ownership And Next Step
-
-A native Activity owns the WebView, automatic signed-in injection, mode selection, lifecycle, and Back behavior.
-Cookies/DOM storage stay in the WebView; cookies flush when pausing. WebView timers and native probe polling pause
-in the background and resume on return. Timer suspension is process-wide; this spike owns a single WebView. Embedded top-level pages are restricted to Intel, `login.ingress.com`, the verified regional Google account-host
-allowlist, `accounts.youtube.com`, and its named Niantic sign-in hosts; other HTTPS links open
-in the browser. The app declares Internet and foreground coarse/fine location permissions. Version 0.3.1 enables
-WebView geolocation and requests Android permission when the location action calls the web Geolocation API,
-accepting approximate or precise access. Only the exact HTTPS Intel origin on an Intel top-level page is allowed.
-Navigation, cancellation, and disposal discard pending page callbacks without invoking cancelled requests.
-Positive WebView grants are never retained. Denials are retained to stop retry loops, cleared on a new page and
-after returning with Android permission granted. The wrapper checks prior Android decisions/rationale before
-launching another permission Activity, and diagnostics include permission state and the native request count. No background location permission or tracking service is added. File handling remains later work. Existing web clipboard copying
-works on the phone for markers and portal titles; no additional native clipboard bridge was needed. Native clipboard
-access only supports the explicit diagnostics Copy action.
-
-IITC mobile comparison sources are `IITC_WebView.java`, `IITC_WebViewClient.java`, and the user-agent helpers in
-`IITC_Mobile.java` under `reference/ingress-intel-total-conversion/mobile/`. Reused concepts: JavaScript/DOM storage,
-cookie persistence, navigation ownership, and WebView lifecycle. The broad JavaScript interface, mixed/file access,
-and entire mobile/plugin framework were not adopted. Only the narrow user-agent login workaround is now under test.
-
-Native diagnostics evaluate a bundled probe only on the exact HTTPS Intel origin. Credentials stay inside that page's
-same-origin request; no privileged native JavaScript bridge is installed. Navigation/disposal invalidates pending probe
-callbacks. Request format mirrors `postIntelEndpoint`/`extractVersion` in the existing page runtime.
-
-Bundled assets are served only under the reserved HTTPS Intel path `/__iris_android__/`; other Intel requests
-keep their network owner. The host supplies an asset-base meta tag; no fake extension APIs or privileged JavaScript
-bridge are installed. The read-only Draw Tools status request/reply proves the existing shell/runtime transport.
-In IRIS mode, interception returns an empty response for the exact Intel `gen_dashboard_<hash>.js` entry, preventing
-the stock dashboard runtime from starting while retaining its script-tag version metadata, inline player data, and
-authenticated endpoints. Stock Intel mode permits the original script. This depends on Intel’s current bootstrap layout;
-confirm the blocked diagnostic and map behavior on the phone. Back reaches IRIS through a cancelable DOM event,
-without native access to component state.
-Next: phone-smoke the new App menu and interface themes, then invite 2–5 trusted players for a short sideload trial.
-Collect concrete usability/auth failures before another polish pass. Store distribution and the outstanding auth
-architecture remain later decisions. Include Back from image/selection/plain map in the next device regression check.
-See the [APK plan](../../docs/iitc-iris/plans/android-apk-installable-plan.md).
-
-Phone evidence (2026-10-20): early versions handed sign-in to Chrome, losing the WebView session.
-Adding `login.ingress.com`, `accounts.google.com`, then `accounts.youtube.com` kept the complete flow embedded.
-Version 0.1.3 reached stock Intel and persisted login across force-stop. Google Password Manager autofill remains
-unresolved. Version 0.2.0 phone injection and the quick feature smoke passed. The native PASS label was not
-separately reported; keep that diagnostic distinct from the accepted feature smoke.
-
-Phone evidence (2026-10-21, 0.3.0): Stock Intel reopened in Stock Intel mode. After selecting IRIS, the user
-closed/reopened the app, IRIS loaded automatically, and Diagnostics showed **Stock dashboard: blocked**.
-The user also confirmed Back closes a panel, rotation follows the phone, and Reload restores the open panel.
-The user subsequently confirmed the app remains responsive after the requested background/resume check.
-Back from image/selection/plain map and the native round-trip PASS label remain unreported.
-
-Phone evidence (2026-10-21, 0.3.1): the user received the location prompts, accepted access, and location was found.
-Denial/retry, approximate-only access, and cancellation during navigation/rotation were not separately reported.
-
-Fresh-install regression (2026-10-21): after uninstalling and signing in with another account, the user reached
-HTTP 400 in an external browser; Diagnostics reported `accounts.google.nl` as the last external host. Version 0.3.2
-added that host; 0.3.3 replaces individual Google host additions with the verified regional allowlist above.
-The user confirmed 0.3.3 works after the login fix and location/clipboard still work; individual regional login
-flows were not all tested.
-
-Scope correction: Draw Tools import/export uses JSON text and clipboard in the existing app. No file-picker or
-file-download UI exists; native file import/export is deferred, not a required existing-feature spike test.
-The user believes the other requested checks were exercised. Location denial failed on 0.3.3: after reinstalling
-and denying two prompts, Locate caused status-bar flicker followed by the app closing. No phone was connected for
-a crash trace; the exact crash cause remains unconfirmed. Version 0.3.4 prevents repeated permission requests after
-denial, retains WebView denials, and drops cancelled callbacks. Regression tests pass. On 0.3.4 the user received
-one prompt, denied it, and saw permission denied. A second Locate produced one more prompt; after denial, further
-taps stopped prompting. The user enabled location including precise access in Android settings and Locate found
-their location again. The reported denial regression passed the phone retest; the original crash mechanism remains
-unconfirmed without a device trace.
-The denial-cache behavior follows [Chromium’s geolocation implementation](https://chromium.googlesource.com/chromium/src/+/main/android_webview/java/src/org/chromium/android_webview/AwContents.java)
-and [Android’s permission-denial guidance](https://developer.android.com/training/permissions/requesting).
-
-Spike conclusion (2026-10-21): feasibility is proven for the tested phone paths, including fresh login, persisted
-session, IRIS startup/runtime communication, stock recovery, panel Back, rotation/reload, background/resume, clipboard,
-and location permission denial/recovery. Promote this wrapper rather than rebuilding it. Preserve the documented
-Google login/password-manager limits and deferred file handling; this is not production-auth or release approval.
-
-Player-tracker follow-up (0.3.5): phone taps produced no popup. Browser hit-testing reproduced the marker shadow
-intercepting clicks; CSS now enables pointer events on the icon only. Markers persist through COMM refreshes so
-popup auto-pan no longer removes the popup source. Browser reproduction and marker-lifetime tests pass;
-the user confirmed popup opening in both XPI and APK (2026-10-21). History-link behavior was not separately reported.
-
-OpenFreeMap trial (0.3.6): Dark/Light use keyless OpenFreeMap vector styles via MapLibre’s Leaflet binding;
-OSM remains raster. The standalone worker is packaged and served through an exact native asset route.
-Browser checks passed with real tiles, including cross-origin workers, switching, movement, and map replacement.
-The user tested the updated APK and XPI and reported both look fine (2026-10-21).
+In addition to the friends checklist, confirm Diagnostics → Check session sees a player and valid subscription
+response (non-subscribers can pass); reopen Diagnostics to read it. Feature smoke alone is not native PASS.
+IRIS must report Stock dashboard blocked; Stock recovery must restore it. Back closes image → panel → selection →
+background. Verify login/expiry, rotation/resume, location denial/retry/settings recovery and no cancelled callbacks.

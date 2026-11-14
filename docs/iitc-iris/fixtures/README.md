@@ -1,12 +1,6 @@
 # Payload samples
 
-The three existing captured samples were moved unchanged from `docs/iris/update-map-samples/` when the superseded
-applications were removed. Their original filenames are retained for traceability. These are reference samples, not
-packaged map fixtures.
-
-The three absent diagnostics map captures and their source choices were retired on 2026-10-20. The application uses live
-Intel data; saved selections for the retired fixtures fall back to Live. Packaging no longer generates empty fixture
-maps or exposes them as extension resources.
-
-Do not substitute a sample from another zoom/area or describe an empty map as live parity evidence.
-New captured payloads must be sanitized before being committed.
+These three sanitized reference captures retain their original filenames from the superseded application.
+They are development samples, not packaged diagnostic maps; normal operation uses live Intel.
+Do not substitute captures from another zoom/area or describe an empty map as live parity evidence.
+Sanitize new payload captures before committing them.

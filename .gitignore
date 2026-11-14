@@ -57,7 +57,7 @@ pnpm-debug.log*
 /reference/
 .aider*
 /docs/*
-!/docs/README.md
+!/docs/ROADMAP.md
 !/docs/iitc-iris/
 !/docs/iitc-iris/**
 /tmp/markers-and-links.json
