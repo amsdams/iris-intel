@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IRIS — Ingress Intel map for Android and browsers</title>
+  <meta name="description" content="IRIS is an independent, open-source Ingress Intel map companion based on IITC. Explore portals, plan links and read COMM on Android and in browser extensions.">
+  <link rel="canonical" href="https://amsdams.github.io/iris-intel/">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#123542">
+  <meta property="og:title" content="IRIS — Ingress Intel map for Android and browsers">
+  <meta property="og:description" content="An independent, open-source IITC-based map companion, with essential Intel information and planning tools for smaller screens.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://amsdams.github.io/iris-intel/">
+  <style>
+    :root { color-scheme: light dark; font: 17px/1.65 system-ui, sans-serif; --bg: #f3f7f8; --surface: #fff;
+      --text: #18333e; --muted: #445e68; --line: #c6d5db; --link: #075e75; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #0b202a; --surface: #12313d; --text: #e7f8fc; --muted: #b6cdd5; --line: #355562; --link: #84dbed; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--text); background: var(--bg); }
+    .wrap { max-width: 66rem; margin: auto; padding: 0 clamp(1.25rem, 5vw, 4rem); }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      padding: 1.5rem 0; border-bottom: 1px solid var(--line); }
+    .brand { display: inline-flex; align-items: center; gap: .7rem; color: var(--text);
+      font-size: 1.2rem; font-weight: 750; text-decoration: none; letter-spacing: .12em; }
+    .brand img { border-radius: .5rem; }
+    a { color: var(--link); text-underline-offset: .2em; overflow-wrap: anywhere; }
+    a:hover { text-decoration-thickness: .14em; }
+    a:focus-visible { outline: 3px solid var(--link); outline-offset: 5px; }
+    .hero { padding: clamp(2.5rem, 8vw, 5.5rem) 0 2.5rem; }
+    .eyebrow { margin: 0 0 1rem; color: var(--link); font-size: .8rem; font-weight: 700;
+      letter-spacing: .12em; text-transform: uppercase; }
+    h1, h2 { line-height: 1.15; text-wrap: balance; }
+    h1 { max-width: 19ch; margin: 0; font-size: clamp(2.1rem, 5.5vw, 3.7rem); letter-spacing: -.035em; }
+    .intro { max-width: 58ch; margin: 1.5rem 0; font-size: 1.12rem; }
+    .actions { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem 1.3rem; margin: 1.8rem 0; }
+    .button { display: inline-block; padding: .75rem 1.1rem; border: 1px solid #123542; border-radius: .6rem;
+      background: #123542; color: #e7f8fc; font-weight: 650; text-decoration: none; }
+    .button:hover { background: #1b485a; }
+    .note, footer { color: var(--muted); font-size: .9rem; }
+    .note { max-width: 64ch; }
+    .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+      gap: 1rem; margin-bottom: 2.5rem; }
+    .features section { padding: 1.4rem; border: 1px solid var(--line); border-radius: .8rem; background: var(--surface); }
+    h2 { margin: 0 0 .75rem; font-size: 1.2rem; }
+    .features p { margin: 0; }
+    footer { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+      gap: 1rem; padding: 1.5rem 0 2rem; border-top: 1px solid var(--line); }
+    footer p { margin: 0; }
+    nav { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a class="brand" href="./"><img src="icon.svg" alt="" width="40" height="40">IRIS</a>
+      <a href="https://github.com/amsdams/iris-intel">GitHub project</a>
+    </header>
+    <main>
+      <div class="hero">
+        <p class="eyebrow">Independent · Open source · IITC-based</p>
+        <h1>IRIS — Ingress Intel for Android and browsers</h1>
+        <p class="intro">Explore portals, plan links and follow COMM with an Intel map companion designed to keep
+          essential information and common actions within reach on smaller screens.</p>
+        <div class="actions">
+          <a class="button" href="https://github.com/amsdams/iris-intel/releases/tag/latest">Download test builds</a>
+          <a href="https://github.com/amsdams/iris-intel#download-and-try">Installation instructions</a>
+        </div>
+        <p class="note">Friends alpha for Android and Chrome/Firefox browser extensions. Android sign-in uses an
+          experimental WebView workaround; Firefox builds require temporary loading unless signed.
+          Read the installation guidance before trying a build.</p>
+      </div>
+      <div class="features" aria-label="What IRIS offers">
+        <section><h2>Explore the map</h2><p>Inspect portal details, resonators, mods and statistics. Find missions,
+          check regional scores, and view Intel over OpenStreetMap or OpenFreeMap.</p></section>
+        <section><h2>Plan your next move</h2><p>Draw links and markers, inspect link ranges and inventory key counts,
+          share portal locations, and open destinations in your preferred maps tool.</p></section>
+        <section><h2>Keep activity in view</h2><p>Read and send COMM, filter loaded messages, and follow player activity
+          derived from Intel events. Interface theme and text size are independent of the base map.</p></section>
+      </div>
+      <p class="note">IRIS means Ingress Reconnaissance &amp; Intelligence System. It uses IITC-CE core and relevant
+        plugins as its behavioral reference, with an independent mobile interface. It is not affiliated with or
+        endorsed by Niantic or IITC.</p>
+    </main>
+    <footer>
+      <p>Open source under <a href="https://github.com/amsdams/iris-intel/blob/main/LICENSE">GPL-3.0</a>.</p>
+      <nav aria-label="Project links">
+        <a href="https://github.com/amsdams/iris-intel/issues">Feedback</a>
+        <a href="https://github.com/amsdams/iris-intel/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/amsdams/iris-intel/blob/main/CREDITS.md">Credits</a>
+        <a href="privacy/">Privacy</a>
+      </nav>
+    </footer>
+  </div>
+</body>
+</html>

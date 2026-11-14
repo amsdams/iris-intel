@@ -19,7 +19,7 @@ Open `https://intel.ingress.com/` after loading the extension. IRIS provides por
 missions, inventory, regional scores, COMM, player activity, drawn links/markers and viewport analysis.
 It uses live Intel with OSM/OpenFreeMap base maps; UI theme and text size are independent preferences.
 
-[Privacy policy](https://amsdams.github.io/iris-intel/privacy/) ·
+[Project website](https://amsdams.github.io/iris-intel/) · [Privacy policy](https://amsdams.github.io/iris-intel/privacy/) ·
 [Feedback](https://github.com/amsdams/iris-intel/issues) · [Support/privacy email](mailto:1sos.2play@gmail.com)
 
 ## Project setup
