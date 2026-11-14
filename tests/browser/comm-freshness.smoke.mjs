@@ -1,15 +1,12 @@
-import {test, expect} from '@playwright/test';
+import {test, expect} from './smoke-fixtures.mjs';
 import {DEFAULT_LAYER_SETTINGS} from '../../apps/iitc-iris/src/map/layers/layer-registry.ts';
 
 test.beforeEach(async ({page}) => {
-  await page.route('**/*', route => new URL(route.request().url()).origin === 'http://127.0.0.1:6973'
-    ? route.continue() : route.fulfill({status: 200, body: ''}));
   await page.addInitScript(() => {
     const nativeNow = Date.now;
     // The cache captures Date.now during boot, before Playwright replaces the clock.
     Date.now = () => window.freshFixture.clockInstalled ? window.Date.now() : nativeNow();
-    window.freshFixture = {phase: 0, entities: [], comm: [], times: {}, errors: [], events: []};
-    window.addEventListener('error', event => window.freshFixture.errors.push(event.message));
+    window.freshFixture = {phase: 0, entities: [], comm: [], times: {}, events: []};
     window.addEventListener('message', ({data}) => {
       if (['IITC_IRIS_REQUEST_COMM', 'IITC_IRIS_COMM_STATUS', 'IITC_IRIS_COMM_VISIBILITY', 'IITC_IRIS_ENTITY_STATUS'].includes(data.type)) {
         window.freshFixture.events.push({type: data.type, time: Date.now(), tab: data.commTab ?? data.comm?.tab, status: data.comm?.status});
@@ -17,11 +14,9 @@ test.beforeEach(async ({page}) => {
       if (data.type === 'IITC_IRIS_ENTITY_STATUS') window.freshFixture.mapStatus = data;
       if (data.type === 'IITC_IRIS_COMM_STATUS') window.freshFixture.commStatus = data.comm;
     });
-    const nativeFetch = window.fetch.bind(window);
-    const fetchFixture = async (url, init) => {
-      const endpoint = String(url).split('/').pop();
-      const state = window.freshFixture;
-      if (endpoint === 'getEntities') {
+    window.__irisRpcHandlers = {
+      getEntities: init => {
+        const state = window.freshFixture;
         const payload = JSON.parse(init.body);
         state.entities.push(payload);
         const geometry = state.phase ? [] : [
@@ -32,8 +27,9 @@ test.beforeEach(async ({page}) => {
           ['capture', Date.now(), ['p', state.phase ? 'R' : 'E', 52000000, 4000000, 1, 100, 1, '', 'Capture portal', [], false, false, null, Date.now()]],
           ...geometry,
         ]}]))}});
-      }
-      if (endpoint === 'getPlexts') {
+      },
+      getPlexts: init => {
+        const state = window.freshFixture;
         const payload = JSON.parse(init.body);
         state.comm.push(payload);
         const phase = state.phase;
@@ -50,13 +46,8 @@ test.beforeEach(async ({page}) => {
         const filtered = rows.filter(row => payload.minTimestampMs <= row[1]);
         if (!payload.ascendingTimestampOrder) filtered.reverse();
         return Response.json({result: filtered});
-      }
-      if (endpoint === 'getArtifactPortals') return Response.json({result: {}});
-      if (String(url).includes('/r/')) return Response.json({result: false});
-      return nativeFetch(url, init);
+      },
     };
-    // Keep the fixture HTML's generic empty endpoint wrapper from replacing these responses.
-    Object.defineProperty(window, 'fetch', {configurable: true, get: () => fetchFixture, set: () => {}});
   });
   await page.goto('/');
   await expect.poll(() => page.evaluate(() => window.freshFixture.mapStatus?.status)).toBe('entities ready');
@@ -77,9 +68,6 @@ const snapshot = page => page.evaluate(() => ({
   oldField: window.__iitcIrisLayers.entityLayerIndex.fields.has('old-field'),
 }));
 
-test.afterEach(async ({page}) => {
-  expect(await page.evaluate(() => window.freshFixture.errors)).toEqual([]);
-});
 
 test('stationary authoritative refresh changes faction and removes old links/fields after COMM moves the player', async ({page}) => {
   const initial = await snapshot(page);

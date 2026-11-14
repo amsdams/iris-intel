@@ -1,32 +1,14 @@
-import {test, expect} from '@playwright/test';
+import {openPanel} from './navigation-fixture.mjs';
+import {test, expect} from './smoke-fixtures.mjs';
 
-async function appearance(page) {
-  const primary = page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: 'System', exact: true});
-  if (await primary.getAttribute('aria-pressed') !== 'true') await primary.click();
-  const secondary = page.locator('.iitc-iris-sheet-tabbar-secondary').getByRole('button', {name: 'Appearance', exact: true});
-  if (await secondary.getAttribute('aria-pressed') !== 'true') await secondary.click();
-  return page.getByLabel('Appearance', {exact: true});
-}
+const appearance = page => openPanel(page, 'System', 'Appearance');
 
 test.beforeEach(async ({page}) => {
-  // Empty valid vector styles and raster tiles make failure tests independent of providers.
-  await page.route('**/*', route => {
-    const url = new URL(route.request().url());
-    if (url.origin === 'http://127.0.0.1:6973') return route.continue();
-    if (url.hostname === 'tiles.openfreemap.org') return route.fulfill({
-      json: {version: 8, sources: {}, layers: [{id: 'background', type: 'background', paint: {'background-color': '#345678'}}]},
-    });
-    return route.fulfill({status: 200, body: ''});
-  });
-  const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
-  // Keep uncaught errors visible in the report, including those during failed GL initialization.
-  await page.exposeFunction('getSmokeErrors', () => errors);
+  await page.route('https://tiles.openfreemap.org/**', route => route.fulfill({
+    json: {version: 8, sources: {}, layers: [{id: 'background', type: 'background', paint: {'background-color': '#345678'}}]},
+  }));
   await page.goto('/');
   await expect(page.locator('.iitc-iris-sheet-tabbar')).toBeVisible();
-});
-test.afterEach(async ({page}) => {
-  expect(await page.evaluate(() => window.getSmokeErrors())).toEqual([]);
 });
 
 for (const failure of ['malformed style', 'HTTP failure']) {

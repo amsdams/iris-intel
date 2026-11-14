@@ -15,8 +15,7 @@ Candidates in suggested order; select a bounded item before implementation. Thes
 | --- | --- |
 | Device acceptance | Exercise 0.6 on Firefox/Android: portrait/landscape keyboard, larger text, Back/image focus, rotation/resume, portal details and populated lists; [checklist](iitc-iris/friends-testing.md). |
 | Request recovery | Probe Missions close-during-loading/reopen, then Passcode/geocoder cancellation as relevant. Inventory/Scores already have recovery regressions. Verify session expiry/logout/subscription transitions; retain preferences and pause automatic work during auth recovery. |
-| Browser CI | Add an explicit Playwright job and browser installation; current CI runs check/package/native gates without browser smoke. |
-| Test gaps | Migrate legacy suites to strict RPC fixtures; cover malformed/blocked saved views, overwrite/delete/eight-view limits and filtered-message reload. Add visual baselines/workbench compositions only for a concrete benefit. |
+| Test gaps | Cover malformed/blocked saved views, overwrite/delete/eight-view limits and filtered-message reload; expand CI browser coverage when needed. Add visual baselines/workbench compositions only for a concrete benefit. |
 | Release/LCM audit | Before broader delivery: permissions, native handoffs, Firefox signing, actual update routes and backup restoration. Handle major Preact/Vite/Vitest/TypeScript/Stylelint upgrades separately; check peers, AGP/Gradle pairing, advisories and Leaflet's private canvas seam. |
 
 ## Later

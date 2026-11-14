@@ -1,4 +1,5 @@
-import {test, expect} from '@playwright/test';
+import {waitForMapFrames} from './navigation-fixture.mjs';
+import {test, expect} from './smoke-fixtures.mjs';
 import {DEFAULT_LAYER_SETTINGS} from '../../apps/iitc-iris/src/map/layers/layer-registry.ts';
 
 async function openComm(page) {
@@ -7,12 +8,11 @@ async function openComm(page) {
   return page.locator('aside[aria-label="COMM messages panel"]');
 }
 
-let errors;
 test.beforeEach(async ({page}) => {
-  errors = [];
-  page.on('pageerror', error => errors.push(error.message));
-  await page.route('**/*', route => new URL(route.request().url()).origin === 'http://127.0.0.1:6973'
-    ? route.continue() : route.fulfill({status: 200, body: ''}));
+  await page.addInitScript(() => {window.__irisRpcHandlers = {
+    getPortalDetails: () => Response.json({result: false}), // Selection is exercised; detail content is outside this fixture.
+  };});
+
   await page.goto('/');
   await expect(page.locator('.iitc-iris-sheet-tabbar')).toBeVisible();
   await page.evaluate(() => {
@@ -65,8 +65,6 @@ test.beforeEach(async ({page}) => {
   });
 });
 
-test.afterEach(() => {expect(errors).toEqual([]);});
-
 test('Machina names in neutral-tagged TEXT and player markup render red in both themes', async ({page}) => {
   await page.evaluate(() => {
     const now = Date.now();
@@ -97,7 +95,7 @@ test('Machina names in neutral-tagged TEXT and player markup render red in both 
   }
 });
 
-test('retains failed drafts per channel, confirms a successful send, and preserves newer text after a late success', async ({page}) => {
+test('retains failed drafts per channel, confirms a successful send, and preserves newer text after a late success', {tag: '@smoke'}, async ({page}) => {
   const panel = await openComm(page);
   const draft = panel.locator('.iitc-iris-comm-send-form input');
   await draft.fill('recover this');
@@ -218,7 +216,6 @@ test('malformed refresh preserves loaded messages and portal timeline excludes u
   // Portal selection is separate from opening its panel.
   await expect(page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: 'Portal', exact: true})).toBeEnabled();
   await page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: 'Portal', exact: true}).click();
-  panel = page.locator('.iitc-iris-portal-side-panel');
   const timeline = page.locator('.iitc-iris-portal-activity');
   await timeline.locator('summary').first().click();
   await expect(timeline).toContainText('Loaded public COMM only');
@@ -258,7 +255,6 @@ test('malformed refresh preserves loaded messages and portal timeline excludes u
   await expect(timeline).not.toContainText('AgentA');
 });
 
-
 test('expanded filters stay reachable in light/dark phone and landscape layouts', async ({page}, testInfo) => {
   for (const theme of ['Light', 'Dark']) {
     await page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: 'System', exact: true}).click();
@@ -293,7 +289,6 @@ test('expanded filters stay reachable in light/dark phone and landscape layouts'
     }
   }
 });
-
 
 test('structured errors and ambiguous send replies preserve drafts without retrying; success tokens clear them', async ({page}) => {
   const panel = await openComm(page);
@@ -339,6 +334,8 @@ test('out-of-range timestamps preserve loaded history and cursor; presentation a
     window.addEventListener('message', acknowledged);
     window.postMessage({type: 'IITC_IRIS_COMM_VISIBILITY', commVisible: false}, '*');
   }));
+  // Drain the cancellation/status render before injecting a presentation-only snapshot.
+  await waitForMapFrames(page);
   // A malformed internal bridge message must not throw in date presentation either.
   await page.evaluate(() => {
     const comm = window.commReviewFixture.lastComm;

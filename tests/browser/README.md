@@ -7,7 +7,8 @@ isolated storage, simulated responses and hostile host styles; no credentials or
 ## Running
 
 ```sh
-npm run test:browser
+npm run test:browser:smoke       # representative journeys
+npm run test:browser             # full regression suite
 npm run test:browser -- tests/browser/comm-usability.smoke.mjs
 npm run test:browser:watch
 npm run test:browser:report
@@ -15,19 +16,22 @@ npm run test:browser:report
 
 Normal runs build the app and manage the loopback fixture server (port 6973). Reports/screenshots/traces are ignored
 under `playwright-report/` and `test-results/`. `--ui` enables stepping; `--workers=1` isolates timing investigations.
-Local default is two workers; CI configuration uses one if invoked, but workflows do not currently run Playwright.
-Re-benchmark reliability/runtime before increasing concurrency. Reuse commands are in the contributor guide.
+Local default is two workers; CI uses one worker for the tagged smoke selection before packaging.
+Re-benchmark reliability/runtime before increasing concurrency. Use `npm run test:browser:smoke:reuse` for quick
+checks of unchanged build inputs; full build-reuse commands are in the contributor guide.
 
 ## Fixture and assertion rules
 
 - `intel-fixture.html` hosts the runtime; `portal-fixture.mjs` / `navigation-fixture.mjs` share setup/navigation helpers.
-- Use strict `smoke-fixtures.mjs` RPC handlers before navigation/reload; reject unexpected requests and explicitly
-  suppress intended external imagery/navigation. Error tracking must survive reload/popup closure. Legacy suites still
-  have permissive defaults; new cases should not copy them.
+- All suites use `smoke-fixtures.mjs`; declare feature RPC handlers before navigation/reload and suppress intended
+  external resources explicitly. Only empty map/COMM/artifact and inactive subscription startup responses are shared.
+  Unexpected requests and errors fail the test, including reload/popup errors. `entity-fixture.mjs` adds renderer setup.
 - Supply authoritative map responses for entities that must survive refreshes; one-shot bridge injections can race
   publishers. Stop unrelated publishers deliberately when exercising malformed presentation snapshots.
 - Wait for responses/state, not arbitrary sleeps. Stable feature fixtures use en-US/UTC; control lifecycle clocks.
   Preserve recovery/selection assertions when fixing races. WebGL cancellation checks must cross the fallback deadline.
+- Use `navigation-fixture.mjs` for shared panel/group navigation. Tags mark existing quick journeys (`@smoke`); full
+  regression includes them. Keep each test in its behavior suite rather than a UI-batch file.
 - Assert behavior: navigation/focus, actual QR decode, geometry, retained layers/pixels, cancellation/errors and absent
   unintended requests. Source tests describe suite coverage; avoid maintaining a second catalogue here.
 

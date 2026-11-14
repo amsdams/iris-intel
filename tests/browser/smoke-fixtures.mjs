@@ -2,9 +2,10 @@ import {test as base, expect} from '@playwright/test';
 
 export {expect};
 
-// Start with the feature suites. Keep provider suppression explicit and let popup pages share the same checks.
+// All suites share strict request/error tracking, including reloads and popup pages.
 export const test = base.extend({
-  smokeChecks: [async ({page, context}, use, testInfo) => {
+  checkConsoleErrors: [false, {option: true}],
+  smokeChecks: [async ({context, checkConsoleErrors}, use, testInfo) => {
     const errors = [];
     const unexpectedRequests = [];
     const unexpectedRpcs = [];
@@ -13,6 +14,9 @@ export const test = base.extend({
       if (watched.has(candidate)) return;
       watched.add(candidate);
       candidate.on('pageerror', error => errors.push({url: candidate.url(), message: error.message}));
+      if (checkConsoleErrors) candidate.on('console', message => {
+        if (message.type() === 'error') errors.push({url: candidate.url(), message: message.text()});
+      });
     };
     context.on('page', watch);
     context.pages().forEach(watch);
@@ -33,7 +37,6 @@ export const test = base.extend({
       unexpectedRequests.push(route.request().url());
       return route.fulfill({status: 502, body: 'Unexpected external request in smoke test'});
     });
-    await page.addInitScript(() => {window.__irisStrictRpcs = true;});
     await use();
     if (errors.length || unexpectedRequests.length || unexpectedRpcs.length) {
       await testInfo.attach('smoke-diagnostics', {body: JSON.stringify({errors, unexpectedRequests, unexpectedRpcs}, null, 2), contentType: 'application/json'});

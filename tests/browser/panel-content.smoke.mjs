@@ -1,15 +1,8 @@
+import {openPanel} from './navigation-fixture.mjs';
 import {test, expect} from './smoke-fixtures.mjs';
 import {installPortalFixture, setupPortalMap, selectPortal} from './portal-fixture.mjs';
 
 test.beforeEach(installPortalFixture);
-
-async function openPanel(page, menu, name) {
-  const primary = page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: menu, exact: true});
-  if (await primary.getAttribute('aria-pressed') !== 'true') await primary.click();
-  const secondary = page.locator('.iitc-iris-sheet-tabbar-secondary').getByRole('button', {name, exact: true});
-  if (await secondary.getAttribute('aria-pressed') !== 'true') await secondary.click();
-  return page.locator('aside:visible');
-}
 
 async function oneScroller(panel) {
   expect(await panel.evaluate(element => [element, ...element.querySelectorAll('*')].filter(node =>

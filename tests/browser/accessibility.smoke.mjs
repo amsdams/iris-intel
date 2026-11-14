@@ -1,18 +1,9 @@
+import {openPanel} from './navigation-fixture.mjs';
 import {test, expect} from './smoke-fixtures.mjs';
 import {installPortalFixture, setupPortalMap, selectPortal} from './portal-fixture.mjs';
 
 test.beforeEach(installPortalFixture);
 test.use({viewport: {width: 320, height: 780}, hasTouch: true});
-
-async function openPanel(page, menu, name) {
-  const primary = page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: menu, exact: true});
-  if (await primary.getAttribute('aria-pressed') !== 'true') await primary.click();
-  if (name) {
-    const tab = page.locator('.iitc-iris-sheet-tabbar-secondary').getByRole('button', {name, exact: true});
-    if (await tab.getAttribute('aria-pressed') !== 'true') await tab.click();
-  }
-  return page.locator('aside:visible');
-}
 
 for (const {menu, name, field} of [
   {menu: 'Map', name: 'Search', field: 'Search portal or address'},

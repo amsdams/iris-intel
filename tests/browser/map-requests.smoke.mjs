@@ -1,10 +1,8 @@
-import {test, expect} from '@playwright/test';
+import {waitForMapFrames} from './navigation-fixture.mjs';
+import {test, expect} from './smoke-fixtures.mjs';
 
-test('live request retries deliver real layers and subsequent refreshes reuse cached tiles', async ({page}) => {
-  const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
-  await page.route('**/*', route => new URL(route.request().url()).origin === 'http://127.0.0.1:6973'
-    ? route.continue() : route.fulfill({status: 200, body: ''}));
+test('live request retries deliver real layers and subsequent refreshes reuse cached tiles', {tag: '@smoke'}, async ({page}) => {
+
   await page.addInitScript(() => {
     window.requestFixture = {requests: 0};
     window.addEventListener('message', ({data}) => {
@@ -42,6 +40,6 @@ test('live request retries deliver real layers and subsequent refreshes reuse ca
   await page.evaluate(() => window.__iitcIrisMap.fire('moveend'));
   await expect.poll(() => page.evaluate(() => window.requestFixture.status.cacheFreshTileKeys?.length ?? 0)).toBeGreaterThan(0);
   expect(await page.evaluate(() => window.requestFixture.requests)).toBe(before);
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  expect(errors).toEqual([]);
+  await waitForMapFrames(page);
+
 });

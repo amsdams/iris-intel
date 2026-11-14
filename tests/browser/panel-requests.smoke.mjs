@@ -1,21 +1,11 @@
-import {test, expect} from '@playwright/test';
+import {waitForMapFrames, openPanel} from './navigation-fixture.mjs';
+import {test, expect} from './smoke-fixtures.mjs';
 
-async function openPanel(page, menu, name) {
-  const primary = page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: menu, exact: true});
-  if (await primary.getAttribute('aria-pressed') !== 'true') await primary.click();
-  const secondary = page.locator('.iitc-iris-sheet-tabbar-secondary').getByRole('button', {name, exact: true});
-  if (await secondary.getAttribute('aria-pressed') !== 'true') await secondary.click();
-  return page.locator('aside:visible');
-}
-
-let errors;
 test.beforeEach(async ({page}) => {
-  errors = [];
-  page.on('pageerror', error => errors.push(error.message));
-  await page.route('**/*', route => new URL(route.request().url()).origin === 'http://127.0.0.1:6973'
-    ? route.continue() : route.fulfill({status: 200, body: ''}));
+
   await page.addInitScript(() => {
     window.panelFixture = {};
+    window.__irisRpcHandlers = {getPortalDetails: () => Response.json({result: false})};
     window.addEventListener('message', ({data}) => {
       if (data.type === 'IITC_IRIS_SCORES_STATUS') window.panelFixture.scores = data.scores;
       if (data.type === 'IITC_IRIS_INVENTORY_STATUS') window.panelFixture.inventory = data.inventory;
@@ -27,11 +17,11 @@ test.beforeEach(async ({page}) => {
   await expect.poll(() => page.evaluate(() => window.panelFixture.agent?.subscription?.status)).toBe('inactive');
 });
 test.afterEach(async ({page}) => {
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  expect(errors).toEqual([]);
+  await waitForMapFrames(page);
+
 });
 
-test('Scores, Inventory/Profile and Passcode panels use their real request workflows', async ({page}) => {
+test('Scores, Inventory/Profile and Passcode panels use their real request workflows', {tag: '@smoke'}, async ({page}) => {
   await page.evaluate(() => {
     const original = window.fetch;
     window.panelFixture.requests = [];
@@ -107,7 +97,7 @@ test('closing Inventory cancels its response while the shared subscription still
   expect(await page.evaluate(() => window.panelFixture.inventory.status)).toBe('idle');
   let panel = await openPanel(page, 'Agent', 'Profile');
   await expect(panel.getByLabel('C.O.R.E. active', {exact: true})).toBeVisible();
-  panel = await openPanel(page, 'Agent', 'Inventory');
+  await openPanel(page, 'Agent', 'Inventory');
   await expect.poll(() => page.evaluate(() => Boolean(window.panelFixture.held.getInventory))).toBe(true);
   await page.getByRole('button', {name: 'Close Inventory', exact: true}).click();
   await expect.poll(() => page.evaluate(() => window.panelFixture.held.getInventory.signal.aborted)).toBe(true);

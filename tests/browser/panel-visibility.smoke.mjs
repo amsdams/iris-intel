@@ -1,27 +1,12 @@
-import {openMapGroupFor} from './navigation-fixture.mjs';
-import {test, expect} from '@playwright/test';
+import {openPanel as open, openMapGroupFor} from './navigation-fixture.mjs';
+import {test, expect} from './smoke-fixtures.mjs';
 
 const optionalPanels = ['Counts', 'List', 'Viewport scores', 'Links', 'Markers'];
 const optionalIds = ['portalCounts', 'portalsList', 'scoreboard', 'drawLinks', 'drawMarkers'];
 const secondary = page => page.locator('.iitc-iris-sheet-tabbar');
-async function open(page, menu, panel) {
-  const primary = page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: menu, exact: true});
-  if (await primary.getAttribute('aria-pressed') !== 'true') await primary.click();
-  if (panel) {
-    await openMapGroupFor(page, panel);
-    const tab = secondary(page).getByRole('button', {name: panel, exact: true});
-    if (await tab.getAttribute('aria-pressed') !== 'true') await tab.click();
-  }
-}
-
-test.beforeEach(async ({page}) => {
-  await page.route('**/*', route => new URL(route.request().url()).origin === 'http://127.0.0.1:6973'
-    ? route.continue() : route.fulfill({status: 200, body: ''}));
-});
 
 test('optional panels default to visible, persist independently of drawings/layers, and restore together', async ({page}, testInfo) => {
-  const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
+
   await page.addInitScript(() => {
     if (sessionStorage.getItem('panel-visibility-seeded')) return;
     sessionStorage.setItem('panel-visibility-seeded', 'true');
@@ -78,7 +63,7 @@ test('optional panels default to visible, persist independently of drawings/laye
   await secondary(page).getByRole('button', {name: 'Back to Map menu'}).click();
   await open(page, 'Map', 'Markers');
   await expect(page.getByText('Saved marker', {exact: true})).toBeVisible();
-  expect(errors).toEqual([]);
+
 });
 
 test('a hidden saved panel falls back to the map and malformed preferences cannot hide baseline panels', async ({page}) => {

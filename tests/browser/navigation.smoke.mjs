@@ -111,7 +111,6 @@ test('map grouping supports keyboard return and visibility reset preserves decor
   await expect(page.getByRole('checkbox', {name: 'Level labels', exact: true})).toBeChecked();
 });
 
-
 test('menu edge indicators follow scrolling, resizing and shorter menus', async ({page}) => {
   await page.setViewportSize({width: 320, height: 780});
   await setupPortalMap(page);
@@ -148,7 +147,7 @@ test('menu edge indicators follow scrolling, resizing and shorter menus', async 
   await expect(end).toBeVisible();
 });
 
-test('Android Back closes tool groups before selection; Escape works outside the menu', async ({page}) => {
+test('Android Back closes tool groups before selection; Escape works outside the menu', {tag: '@smoke'}, async ({page}) => {
   await setupPortalMap(page);
   await selectPortal(page, 'alpha');
   const primary = page.locator('.iitc-iris-sheet-tabbar-primary');

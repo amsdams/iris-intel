@@ -1,4 +1,5 @@
-import {test, expect} from '@playwright/test';
+import {waitForMapFrames} from './navigation-fixture.mjs';
+import {test, expect} from './smoke-fixtures.mjs';
 
 const layerCounts = page => page.evaluate(() => ({
   drawings: window.__iitcIrisLayers.drawnItems.length,
@@ -6,10 +7,7 @@ const layerCounts = page => page.evaluate(() => ({
 }));
 
 test('drawing actions and cached mission overlays still work after map replacement', async ({page}) => {
-  const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
-  await page.route('**/*', route => new URL(route.request().url()).origin === 'http://127.0.0.1:6973'
-    ? route.continue() : route.fulfill({status: 200, body: ''}));
+
   await page.addInitScript(() => {
     localStorage.setItem('iitc-iris:missions:details-cache', JSON.stringify({test: {time: Date.now(), data: {
       guid: 'test', title: 'Overlay fixture', description: '', typeNum: 1,
@@ -52,6 +50,6 @@ test('drawing actions and cached mission overlays still work after map replaceme
   await expect(page.locator('.iitc-iris-draw-tools-marker')).toHaveCount(1);
   await expect(page.locator('.iitc-iris-mission-waypoint-label')).toHaveCount(2);
   // Let pending Canvas redraw callbacks run before checking replacement cleanup.
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  expect(errors).toEqual([]);
+  await waitForMapFrames(page);
+
 });

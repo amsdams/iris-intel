@@ -4,7 +4,7 @@ import {installPortalFixture, setupPortalMap, selectPortal} from './portal-fixtu
 test.use({locale: 'en-US', timezoneId: 'UTC'});
 test.beforeEach(installPortalFixture);
 
-test('portal access/link indicators clear with selection and survive map replacement without stale layers', async ({page}) => {
+test('portal access/link indicators clear with selection and survive map replacement without stale layers', {tag: '@smoke'}, async ({page}) => {
   await setupPortalMap(page);
   await selectPortal(page, 'alpha');
   await expect.poll(() => page.evaluate(() => window.__iitcIrisLayers.selectedPortal.length)).toBe(3);

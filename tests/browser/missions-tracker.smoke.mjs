@@ -1,11 +1,8 @@
-import {test, expect} from '@playwright/test';
+import {waitForMapFrames} from './navigation-fixture.mjs';
+import {test, expect} from './smoke-fixtures.mjs';
 
-let errors;
 test.beforeEach(async ({page}) => {
-  errors = [];
-  page.on('pageerror', error => errors.push(error.message));
-  await page.route('**/*', route => new URL(route.request().url()).origin === 'http://127.0.0.1:6973'
-    ? route.continue() : route.fulfill({status: 200, body: ''}));
+
   await page.addInitScript(() => {
     window.featureFixture = {};
     window.addEventListener('message', ({data}) => {
@@ -18,13 +15,13 @@ test.beforeEach(async ({page}) => {
   await expect.poll(() => page.evaluate(() => ({map: Boolean(window.__iitcIrisMap), settings: Boolean(window.featureFixture.settings)}))).toEqual({map: true, settings: true});
 });
 test.afterEach(async ({page}) => {
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  expect(errors).toEqual([]);
+  await waitForMapFrames(page);
+
 });
 
 async function replaceMap(page) {
   await expect(page.locator('.leaflet-zoom-anim, .leaflet-pan-anim')).toHaveCount(0);
-  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await waitForMapFrames(page);
   await page.evaluate(() => {
     const old = document.getElementById('iitc-iris-map');
     const replacement = document.createElement('div');

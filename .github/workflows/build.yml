@@ -19,14 +19,19 @@ env:
 
 jobs:
   validate:
+    permissions:
+      contents: read
+      actions: read
     runs-on: ubuntu-latest
     outputs:
       sha: ${{ steps.source.outputs.sha }}
+      build: ${{ steps.changes.outputs.build }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
           ref: ${{ github.sha }}
+          fetch-depth: 0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 24
@@ -34,8 +39,30 @@ jobs:
         run: node scripts/verify-release.mjs
       - id: source
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Detect changes that need application builds
+        id: changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          # Include code from cancelled/failed pushes, even when this push changes only docs.
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/main ]; then
+            BASE_SHA=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/build.yml/runs?branch=main&event=push&status=success&per_page=1" \
+              --jq '.workflow_runs[0].head_sha // empty') || BASE_SHA=
+          fi
+          # Unknown/new history and manual runs build everything; only known docs-only diffs skip.
+          if [ -n "$BASE_SHA" ] && git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null &&
+             git diff --quiet "$BASE_SHA" HEAD -- . ':(exclude,glob)**/*.md' ':(exclude)docs/**' \
+               ':(exclude)site/**' ':(exclude)apps/android-intel-spike/store-listing/**' &&
+             git diff --quiet "$BASE_SHA" HEAD -- CREDITS.md apps/iitc-iris/assets; then
+            echo 'build=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'build=true' >> "$GITHUB_OUTPUT"
+          fi
 
   build:
+    if: needs.validate.outputs.build == 'true'
     needs: validate
     runs-on: ubuntu-latest
 
@@ -58,8 +85,25 @@ jobs:
       - name: Check workspaces, CSS, and workbench
         run: npm run check
 
-      - name: Package IITC IRIS
-        run: npm run package
+      - name: Ensure Chrome is available
+        run: google-chrome --version || npx playwright install --with-deps chrome
+
+      - name: Browser smoke (build web assets once)
+        run: npm run test:browser:smoke
+
+      - name: Package verified web assets
+        run: npm run package:reuse
+
+      - name: Upload browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: browser-smoke-failure
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Prepare artifacts
         run: |
@@ -76,7 +120,7 @@ jobs:
           retention-days: 30
 
   android-unsigned:
-    if: github.ref != 'refs/heads/main' || github.event_name == 'pull_request'
+    if: needs.validate.outputs.build == 'true' && (github.ref != 'refs/heads/main' || github.event_name == 'pull_request')
     needs: validate
     uses: ./.github/workflows/android.yml
     with:
@@ -85,7 +129,7 @@ jobs:
     # No signing secrets are passed to PR or non-main builds.
 
   android-signed:
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: needs.validate.outputs.build == 'true' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: validate
     uses: ./.github/workflows/android.yml
     with:
@@ -98,8 +142,8 @@ jobs:
       ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
 
   publish-latest:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: [build, android-signed]
+    if: needs.validate.outputs.build == 'true' && github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [validate, build, android-signed]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -137,7 +181,7 @@ jobs:
 
             ---
             **Installation Instructions:**
-            Refer to the [README](https://github.com/${{ github.repository }}#load-iitc-iris-locally) for extension installation instructions.
+            Refer to the [README](https://github.com/${{ github.repository }}#download-and-try) for extension installation instructions.
             Android: see the [friends testing guide](https://github.com/${{ github.repository }}/blob/main/docs/iitc-iris/friends-testing.md).
             In IRIS, use **App → Check for updates** or **App → Releases** for future APKs.
           files: out/*

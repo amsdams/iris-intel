@@ -1,16 +1,6 @@
-import {openMapGroupFor} from './navigation-fixture.mjs';
-import {test, expect} from '@playwright/test';
+import {openPanel} from './navigation-fixture.mjs';
+import {test, expect} from './smoke-fixtures.mjs';
 test.setTimeout(30_000);
-
-async function openPanel(page, menu, name) {
-  const primary = page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: menu, exact: true});
-  if (await primary.getAttribute('aria-pressed') !== 'true') await primary.click();
-  if (!name) return page.locator('aside:visible');
-  await openMapGroupFor(page, name);
-  const secondary = page.locator('.iitc-iris-sheet-tabbar').getByRole('button', {name, exact: true});
-  if (await secondary.getAttribute('aria-pressed') !== 'true') await secondary.click();
-  return page.locator('aside:visible');
-}
 
 async function reachable(locator) {
   // scrollIntoView can scroll overflow:hidden too, so first reject clipping ancestors.
@@ -34,10 +24,12 @@ async function reachable(locator) {
 for (const viewport of [{width: 780, height: 360}, {width: 780, height: 280}, {width: 660, height: 280}, {width: 412, height: 780}]) {
   test(`panel contents remain reachable at ${viewport.width}×${viewport.height}`, async ({page}, testInfo) => {
     await page.setViewportSize(viewport);
-    await page.route('**/*', route => new URL(route.request().url()).origin === 'http://127.0.0.1:6973'
-      ? route.continue() : route.fulfill({status: 200, body: ''}));
-    const errors = [];
-    page.on('pageerror', error => errors.push(error.message));
+
+    await page.addInitScript(() => {window.__irisRpcHandlers = {
+      getTopMissionsInBounds: () => Response.json({result: []}),
+      getGameScore: () => Response.json({result: false}),
+      getRegionScoreDetails: () => Response.json({result: false}),
+    };});
     await page.goto('/');
 
     for (const [menu, name] of [
@@ -112,6 +104,6 @@ for (const viewport of [{width: 780, height: 360}, {width: 780, height: 280}, {w
         await expect(page.locator('aside:visible')).toHaveCount(0);
       });
     }
-    expect(errors).toEqual([]);
+
   });
 }

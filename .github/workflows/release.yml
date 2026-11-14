@@ -79,8 +79,25 @@ jobs:
       - name: Check workspaces, CSS, and workbench
         run: npm run check
 
-      - name: Build IITC IRIS release artifacts
-        run: npm run package
+      - name: Ensure Chrome is available
+        run: google-chrome --version || npx playwright install --with-deps chrome
+
+      - name: Browser smoke (build web assets once)
+        run: npm run test:browser:smoke
+
+      - name: Package verified web assets
+        run: npm run package:reuse
+
+      - name: Upload browser failure evidence
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: browser-smoke-failure
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Prepare artifacts
         run: |

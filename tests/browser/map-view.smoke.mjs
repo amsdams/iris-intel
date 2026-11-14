@@ -1,10 +1,7 @@
-import {test, expect} from '@playwright/test';
+import {test, expect} from './smoke-fixtures.mjs';
 
 test('URL view overrides stored view and movement persists through cookies, history and reload', async ({page}) => {
-  const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
-  await page.route('**/*', route => new URL(route.request().url()).origin === 'http://127.0.0.1:6973'
-    ? route.continue() : route.fulfill({status: 200, body: ''}));
+
   await page.addInitScript(() => {
     if (!localStorage.getItem('view-fixture-seeded')) {
       localStorage.setItem('view-fixture-seeded', 'yes');
@@ -45,5 +42,5 @@ test('URL view overrides stored view and movement persists through cookies, hist
     const map = window.__iitcIrisMap;
     return {lat: Number(map.getCenter().lat.toFixed(3)), lng: Number(map.getCenter().lng.toFixed(3)), zoom: map.getZoom()};
   })).toEqual({lat: 51.75, lng: 5.25, zoom: 14});
-  expect(errors).toEqual([]);
+
 });

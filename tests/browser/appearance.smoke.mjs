@@ -1,14 +1,7 @@
-import {test as base, expect} from '@playwright/test';
+import {openPanel} from './navigation-fixture.mjs';
+import {test, expect} from './smoke-fixtures.mjs';
 
 const button = (page, name) => page.getByRole('button', {name, exact: true});
-async function openPanel(page, menu, panel) {
-  const primary = page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: menu, exact: true});
-  if (await primary.getAttribute('aria-pressed') !== 'true') await primary.click();
-  if (panel) {
-    const secondary = page.locator('.iitc-iris-sheet-tabbar-secondary').getByRole('button', {name: panel, exact: true});
-    if (await secondary.getAttribute('aria-pressed') !== 'true') await secondary.click();
-  }
-}
 async function theme(page, name) {
   await openPanel(page, 'System', 'Appearance');
   await page.getByLabel('Appearance', {exact: true}).getByRole('button', {name, exact: true}).click();
@@ -21,20 +14,13 @@ async function surface(locator) {
   });
 }
 
-const test = base.extend({page: async ({page}, use) => {
-  // No real Intel requests or map tiles. Every test gets an isolated browser context.
-  await page.route('**/*', route => new URL(route.request().url()).origin === 'http://127.0.0.1:6973'
-    ? route.continue() : route.fulfill({status: 200, body: ''}));
-  const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
-  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });
+test.use({checkConsoleErrors: true});
+test.beforeEach(async ({page}) => {
   await page.goto('/');
   await expect(page.locator('.iitc-iris-sheet-tabbar')).toBeVisible();
-  await use(page);
-  expect(errors, 'Uncaught browser/console errors').toEqual([]);
-}});
+});
 
-test('Appearance persists across reload and follows System only when selected', async ({page}) => {
+test('Appearance persists across reload and follows System only when selected', {tag: '@smoke'}, async ({page}) => {
   await theme(page, 'Light');
   await expect(page.locator('html')).toHaveAttribute('data-iitc-iris-theme', 'light');
   await page.reload();

@@ -5,6 +5,7 @@ Earlier version numbers refer to the Android prototype/alpha; 0.5.0 aligns Andro
 
 ## Unreleased
 
+- Consolidated browser regression fixtures/navigation and organized suites by behavior; added quick browser smoke checks, docs-only CI gating, verified build reuse and Gradle dependency caching.
 - Simplified documentation around project goals, definition of done, roadmap and contributor procedures; retired redundant plans and feature inventories.
 - Made IITC-CE core and relevant plugins the explicit behavioral reference, with documented reasons and validation for intentional deviations.
 

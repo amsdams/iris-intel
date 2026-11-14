@@ -25,10 +25,10 @@ credentials, isolate signing secrets from unsigned/PR calls and validate syntax/
 | --- | --- |
 | Documentation only | `git diff --check`; local paths/anchors and incoming links to retired files. No app tests/builds. |
 | Application/core | Focused tests and affected lint/type checks during editing; `npm run check` when the batch settles. |
-| UI/map behavior | Also run the full `npm run test:browser` suite after the related edits settle. |
+| UI/map behavior | Use `npm run test:browser:smoke:reuse` or focused cases during iteration; also run the full `npm run test:browser` suite after the related edits settle. |
 | Native host | Appropriate debug/release Android check below; device checks for auth, permissions and WebView behavior. |
 
-`npm run check` includes release/build/architecture gates, workspace lint/types/tests, CSS lint and workbench build.
+`npm run check` includes release/build/architecture gates, workspace lint/types/tests, browser-test/CSS lint and workbench build.
 Run `git diff --check` before handoff. Group cosmetic edits before broad checks. After failures, rerun affected cases
 first; repeat broad suites when shared changes or unresolved concerns justify them. Do not write tests that only
 repeat markup/style constants. See [browser testing](tests/browser/README.md) for fixture/assertion contracts.
@@ -81,8 +81,9 @@ After user acceptance, merge the tested version to main; tag the accepted main c
 merge, tag, push or publish without authorization. CI checks/packages on main pushes update the existing `latest`
 GitHub release; version tags trigger tagged releases. Both publish signed APK plus XPI/ZIP; ordinary Firefox permanent
 installation still requires Mozilla signing. Main APKs use `iitc-iris-android.apk`; tagged APKs include the version.
-Manual releases require an existing `vX.Y.Z` tag containing Android and build that tag. CI does not run Playwright or
-publish AABs; see [Play readiness](docs/iitc-iris/plans/play-store-readiness.md) before resuming store work.
+Manual releases require an existing `vX.Y.Z` tag containing Android and build that tag. CI runs browser smoke before
+packaging and caches Gradle dependencies; known docs-only changes run validation without artifact/signing jobs.
+CI does not publish AABs; see [Play readiness](docs/iitc-iris/plans/play-store-readiness.md) before resuming store work.
 
 ## Documentation maintenance
 

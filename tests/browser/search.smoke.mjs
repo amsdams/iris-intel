@@ -1,5 +1,4 @@
-import {test, expect} from '@playwright/test';
-import {setFixtureSource} from './smoke-fixtures.mjs';
+import {test, expect, setFixtureSource} from './smoke-fixtures.mjs';
 
 const results = page => page.locator('.iitc-iris-search-result:not(:disabled)');
 const view = page => page.evaluate(() => {
@@ -16,29 +15,26 @@ async function expectView(page, lat, lng, zoom = 15) {
 }
 
 test.beforeEach(async ({page}) => {
+  await page.addInitScript(() => {window.__irisRpcHandlers = {
+    getPortalDetails: () => Response.json({result: false}), // Selection is exercised; detail content is outside this fixture.
+  };});
   await page.addInitScript(() => {
     window.completedSearches = 0;
     window.addEventListener('message', ({data}) => {
       if (data.type === 'IITC_IRIS_SEARCH_STATUS' && data.search?.status === 'ready') window.completedSearches += 1;
     });
   });
-  await page.route('**/*', route => {
-    const url = new URL(route.request().url());
-    if (url.origin === 'http://127.0.0.1:6973') return route.continue();
-    if (url.hostname === 'nominatim.openstreetmap.org') return route.fulfill({json: [{
-      place_id: 1, display_name: 'Test region', lat: '52.4', lon: '4.8',
-      boundingbox: ['51', '54', '3', '7'],
-    }]});
-    return route.fulfill({status: 200, body: ''});
-  });
+  await page.route('https://nominatim.openstreetmap.org/**', route => route.fulfill({json: [{
+    place_id: 1, display_name: 'Test region', lat: '52.4', lon: '4.8',
+    boundingbox: ['51', '54', '3', '7'],
+  }]}));
   await page.goto('/');
   await page.locator('.iitc-iris-sheet-tabbar-primary').getByRole('button', {name: 'Map', exact: true}).click();
   await page.locator('.iitc-iris-sheet-tabbar-secondary').getByRole('button', {name: 'Search', exact: true}).click();
 });
 
-test('Enter submits even with local results; arrows focus rows and activation navigates', async ({page}) => {
-  const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
+test('Enter submits even with local results; arrows focus rows and activation navigates', {tag: '@smoke'}, async ({page}) => {
+
   const input = page.locator('.iitc-iris-search-input');
   const initialView = await view(page);
   await input.fill('52.4,4.8');
@@ -79,7 +75,7 @@ test('Enter submits even with local results; arrows focus rows and activation na
   await expect(results(page).last()).toBeFocused();
   await results(page).last().press('ArrowDown');
   await expect(results(page).first()).toBeFocused();
-  expect(errors).toEqual([]);
+
 });
 
 test('loaded portal activation centers and applies the standard zoom', async ({page}) => {
@@ -182,7 +178,6 @@ test('streets zoom in to 15 while larger administrative areas fit their bounds',
     });
   }
 });
-
 
 test('fast submission keeps online results; closing clears previews and reopening retains the search', async ({page}) => {
   await page.route('https://nominatim.openstreetmap.org/**', async route => {
