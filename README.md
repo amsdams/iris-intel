@@ -1,7 +1,8 @@
-# IRIS — Ingress Intel Map for Android and Browsers
+# IRIS — Ingress Intel map for Android and browsers
 
-IRIS (Ingress Reconnaissance & Intelligence System) is an independent IITC-based Intel companion. Its goal is to
-keep essential map information and planning actions usable on small screens, on Android and in browser extensions.
+IRIS (Ingress Reconnaissance & Intelligence System) is an independent, open-source Ingress Intel map for Android
+and browsers. It keeps essential map information and common planning actions usable on small screens.
+It is based on IITC-CE, with an independent mobile interface.
 It is a friends alpha, unaffiliated with Niantic. Arbitrary IITC plugin compatibility and broad Play distribution
 are outside the current scope. Android sign-in uses an experimental WebView workaround.
 

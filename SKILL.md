@@ -1,4 +1,4 @@
-# IITC IRIS Repository Guide
+# IRIS Repository Guide
 
 Read the [project manifest and definition of done](README.md), [contributor procedures](CONTRIBUTING.md),
 [IITC porting doctrine](docs/iitc-iris/port-plan.md), [architecture](docs/iitc-iris/architecture.md) and

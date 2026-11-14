@@ -7,7 +7,7 @@ Upload these English listing assets in Play Console:
 | App icon | [app-icon-512.png](app-icon-512.png) | 512 × 512, 32-bit RGBA PNG, opaque square artwork |
 | Feature graphic | [feature-graphic-1024x500.png](feature-graphic-1024x500.png) | 1024 × 500, 24-bit RGB PNG, no alpha |
 
-Suggested feature-graphic alt text: “IRIS Intel map companion, with connected map points on a dark teal background.”
+Suggested feature-graphic alt text: “IRIS Ingress Intel map, with connected map points on a dark teal background.”
 
 The selected design is the original cyan I on dark teal. The icon exports the existing Android launcher vector,
 without adding a mask, rounded corners or shadows.

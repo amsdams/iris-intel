@@ -7,6 +7,7 @@ Earlier prototype entries record development/testing milestones; 0.5.0 aligns An
 
 ## 2026-11-14 — Website and maintenance
 
+- Standardized the public description as “IRIS — Ingress Intel map for Android and browsers,” with IITC origins explained in the body text and credits.
 - Published the [project homepage](https://amsdams.github.io/iris-intel/) with download, installation and privacy links; added GitHub discovery topics.
 - Organized browser tests by behavior with shared strict request/error fixtures and navigation helpers; added quick smoke checks and browser-test linting while retaining regression coverage.
 - CI now runs browser smoke before packaging, reuses verified web assets and caches Gradle dependencies; documentation/site-only changes skip app builds and signing without overlooking earlier unbuilt changes.

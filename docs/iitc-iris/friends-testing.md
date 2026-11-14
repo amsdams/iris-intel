@@ -1,6 +1,7 @@
 # IRIS Friends Testing
 
-IRIS is an independent Ingress Intel companion based on IITC, currently an early Android alpha.
+IRIS is an independent, open-source Ingress Intel map for Android and browsers, currently a friends alpha.
+It is based on IITC-CE, with an independent mobile interface.
 Use GitHub APKs for testing; broader Play distribution is [paused](../ROADMAP.md#blocked--paused).
 Google sign-in uses an experimental embedded-browser workaround; saved-password support remains unresolved.
 
