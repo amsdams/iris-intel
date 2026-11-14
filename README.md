@@ -1,10 +1,10 @@
 # IRIS — Ingress Intel map for Android and browsers
 
 IRIS (Ingress Reconnaissance & Intelligence System) is an independent, open-source Ingress Intel map for Android
-and browsers. It keeps essential map information and common planning actions usable on small screens.
+and browser extensions. It integrates a focused set of Intel and planning tools into one interface designed for small screens.
 It is based on IITC-CE, with an independent mobile interface.
-It is a friends alpha, unaffiliated with Niantic. Arbitrary IITC plugin compatibility and broad Play distribution
-are outside the current scope. Android sign-in uses an experimental WebView workaround.
+It is a friends alpha, unaffiliated with Niantic. Arbitrary IITC plugin compatibility, a native iOS app and broad
+Play distribution are outside the current scope. Android sign-in uses an experimental WebView workaround.
 
 ## Download and try
 
@@ -12,7 +12,7 @@ Get builds from [GitHub Releases](https://github.com/amsdams/iris-intel/releases
 
 | Platform | Package / installation |
 | --- | --- |
-| Android 8.0+ | `iitc-iris-android.apk`; [installation, updates, recovery and device testing](docs/iitc-iris/friends-testing.md). |
+| Android 8.0+ | `iitc-iris-android.apk` (currently under 1 MB); [installation, updates, recovery and device testing](docs/iitc-iris/friends-testing.md). |
 | Chrome / Chromium | Extract `iitc-iris-chrome.zip`; Developer mode → Load unpacked → folder containing `manifest.json`. |
 | Firefox | Development `iitc-iris-firefox.xpi`; use `about:debugging` → This Firefox → Load Temporary Add-on. Permanent installation requires signing. |
 
