@@ -7,7 +7,7 @@ Read the [project manifest and definition of done](README.md), [contributor proc
 **IITC-CE core and relevant plugins are the behavioral reference.** Follow the porting doctrine before changing
 behavior; document intentional improvements/deviations explicitly. Earlier IRIS implementations are historical context.
 
-- Active npm workspaces: `apps/iitc-iris` and `packages/iitc-core`; existing native host: `apps/android-intel-spike`.
+- Active npm workspaces: `apps/iitc-iris` and `packages/iitc-core`; existing native host: `apps/android`.
 - Preserve appearance, message/persistence contracts and request lifetimes unless the task authorizes changes.
 - Follow CONTRIBUTING's testing matrix: focused checks during edits, broad checks once the batch settles;
   documentation-only edits need whitespace/local-link checks. Build downloads only when requested.

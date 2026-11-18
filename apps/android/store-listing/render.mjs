@@ -1,4 +1,4 @@
-// Run from the repository root: node apps/android-intel-spike/store-listing/render.mjs
+// Run from the repository root: node apps/android/store-listing/render.mjs
 // Requires the existing dev dependencies and installed Google Chrome; no app build or network access.
 import {readFile, writeFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';

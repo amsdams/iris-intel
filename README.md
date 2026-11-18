@@ -40,7 +40,7 @@ Android additionally needs JDK 21 and the SDK described in its guide below.
 | --- | --- |
 | `apps/iitc-iris/` | TypeScript/Preact UI, browser integration and Leaflet runtime. |
 | `packages/iitc-core/` | UI-independent parsing, geometry, request/cache planning and domain logic. |
-| `apps/android-intel-spike/` | Existing experimental WebView host; outside npm workspaces. |
+| `apps/android/` | Existing experimental WebView host; outside npm workspaces. |
 | `scripts/` | Build, release and Android tooling. |
 | `reference/` | Optional, ignored IITC-CE core/plugin comparison checkout. |
 
@@ -63,7 +63,7 @@ Android additionally needs JDK 21 and the SDK described in its guide below.
 | [IITC porting doctrine](docs/iitc-iris/port-plan.md) | Behavioral reference, comparison rules and intentional deviations. |
 | [Architecture](docs/iitc-iris/architecture.md) | Package boundaries, ownership, lifetimes and UI contracts. |
 | [Browser testing](tests/browser/README.md) | Fixtures, probes and live comparison. |
-| [Android development](apps/android-intel-spike/README.md) | SDK, signing, identity and native security boundaries. |
+| [Android development](apps/android/README.md) | SDK, signing, identity and native security boundaries. |
 | [Friends testing](docs/iitc-iris/friends-testing.md) | Installation, updates, recovery, device checks and data use. |
 | [Menu proposal](docs/iitc-iris/plans/optional-features-plan.md) / [Play checklist](docs/iitc-iris/plans/play-store-readiness.md) | Deferred requirements and distribution blockers. |
 | [Payload samples](docs/iitc-iris/fixtures/README.md) | Sanitized reference captures. |

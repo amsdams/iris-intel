@@ -42,7 +42,7 @@ android {
 
     lint {
         warningsAsErrors true
-        // Intentional API 36/toolchain pins for this disposable proof, not automatic upgrade gates.
+        // Keep SDK and toolchain upgrades under maintainer review.
         disable 'OldTargetApi', 'AndroidGradlePluginVersion'
     }
 }

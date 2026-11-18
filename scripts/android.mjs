@@ -6,7 +6,7 @@ import {dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const project = join(root, 'apps/android-intel-spike');
+const project = join(root, 'apps/android');
 const sdk = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT
   || (process.platform === 'darwin' ? join(homedir(), 'Library/Android/sdk') : '');
 let javaHome = process.env.JAVA_HOME;
@@ -20,7 +20,7 @@ const release = args.some((task) => task.endsWith('Release'));
 const buildEnv = {...process.env, ANDROID_HOME: sdk, ...(javaHome ? {JAVA_HOME: javaHome} : {})};
 if (release) {
   for (const name of ['IRIS_ANDROID_KEYSTORE', 'IRIS_ANDROID_STORE_PASSWORD', 'IRIS_ANDROID_KEY_ALIAS', 'IRIS_ANDROID_KEY_PASSWORD']) {
-    if (!buildEnv[name]) throw new Error(`Release signing requires ${name}; see apps/android-intel-spike/README.md.`);
+    if (!buildEnv[name]) throw new Error(`Release signing requires ${name}; see apps/android/README.md.`);
   }
   if (!existsSync(buildEnv.IRIS_ANDROID_KEYSTORE)) throw new Error('Release keystore file does not exist.');
   const gitValue = (gitArgs) => {

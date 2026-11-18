@@ -51,6 +51,7 @@ These inventory acknowledgements recognize behavioral references, not inclusion 
 - [Leaflet](https://leafletjs.com/), by Vladimir Agafonkin, CloudMade and contributors — BSD-2-Clause.
 - [MapLibre GL JS](https://github.com/maplibre/maplibre-gl-js), by MapLibre contributors and its Mapbox lineage —
   BSD-3-Clause, with additional bundled notices in its license file.
+- [Zustand](https://github.com/pmndrs/zustand), used by MapLibre, by Paul Henschel and contributors — MIT.
 - [MapLibre GL Leaflet](https://github.com/maplibre/maplibre-gl-leaflet), by MapLibre contributors and its Mapbox
   lineage — ISC.
 - [OpenFreeMap](https://openfreemap.org/) and [OpenStreetMap contributors](https://www.openstreetmap.org/copyright)

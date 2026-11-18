@@ -51,6 +51,16 @@ jobs:
           ref: ${{ inputs.ref || github.sha }}
           fetch-depth: 0
 
+      - name: Locate Android project in the checked-out revision
+        run: |
+          project=apps/android
+          # Manual releases can check out tags created before the directory rename.
+          if [ ! -f "$project/settings.gradle" ]; then
+            project=apps/android-intel-spike
+          fi
+          test -f "$project/settings.gradle"
+          echo "ANDROID_PROJECT_DIR=$project" >> "$GITHUB_ENV"
+
       - name: Setup Node.js
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
@@ -69,9 +79,9 @@ jobs:
           java-version: '21'
           cache: gradle
           cache-dependency-path: |
-            apps/android-intel-spike/**/*.gradle*
-            apps/android-intel-spike/**/gradle-wrapper.properties
-            apps/android-intel-spike/gradle.properties
+            ${{ env.ANDROID_PROJECT_DIR }}/**/*.gradle*
+            ${{ env.ANDROID_PROJECT_DIR }}/**/gradle-wrapper.properties
+            ${{ env.ANDROID_PROJECT_DIR }}/gradle.properties
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3.2.2
@@ -120,18 +130,18 @@ jobs:
         run: |
           mkdir -p out
           if [ "$SIGNED" = 'true' ]; then
-            APK=apps/android-intel-spike/app/build/outputs/apk/release/app-release.apk
+            APK="$ANDROID_PROJECT_DIR/app/build/outputs/apk/release/app-release.apk"
           else
-            APK=apps/android-intel-spike/app/build/outputs/apk/debug/app-debug.apk
+            APK="$ANDROID_PROJECT_DIR/app/build/outputs/apk/debug/app-debug.apk"
           fi
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK"
           if [ "$SIGNED" = 'true' ]; then
             CERTIFICATE=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
-            test "$CERTIFICATE" = "$(cat apps/android-intel-spike/release-certificate.sha256)"
+            test "$CERTIFICATE" = "$(cat "$ANDROID_PROJECT_DIR/release-certificate.sha256")"
           fi
           cp "$APK" out/iitc-iris-android.apk
           if [ "$SIGNED" = 'true' ]; then
-            node scripts/write-android-update.mjs apps/android-intel-spike/app/build/outputs/apk/release/output-metadata.json out/iitc-iris-android-update.properties
+            node scripts/write-android-update.mjs "$ANDROID_PROJECT_DIR/app/build/outputs/apk/release/output-metadata.json" out/iitc-iris-android-update.properties
           fi
 
       - name: Upload APK

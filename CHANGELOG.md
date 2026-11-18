@@ -5,6 +5,13 @@ Unreleased is reserved for changes awaiting publication. Alpha app builds are sh
 [latest release](https://github.com/amsdams/iris-intel/releases/tag/latest); these are not stable releases.
 Earlier prototype entries record development/testing milestones; 0.5.0 aligns Android and browser versions.
 
+## 2026-11-18 — Dependency and Android maintenance
+
+- Updated compatible Playwright, ESLint, typescript-eslint and MapLibre dependencies, including MapLibre's new dependency notice.
+- Updated the Android Gradle wrapper to 8.14.7 for upstream security fixes, retaining AGP 8.13.2 and JDK 21.
+- Added grouped Dependabot updates for npm workspaces, Android Gradle/wrapper and pinned GitHub Actions; major upgrades remain manual.
+- Renamed the Android project folder to `apps/android` and kept CI support for older release tags.
+
 ## 2026-11-14 — Website and maintenance
 
 - Clarified the homepage and README: integrated planning tools, a current Android download under 1 MB, and explicit alpha, plugin and iOS limits.

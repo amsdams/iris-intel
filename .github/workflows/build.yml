@@ -54,7 +54,7 @@ jobs:
           # Unknown/new history and manual runs build everything; only known docs-only diffs skip.
           if [ -n "$BASE_SHA" ] && git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null &&
              git diff --quiet "$BASE_SHA" HEAD -- . ':(exclude,glob)**/*.md' ':(exclude)docs/**' \
-               ':(exclude)site/**' ':(exclude)apps/android-intel-spike/store-listing/**' &&
+               ':(exclude)site/**' ':(exclude)apps/android/store-listing/**' &&
              git diff --quiet "$BASE_SHA" HEAD -- CREDITS.md apps/iitc-iris/assets; then
             echo 'build=false' >> "$GITHUB_OUTPUT"
           else

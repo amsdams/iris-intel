@@ -6,7 +6,7 @@ import {fileURLToPath} from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const builds = join(root, 'apps/iitc-iris/builds');
-const apkDirectory = join(root, 'apps/android-intel-spike/app/build/outputs/apk');
+const apkDirectory = join(root, 'apps/android/app/build/outputs/apk');
 const port = Number(process.env.PORT || 6969);
 if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT must be between 1 and 65535.');
 

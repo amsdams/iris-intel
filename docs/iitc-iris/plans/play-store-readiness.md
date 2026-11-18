@@ -23,14 +23,14 @@ Keep the working alpha login, permanent app ID and signing key intact during doc
    review/submit the release and share its opt-in link. Confirm actual opt-ins and duration against this account's
    requirements; [testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465)
    must be rechecked rather than inferred from the old internal test.
-3. Build a signed AAB using the [Android guide](../../../apps/android-intel-spike/README.md#play-console-app-bundle).
+3. Build a signed AAB using the [Android guide](../../../apps/android/README.md#play-console-app-bundle).
    Verify target API against [current requirements](https://support.google.com/googleplay/android-developer/answer/11926878),
    identity/certificate, monotonic code and bundle validity. CI currently packages APK/XPI/ZIP, not AAB delivery.
 4. Confirm [public privacy policy](https://amsdams.github.io/iris-intel/privacy/) visibility and actual Data safety answers.
    Pages publishes only `site/`; the Android policy also has an offline summary. Account-specific submission answers
    and permission/auth questions remain decisions, not a guarantee that a WebView will be accepted or rejected.
 5. Finish listing/content rating/audience/ads/access declarations and refresh phone screenshots for the current UI. Existing launcher artwork,
-   feature graphic, renderer and capture instructions live in [store-listing](../../../apps/android-intel-spike/store-listing/README.md).
+   feature graphic, renderer and capture instructions live in [store-listing](../../../apps/android/store-listing/README.md).
 6. Check fresh login, persistent sessions, Back/rotation, background/resume, keyboard/insets, location denial/retry,
    clipboard and map-style recovery on device. Keep GitHub APK distribution; decide Play-specific update help explicitly.
 

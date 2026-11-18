@@ -1,27 +1,27 @@
 # Project state and roadmap
 
-**State:** friends alpha; 0.6.0 integrated into main. Published builds are identified by GitHub Releases.
+**State:** friends alpha; 0.6.0 integrated into main. User accepted general APK/XPI use on 2026-11-18.
+Published builds are identified by GitHub Releases; targeted device checks remain relevant when affected behavior changes.
 Done/release history lives in [CHANGELOG](../CHANGELOG.md); goals and completion criteria live in [README](../README.md).
 
 ## In progress
 
-None selected; choose a bounded item from Next before starting implementation.
+None selected.
 
 ## Next
 
-Candidates in suggested order; select a bounded item before implementation. These are not confirmed defects.
-
-| Item | Acceptance / evidence needed |
-| --- | --- |
-| Device acceptance | Exercise 0.6 on Firefox/Android: portrait/landscape keyboard, larger text, Back/image focus, rotation/resume, portal details and populated lists; [checklist](iitc-iris/friends-testing.md). |
-| Request recovery | Probe Missions close-during-loading/reopen, then Passcode/geocoder cancellation as relevant. Inventory/Scores already have recovery regressions. Verify session expiry/logout/subscription transitions; retain preferences and pause automatic work during auth recovery. |
-| Test gaps | Cover malformed/blocked saved views, overwrite/delete/eight-view limits and filtered-message reload; expand CI browser coverage when needed. Add visual baselines/workbench compositions only for a concrete benefit. |
-| Release/LCM audit | Before broader delivery: permissions, native handoffs, Firefox signing, actual update routes and backup restoration. Handle major Preact/Vite/Vitest/TypeScript/Stylelint upgrades separately; check peers, AGP/Gradle pairing, advisories and Leaflet's private canvas seam. |
+**Release/LCM audit:** review permissions, native handoffs, Firefox signing, actual update routes and backup restoration
+before broader delivery. Check advisories and compatibility; keep major Preact/Vite/Vitest/TypeScript/Stylelint upgrades
+as separate work, including peer ranges, AGP/Gradle pairing and Leaflet's private canvas seam.
 
 ## Later
 
+Recovery and test-gap follow-ups are deferred until relevant changes or a reproducible problem justify them.
+
 | Area | Remaining options / constraints |
 | --- | --- |
+| Request recovery | Probe Missions close-during-loading/reopen, then Passcode/geocoder cancellation as relevant. Inventory/Scores already have recovery regressions. Verify session expiry/logout/subscription transitions; retain preferences and pause automatic work during auth recovery. |
+| Test gaps | Cover malformed/blocked saved views, overwrite/delete/eight-view limits and filtered-message reload; expand CI browser coverage when needed. Add visual baselines/workbench compositions only for a concrete benefit. |
 | Menus / tracker | [Pinning/presets and separate tracker activation](iitc-iris/plans/optional-features-plan.md); independent of visibility and shared COMM polling. Nearby marker overlaps/player-level inference remain optional. |
 | Saved data | Persistent bookmarks/views and richer key search/management; basic inventory/key counts exist. |
 | Missions | Personal completion/waypoint checklist, distance-to-start, uniques/history and consistent First/waypoint focus. |
@@ -33,6 +33,9 @@ Candidates in suggested order; select a bounded item before implementation. Thes
 
 ## Evidence and regression watch
 
+- Dependencies: [picomatch ReDoS](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) has no published fix as of 2026-11-18.
+  Installed copies are dev-only; reviewed tooling uses repository-controlled globs, with no app input path found. Recheck upstream;
+  keep the alert open. The separate minimatch override still covers an older transitive consumer.
 - Inventory: observe valid-empty/C.O.R.E./cross-device availability without inventing shared quota or cooldown rules.
 - Map: investigate concrete cache/retry/overlap/idle mismatches using the [comparison runbook](../tests/browser/README.md#live-iitc-comparison).
   Live stale fallback after retry exhaustion and resonator compass orientation lack separate live acceptance.

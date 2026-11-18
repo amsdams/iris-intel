@@ -17,7 +17,7 @@ Its editable source is [feature-graphic.svg](feature-graphic.svg).
 Regenerate the PNGs from the repository root using the existing Playwright dependency and installed Chrome:
 
 ```sh
-node apps/android-intel-spike/store-listing/render.mjs
+node apps/android/store-listing/render.mjs
 ```
 
 This reads the launcher vector and feature SVG, renders locally with network requests blocked, and checks dimensions,
@@ -45,7 +45,7 @@ stretch/crop images to force a ratio. The renderer regenerates artwork only, not
 To recapture a prepared view with USB debugging authorized:
 
 ```sh
-adb exec-out screencap -p > apps/android-intel-spike/store-listing/phone/01-map-osm-light.png
+adb exec-out screencap -p > apps/android/store-listing/phone/01-map-osm-light.png
 ```
 
 Use the SDK's `adb` on PATH; check device resolution before replacing captures. Review images before upload and retain

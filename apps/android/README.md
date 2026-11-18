@@ -1,12 +1,12 @@
 # Android development and distribution
 
-The existing experimental WebView host bundles IRIS on authenticated Intel with Stock Intel recovery. Its historical
-folder name does not define app identity. [Friends testing](../../docs/iitc-iris/friends-testing.md) owns installation,
+The experimental Android WebView host bundles IRIS on authenticated Intel with Stock Intel recovery.
+[Friends testing](../../docs/iitc-iris/friends-testing.md) owns installation,
 updates and device smoke; [CONTRIBUTING](../../CONTRIBUTING.md) owns shared validation/release procedures.
 
 ## SDK and debug builds
 
-Use Node 24, `npm ci`, JDK 21, Android platform 36 and Build Tools 36.0.0. Gradle 8.14.3/AGP 8.13.2 are pinned.
+Use Node 24, `npm ci`, JDK 21, Android platform 36 and Build Tools 36.0.0. Gradle 8.14.7/AGP 8.13.2 are pinned.
 Root tooling discovers the normal macOS SDK/registered JDK; `JAVA_HOME` / `ANDROID_HOME` override discovery.
 Accept SDK licenses; Gradle can then install missing components. First build needs internet.
 
@@ -34,7 +34,7 @@ The public digest is pinned in `release-certificate.sha256`. Backup restoration 
 PR/debug builds must not receive release credentials. Release APKs are not debuggable.
 
 ```sh
-source apps/android-intel-spike/signing/release.env
+source apps/android/signing/release.env
 npm run android:release
 ```
 
@@ -51,7 +51,7 @@ using the explicit `latest` tag (including prereleases). Tagged releases also ca
 Play expansion is paused; use the [readiness checklist](../../docs/iitc-iris/plans/play-store-readiness.md) before resuming.
 
 ```sh
-source apps/android-intel-spike/signing/release.env
+source apps/android/signing/release.env
 npm run android:bundle
 ```
 

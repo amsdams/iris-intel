@@ -23,7 +23,7 @@
     "@iris/iitc-core": "*",
     "@maplibre/maplibre-gl-leaflet": "^0.1.4",
     "leaflet": "^1.9.4",
-    "maplibre-gl": "^6.18.0",
+    "maplibre-gl": "^6.19.0",
     "preact": "^10.29.8",
     "qrcode-generator": "^2.0.4"
   },

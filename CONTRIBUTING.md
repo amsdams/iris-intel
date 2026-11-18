@@ -48,7 +48,7 @@ Build downloadable artifacts when requested for testing or a release handoff, no
 | `npm run serve` (`npm run android:serve` alias) | Existing ZIP/XPI/APK downloads on port 6969; prints a same-Wi-Fi URL, builds nothing. `PORT` overrides the port. |
 
 Extension packages are under `apps/iitc-iris/builds/`; unpacked output is `apps/iitc-iris/dist/`.
-Android output paths, SDK/signing setup and update constraints are in [the Android guide](apps/android-intel-spike/README.md).
+Android output paths, SDK/signing setup and update constraints are in [the Android guide](apps/android/README.md).
 Browser builds, extension packaging and Android asset preparation share outputs: run them sequentially.
 After a successful build with unchanged production inputs, avoid rebuilding:
 
@@ -84,6 +84,17 @@ installation still requires Mozilla signing. Main APKs use `iitc-iris-android.ap
 Manual releases require an existing `vX.Y.Z` tag containing Android and build that tag. CI runs browser smoke before
 packaging and caches Gradle dependencies; known docs-only changes run validation without artifact/signing jobs.
 CI does not publish AABs; see [Play readiness](docs/iitc-iris/plans/play-store-readiness.md) before resuming store work.
+
+## Dependency maintenance
+
+[Dependabot](.github/dependabot.yml) groups weekly npm/workspace and Android Gradle/wrapper updates, plus monthly
+GitHub Actions updates, with one open routine PR per ecosystem and a seven-day release cooldown. Major upgrades
+are manual, including security fixes that require a major; review alerts separately. npm security PRs have their own group
+and bypass the cooldown/schedule when GitHub's dependency graph, Dependabot alerts and security updates are enabled.
+Merge after review and existing PR checks; updates are not auto-merged. Keep action SHAs pinned, verify Gradle/AGP/JDK
+compatibility and wrapper checksum, and refresh affected notices. Node/JDK major and Android SDK pins stay manual.
+Gradle version PRs do not provide security alerts without dependency submission; this project has no submission job.
+Use `npm audit` / `npm audit --omit=dev` to distinguish tooling from shipped dependencies; avoid forced fixes/downgrades.
 
 ## Documentation maintenance
 

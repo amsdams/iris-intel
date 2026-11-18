@@ -31,6 +31,7 @@ copyRequired(path.join(__dirname, '../../CREDITS.md'), path.join(distDir, 'licen
 for (const [dependency, filename, output] of [
   ['preact', 'LICENSE', 'Preact.txt'],
   ['maplibre-gl', 'LICENSE.txt', 'MapLibre-GL-JS.txt'],
+  ['zustand', 'LICENSE', 'Zustand.txt'],
   ['@maplibre/maplibre-gl-leaflet', 'LICENSE', 'MapLibre-GL-Leaflet.txt'],
 ]) {
   copyRequired(path.join(__dirname, '../../node_modules', dependency, filename), path.join(distDir, 'licenses', output));

@@ -68,4 +68,4 @@ patched versions; past audit counts do not establish current security. Recheck t
 - Map style is independent of theme/text size. Keyboard/safe-area overlay repositioning does not resize the map.
   Clipboard feedback belongs to its initiating area; obsolete completions cannot overwrite newer feedback.
 - Shared assets resolve through the host asset base. About includes visible credits and offline license notices in
-  extension/APK builds. Do not fabricate extension APIs or privileged native bridges; see the [Android guide](../../apps/android-intel-spike/README.md).
+  extension/APK builds. Do not fabricate extension APIs or privileged native bridges; see the [Android guide](../../apps/android/README.md).

@@ -7,6 +7,7 @@ import leafletLicense from '../../../assets/licenses/Leaflet.txt?raw';
 import qrLicense from '../../../assets/licenses/QR-Code-Generator.txt?raw';
 import preactLicense from '../../../../../node_modules/preact/LICENSE?raw';
 import maplibreLicense from '../../../../../node_modules/maplibre-gl/LICENSE.txt?raw';
+import zustandLicense from '../../../../../node_modules/zustand/LICENSE?raw';
 import maplibreLeafletLicense from '../../../../../node_modules/@maplibre/maplibre-gl-leaflet/LICENSE?raw';
 import projectLicense from '../../../../../LICENSE?raw';
 import './about-panel.css';
@@ -58,6 +59,7 @@ export function AboutPanel({closeAbout}: {closeAbout: () => void}): h.JSX.Elemen
             ['QR Code Generator — MIT', qrLicense],
             ['Preact — MIT', preactLicense],
             ['MapLibre GL JS — license and bundled notices', maplibreLicense],
+            ['Zustand (MapLibre dependency) — MIT', zustandLicense],
             ['MapLibre GL Leaflet — ISC', maplibreLeafletLicense],
           ].map(([label, text]) => (
             <details key={label}>
