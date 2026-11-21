@@ -3,6 +3,7 @@ import '../../map-context.css';
 import '../../map-navigation-controls.css';
 import '../../../ui/shared/list-item.css';
 import '../../../ui/shared/control.css';
+import '../../../ui/shared/input-surface.css';
 import {h} from 'preact';
 import {useState} from 'preact/hooks';
 import './draw-tools.css';
@@ -98,7 +99,7 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
   const [markerSort, setMarkerSort] = useState<DrawToolsMarkerSort>('nearby');
 
   if (props.mode === 'links') {
-    return <Section titleHeading="Draw Links">
+    return <Section>
       <div className="iitc-iris-map-context-row">
         <span className="iitc-iris-map-context-coords">
           {props.target?.label ?? 'Select a portal or open a context point'}
@@ -167,7 +168,7 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
     ? `${props.markerItems.length.toLocaleString()} drawn markers`
     : `${props.markerItems.length.toLocaleString()} drawn markers - showing ${visibleMarkerItems.length.toLocaleString()} ${markerFilterLabel}`;
 
-  return <Section titleHeading="Draw Markers">
+  return <Section>
     <div className="iitc-iris-map-context-row">
       <span className="iitc-iris-map-context-coords">
         {props.target?.label ?? 'Select a portal or open a context point'}
@@ -175,7 +176,7 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
     </div>
     <div className="iitc-iris-map-context-row iitc-iris-draw-tools-marker-create-row">
       <TextInput
-        className="iitc-iris-draw-tools-label-input"
+        className="iitc-iris-input-surface iitc-iris-draw-tools-label-input"
         type="text"
         value={props.markerLabel}
         onInput={(event) => props.setMarkerLabel(event.currentTarget.value)}
@@ -215,14 +216,14 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
     {props.markerItems.length > 0 && <div className="iitc-iris-map-context-row iitc-iris-draw-tools-list-controls">
       <label>
         <span>Color</span>
-        <select className="iitc-iris-control iitc-iris-select-input" aria-label="Filter drawn markers by color" value={markerColorFilter} onChange={(event) => setMarkerColorFilter(event.currentTarget.value)}>
+        <select className="iitc-iris-control iitc-iris-input-surface iitc-iris-input-surface-compact" aria-label="Filter drawn markers by color" value={markerColorFilter} onChange={(event) => setMarkerColorFilter(event.currentTarget.value)}>
           <option value="all">All colors</option>
           {markerColorOptions.map((filter) => <option value={filter.value} key={filter.value}>{filter.label}</option>)}
         </select>
       </label>
       <label>
         <span>Sort</span>
-        <select className="iitc-iris-control iitc-iris-select-input" aria-label="Sort drawn markers" value={markerSort} onChange={(event) => setMarkerSort(event.currentTarget.value as DrawToolsMarkerSort)}>
+        <select className="iitc-iris-control iitc-iris-input-surface iitc-iris-input-surface-compact" aria-label="Sort drawn markers" value={markerSort} onChange={(event) => setMarkerSort(event.currentTarget.value as DrawToolsMarkerSort)}>
           {DRAW_TOOLS_MARKER_SORTS.map((sort) => <option value={sort.value} key={sort.value}>{sort.label}</option>)}
         </select>
       </label>
@@ -238,7 +239,7 @@ export function IitcIrisDrawToolsPanel(props: IitcIrisDrawToolsPanelProps): h.JS
             <span className="iitc-iris-draw-tools-list-label">
               {props.editingMarkerIndex === item.storageIndex ? (
                 <TextInput
-                  className="iitc-iris-draw-tools-label-input"
+                  className="iitc-iris-input-surface iitc-iris-draw-tools-label-input"
                   type="text"
                   defaultValue={item.label ?? ''}
                   placeholder={getDrawToolsItemLabel(item, createdIndex)}

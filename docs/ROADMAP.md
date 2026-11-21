@@ -1,6 +1,6 @@
 # Project state and roadmap
 
-**State:** friends alpha; 0.6.0 integrated into main. User accepted general APK/XPI use on 2026-11-18.
+**State:** friends alpha, 0.6.1 on main. User accepted general APK/XPI use on 2026-11-18.
 Published builds are identified by GitHub Releases; targeted device checks remain relevant when affected behavior changes.
 Done/release history lives in [CHANGELOG](../CHANGELOG.md); goals and completion criteria live in [README](../README.md).
 
@@ -15,6 +15,9 @@ before broader delivery. Check advisories and compatibility; keep major Preact/V
 as separate work, including peer ranges, AGP/Gradle pairing and Leaflet's private canvas seam.
 
 ## Later
+
+Keep the current feature set focused. Defer Draw Tools parity, mission planning and additional map analysis until
+user feedback identifies a concrete need. Prioritize making existing tools easier to find and use on small screens.
 
 Recovery and test-gap follow-ups are deferred until relevant changes or a reproducible problem justify them.
 

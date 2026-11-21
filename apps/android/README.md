@@ -40,8 +40,8 @@ npm run android:release
 
 Output: `app/build/outputs/apk/release/app-release.apk`, served as `iitc-iris-android.apk`.
 Codes use `1005 + git rev-list --count HEAD`; complete Git history and preserved main history are required.
-`IRIS_ANDROID_VERSION_CODE` overrides this when necessary. The local module-boundaries test APK uses **1904**,
-above the rolling GitHub APK's **1903** at the time of testing. The next signed build must exceed **1904**.
+`IRIS_ANDROID_VERSION_CODE` overrides this when necessary. The final local UI controls test APK uses **1906**,
+above the previous UI test APK's **1905**. The next signed build must exceed **1906**.
 Record overrides here before the next integration.
 Names include source commit; mark uncommitted builds `-dirty`. Follow the [version procedure](../../CONTRIBUTING.md#versioning-and-releases).
 CI derives `iitc-iris-android-update.properties` from APK `output-metadata.json`; the manual checker compares codes,

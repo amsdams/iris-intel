@@ -3,6 +3,7 @@ import { h } from 'preact';
 import './portal-list-title.css';
 import '../portal-analysis.css';
 import '../../../ui/shared/control.css';
+import '../../../ui/shared/input-surface.css';
 import {
   IitcPortalCounts,
   IitcPortalsListEntry,
@@ -71,14 +72,14 @@ export function IitcIrisPortalsListPanel({
 }: IitcIrisPortalsListPanelProps): h.JSX.Element {
   if (!portalAnalysis) {
     return (
-      <Section className="iitc-iris-portal-analysis" titleHeading="Portals List">
+      <Section className="iitc-iris-portal-analysis">
         <EmptyState>Nothing to show.</EmptyState>
       </Section>
     );
   }
 
   return (
-    <Section className="iitc-iris-portal-analysis" titleHeading="Portals List">
+    <Section className="iitc-iris-portal-analysis">
       <SummaryGrid className="iitc-iris-portals-list-summary" aria-label="Filtered portal list summary">
         {([
           ['R', 'Resistance', portalsListSummary.teams.R],
@@ -117,20 +118,20 @@ export function IitcIrisPortalsListPanel({
       <div className="iitc-iris-portals-list-filters">
         <TextInput
           aria-label="Filter portal list by name"
-          className="iitc-iris-portals-list-search"
+          className="iitc-iris-portals-list-search iitc-iris-input-surface iitc-iris-input-surface-compact"
           placeholder="Filter portals"
           type="search"
           value={portalsListTextFilter}
           onInput={(event) => setPortalsListTextFilter(event.currentTarget.value)}
         />
-        <select className="iitc-iris-control iitc-iris-select-input" aria-label="Filter portal list by faction" value={portalsListTeamFilter} onChange={(event) => setPortalsListTeamFilter(event.currentTarget.value as PortalsListTeamFilter)}>
+        <select className="iitc-iris-control iitc-iris-input-surface iitc-iris-input-surface-compact" aria-label="Filter portal list by faction" value={portalsListTeamFilter} onChange={(event) => setPortalsListTeamFilter(event.currentTarget.value as PortalsListTeamFilter)}>
           <option value="all">All factions</option>
           <option value="R">Resistance</option>
           <option value="E">Enlightened</option>
           <option value="M">Machina</option>
           <option value="N">Neutral</option>
         </select>
-        <select className="iitc-iris-control iitc-iris-select-input" aria-label="Filter portal list by level" value={portalsListLevelFilter} onChange={(event) => setPortalsListLevelFilter(event.currentTarget.value as PortalsListLevelFilter)}>
+        <select className="iitc-iris-control iitc-iris-input-surface iitc-iris-input-surface-compact" aria-label="Filter portal list by level" value={portalsListLevelFilter} onChange={(event) => setPortalsListLevelFilter(event.currentTarget.value as PortalsListLevelFilter)}>
           <option value="all">All levels</option>
           <option value="0">Level 0 / Neutral</option>
           <option value="1">Level 1</option>

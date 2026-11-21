@@ -72,12 +72,7 @@
     white-space: nowrap;
 }
 
-.iitc-iris-draw-tools-list-controls .iitc-iris-select-input {
-    width: 100%;
-    padding: var(--iitc-iris-control-padding);
-    background: rgb(var(--iitc-iris-panel-rgb) / 88%);
-    font: var(--iitc-iris-font-bold) var(--iitc-iris-text-sm) / var(--iitc-iris-line-compact) var(--iitc-iris-font-ui);
-}
+.iitc-iris-draw-tools-list-controls select { width: 100%; }
 
 .iitc-iris-draw-tools-list-empty {
     padding: var(--iitc-iris-space-3);
@@ -182,15 +177,7 @@
     grid-template-columns: minmax(0, 1fr) max-content;
 }
 
-.iitc-iris-draw-tools-label-input {
-    width: 100%;
-    background: rgb(var(--iitc-iris-panel-rgb) / 88%);
-    padding: var(--iitc-iris-control-padding);
-}
-
-.iitc-iris-draw-tools-label-input::placeholder {
-    color: var(--iitc-iris-color-muted);
-}
+.iitc-iris-draw-tools-label-input { width: 100%; }
 
 .iitc-iris-draw-tools-import {
     display: grid;

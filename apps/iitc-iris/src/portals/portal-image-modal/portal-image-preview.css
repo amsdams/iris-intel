@@ -23,7 +23,7 @@
     max-height: calc(var(--iitc-iris-viewport-height, 100dvh) - 36px - var(--iitc-iris-safe-top) - var(--iitc-iris-safe-bottom));
     box-sizing: border-box;
     min-height: 0;
-    overflow: auto;
+    overflow: hidden;
     padding: 8px;
     border: 1px solid rgb(var(--iitc-iris-border-rgb) / 28%);
     border-radius: 6px;

@@ -38,7 +38,7 @@ test('Appearance persists across reload and follows System only when selected', 
   await expect(page.locator('html')).toHaveAttribute('data-iitc-iris-theme', 'dark');
 });
 
-test('Search, COMM, Passcode, and Diagnostics share input surfaces and aligned actions', async ({page}, testInfo) => {
+test('Panel text inputs share surfaces and align with submit actions', async ({page}, testInfo) => {
   const backgrounds = [];
   for (const appearance of ['Light', 'Dark']) {
     await test.step(`${appearance}: matching fields, submit heights, and button corners`, async () => {
@@ -46,6 +46,25 @@ test('Search, COMM, Passcode, and Diagnostics share input surfaces and aligned a
       await openPanel(page, 'Map', 'Search');
       const searchBox = page.locator('.iitc-iris-search-box');
       const search = await surface(searchBox);
+      const query = searchBox.getByRole('searchbox');
+      await query.fill('ab');
+      const clear = searchBox.getByRole('button', {name: 'Clear search'});
+      const searchAddress = button(page, 'Search address');
+      await expect(clear).toHaveCount(1);
+      await expect(searchBox).toHaveCSS('outline-offset', '-2px');
+      await expect(query).toHaveCSS('outline-style', 'none');
+      await expect(searchAddress).toBeEnabled();
+      const searchFocus = await searchBox.evaluate(element => getComputedStyle(element).outline);
+      const queryBounds = await query.boundingBox();
+      await page.mouse.click(queryBounds.x + queryBounds.width - 12, queryBounds.y + queryBounds.height / 2);
+      await expect(query).toHaveValue('ab');
+      await page.keyboard.press('Tab');
+      await expect(clear).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(query).toHaveValue('');
+      await expect(query).toBeFocused();
+      await expect(clear).toHaveCount(0);
+      await expect(searchAddress).toBeDisabled();
       // Compare typography on the actual field: Firefox resolves an input's line height
       // differently from its surrounding form, which supplies the visible surface.
       search.font = await searchBox.locator('input').evaluate(input => getComputedStyle(input).font);
@@ -60,6 +79,8 @@ test('Search, COMM, Passcode, and Diagnostics share input surfaces and aligned a
         const form = page.locator(selector);
         await expect(form).toBeVisible();
         expect(await surface(form.locator('input'))).toEqual(search);
+        await form.locator('input').focus();
+        await expect(form.locator('input')).toHaveCSS('outline', searchFocus);
         const action = form.locator('button[type="submit"]');
         await expect(action).toBeDisabled();
         await expect(action).toHaveCSS('height', search.height);
@@ -74,6 +95,22 @@ test('Search, COMM, Passcode, and Diagnostics share input surfaces and aligned a
       await expect(details).toHaveAttribute('open');
       await details.locator('summary').click();
       await expect(details).not.toHaveAttribute('open');
+
+      const markers = await openPanel(page, 'Map', 'Markers');
+      await page.evaluate(() => window.postMessage({type: 'IITC_IRIS_DRAW_TOOLS_STATUS', drawToolsItems: [
+        {type: 'marker', storageIndex: 0, latLng: {lat: 52, lng: 4}, label: 'Fixture marker', color: '#ff0000'},
+      ]}, '*'));
+      const newLabel = markers.getByRole('textbox', {name: 'New marker label', exact: true});
+      await expect(newLabel).toBeDisabled();
+      expect(await surface(newLabel)).toMatchObject({
+        backgroundColor: search.backgroundColor, border: search.border, borderRadius: search.borderRadius,
+        font: search.font, height: search.height,
+      });
+      await markers.getByRole('button', {name: 'Edit', exact: true}).click();
+      const editLabel = markers.getByRole('textbox', {name: 'Marker 1 label', exact: true});
+      await editLabel.focus();
+      expect(await surface(editLabel)).toEqual(search);
+      await expect(editLabel).toHaveCSS('outline', searchFocus);
     });
   }
   expect(backgrounds[0]).not.toBe(backgrounds[1]);

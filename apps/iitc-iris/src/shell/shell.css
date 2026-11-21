@@ -297,9 +297,6 @@
     color: var(--iitc-iris-color-text);
 }
 
-.iitc-iris-map-controls,
-.iitc-iris-system-panel { align-content: start; }
-
 .iitc-iris-shell .iitc-iris-sheet-tabbar {
     right: max(8px, var(--iitc-iris-safe-right));
     bottom: calc(8px + var(--iitc-iris-viewport-bottom, 0px) + var(--iitc-iris-safe-bottom));

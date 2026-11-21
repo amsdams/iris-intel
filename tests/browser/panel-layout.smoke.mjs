@@ -64,6 +64,21 @@ for (const viewport of [{width: 780, height: 360}, {width: 780, height: 280}, {w
         }, name);
         if (name === 'Missions') await reachable(panel.getByText('Mission 23', {exact: true}));
         if (name === 'Inventory') await reachable(panel.getByText('Key 23', {exact: true}));
+        if (viewport.height === 280 && (name === 'Layers' || name === 'Diagnostics')) {
+          const scroll = await panel.evaluate(frame => {
+            const header = frame.firstElementChild;
+            const body = header.nextElementSibling;
+            const before = header.getBoundingClientRect();
+            body.scrollTop = body.scrollHeight;
+            return {
+              viewportStartsBelowHeader: body.getBoundingClientRect().top >= before.bottom,
+              scrolled: body.scrollTop > 0,
+              headerStayedPut: header.getBoundingClientRect().top === before.top,
+              frameScroll: frame.scrollTop,
+            };
+          });
+          expect(scroll).toEqual({viewportStartsBelowHeader: true, scrolled: true, headerStayedPut: true, frameScroll: 0});
+        }
         if (name === 'About') {
           await expect(panel).toContainText('Stefan Breunig');
           await expect(panel).toContainText('DanielOnDiordna');
