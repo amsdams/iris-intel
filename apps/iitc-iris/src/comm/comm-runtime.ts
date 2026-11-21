@@ -1,6 +1,7 @@
+import {createCommTransport} from './comm-transport';
 import type {Map as LeafletMap} from 'leaflet';
 import {IITC_IRIS_MESSAGES, type IitcIrisCommState, type IitcIrisMessage, type IitcIrisRequestDiagnostics} from '../messages';
-import {getCsrfToken, extractVersion, looksLikeHtml, isIitcAuthError, createIitcAuthError, type IntelRequest} from '../intel/intel-request';
+import {extractVersion, isIitcAuthError, type IntelRequest} from '../intel/intel-request';
 import type {IitcIrisMapLifetime} from '../map/map-runtime-lifetime';
 import {
   createIitcCommChannelData,
@@ -8,7 +9,6 @@ import {
   genIitcCommSendPlextPostData,
   getIitcCommChannelMessages,
   renderIitcCommMarkup,
-  planIitcCommRequest,
   applyIitcCommResponse,
   createIitcCommAuthState,
   createIitcCommErrorState,
@@ -17,8 +17,6 @@ import {
   type IitcCommChannel,
   type IitcCommChannelData,
   type IitcCommMessage,
-  validateIitcCommResponse,
-  validateIitcCommSendResponse,
   matchesIitcCommPortal,
 } from '@iris/iitc-core';
 
@@ -56,6 +54,7 @@ export function normalizeCommTab(tab: unknown): IitcCommChannel {
 export function createCommRuntime({getMap, getLifetime, getMapCenterE6, fetchIitcEndpointText,
   getIitcRequestDiagnostics, onPublicMessages, isPublicChannelInterested = (): boolean => false,
   isIdle = (): boolean => false, isAuthRecoveryActive = (): boolean => false}: CommRuntimeOptions): CommRuntime {
+  const {fetchComm, postSendPlext} = createCommTransport(fetchIitcEndpointText);
   let activeChannel: IitcCommChannel | undefined;
   let refreshTimer: number | undefined;
   let refreshDueAt: number | undefined;
@@ -165,90 +164,6 @@ export function createCommRuntime({getMap, getLifetime, getMapCenterE6, fetchIit
         })),
       players: [...new Set(players)],
     };
-  }
-
-  async function fetchComm(
-    version: string,
-    tab: IitcCommChannel,
-    bounds: NonNullable<IitcIrisCommState['bounds']> | undefined,
-    getOlderMsgs: boolean,
-    signal?: AbortSignal,
-  ): Promise<unknown> {
-    const csrfToken = getCsrfToken();
-    if (!csrfToken) throw new Error('getPlexts missing csrftoken');
-    if (!bounds) throw new Error('getPlexts missing map bounds');
-    const postData = planIitcCommRequest({
-      channel: tab,
-      bounds,
-      storageHash: commChannelsData[tab],
-      getOlderMsgs,
-      version,
-    });
-
-    const {response, text} = await fetchIitcEndpointText('getPlexts', {
-      method: 'POST',
-      credentials: 'include',
-      signal,
-      headers: {
-        'Accept': 'application/json, text/javascript, */*; q=0.01',
-        'Content-Type': 'application/json; charset=utf-8',
-        'X-CSRFToken': csrfToken,
-        'X-Requested-With': 'XMLHttpRequest',
-      },
-      body: JSON.stringify(postData),
-    }, tab === 'all' ? 'comm-all' : `comm-${tab}`);
-
-    if (looksLikeHtml(text)) {
-      throw createIitcAuthError('getPlexts', response);
-    }
-
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(text) as unknown;
-    } catch (error) {
-      if (!response.ok) throw new Error(`getPlexts HTTP ${response.status}`, {cause: error});
-      throw error;
-    }
-    if (!response.ok) throw new Error(`getPlexts HTTP ${response.status}`);
-    const error = parsed && typeof parsed === 'object' ? (parsed as {error?: unknown}).error : undefined;
-    if (typeof error === 'string' && error) throw new Error(error);
-    validateIitcCommResponse(parsed);
-    return parsed;
-  }
-
-  async function postSendPlext(payload: NonNullable<ReturnType<typeof genIitcCommSendPlextPostData>>, signal?: AbortSignal): Promise<unknown> {
-    const csrfToken = getCsrfToken();
-    if (!csrfToken) throw new Error('sendPlext missing csrftoken');
-    const version = extractVersion();
-    if (!version) throw new Error('sendPlext missing Intel version');
-
-    const {response, text} = await fetchIitcEndpointText('sendPlext', {
-      method: 'POST',
-      credentials: 'include',
-      signal,
-      headers: {
-        'Accept': 'application/json, text/javascript, */*; q=0.01',
-        'Content-Type': 'application/json; charset=utf-8',
-        'X-CSRFToken': csrfToken,
-        'X-Requested-With': 'XMLHttpRequest',
-      },
-      body: JSON.stringify({...payload, v: version}),
-    }, `comm-send-${payload.tab}`);
-
-    if (looksLikeHtml(text)) {
-      throw createIitcAuthError('sendPlext', response);
-    }
-
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(text) as unknown;
-    } catch (error) {
-      if (!response.ok) throw new Error(`sendPlext HTTP ${response.status}`, {cause: error});
-      throw error;
-    }
-    if (!response.ok) throw new Error(`sendPlext HTTP ${response.status}`);
-    validateIitcCommSendResponse(parsed);
-    return parsed;
   }
 
   async function sendComm(tab: IitcCommChannel, message: unknown): Promise<void> {
@@ -368,7 +283,7 @@ export function createCommRuntime({getMap, getLifetime, getMapCenterE6, fetchIit
     }
     entry.promise = (async (): Promise<void> => {
       try {
-        const response = await fetchComm(version, tab, bounds, older, controller.signal);
+        const response = await fetchComm(version, tab, bounds, commChannelsData[tab], older, controller.signal);
         controller.signal.throwIfAborted();
         lifetime.signal.throwIfAborted();
         if (getLifetime()?.signal !== lifetime.signal || (tab !== 'alerts' && generation !== areaGeneration)) return;

@@ -1,3 +1,4 @@
+import {createMapArtifactRequest} from './map-artifact-request';
 import type {Map as LeafletMap} from 'leaflet';
 import {
   classifyIitcTileDiagnostics,
@@ -19,9 +20,8 @@ import {createMissingIntelVersionError, extractVersion, isIitcAuthError, type In
 import type {IitcIrisMapLifetime} from './map-runtime-lifetime';
 import {createMapEntityTransport, type MapTileBatchResult} from './map-entity-transport';
 import {createMapRefreshSession, filterMapResponseToTiles} from './map-refresh-session';
-import {createArtifactFetchDiagnostics,
-  type TileDiagnostics, type ArtifactFetchDiagnostics} from './map-request-diagnostics';
-import {adaptMapEntities, getArtifactTypes} from './map-entity-adapter';
+import type {TileDiagnostics, ArtifactFetchDiagnostics} from './map-request-diagnostics';
+import {adaptMapEntities} from './map-entity-adapter';
 
 const REQUEST_BOUNDS_PADDING_RATIO = 0.25;
 const FAST_MOVE_REFRESH_DELAY_MS = 250;
@@ -88,8 +88,9 @@ export function createMapRequest({
     generation: number;
     processExternalBatch(result: MapTileBatchResult): boolean;
   }
-  let latestArtifactDiagnostics = createArtifactFetchDiagnostics();
   const {fetchEntityBatchResult, fetchFixtureResponse, fetchArtifactPortals} = createMapEntityTransport({getLifetime, fetchIitcEndpointText});
+
+  const artifacts = createMapArtifactRequest(fetchArtifactPortals, (generation) => generation === latestFetchGeneration);
 
   function cancelActiveEntityFetch(): void {
     currentFetchAbortController?.abort();
@@ -116,10 +117,6 @@ export function createMapRequest({
     const {entities, historyUpdates} = adaptMapEntities(response, generation, portalHistoryByGuid, artifactEntities);
     for (const [guid, history] of historyUpdates) portalHistoryByGuid.set(guid, history);
     return entities;
-  }
-
-  function resetArtifactDiagnostics(status = 'disabled'): void {
-    latestArtifactDiagnostics = createArtifactFetchDiagnostics(status);
   }
 
   async function waitForIitcQueueDelay(delayMs: number, generation: number, signal: AbortSignal): Promise<boolean> {
@@ -171,37 +168,6 @@ export function createMapRequest({
     return getLifecycleSettings().iitcMovementDelay ? IITC_DOWNLOAD_DELAY_MS : FAST_DOWNLOAD_DELAY_MS;
   }
 
-  async function fetchArtifactEntitiesForRender(version: string, signal: AbortSignal, generation: number): Promise<IitcRawGameEntity[]> {
-    if (generation !== latestFetchGeneration) return [];
-    const startTime = performance.now();
-    latestArtifactDiagnostics = createArtifactFetchDiagnostics('loading');
-
-    try {
-      const entities = await fetchArtifactPortals(version, signal);
-      signal.throwIfAborted();
-      if (generation !== latestFetchGeneration) return [];
-      latestArtifactDiagnostics = {
-        status: entities.length > 0 ? 'ready' : 'empty',
-        portalCount: entities.length,
-        types: getArtifactTypes(entities),
-        elapsedMs: performance.now() - startTime,
-      };
-      return entities;
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') throw error;
-      if (isIitcAuthError(error)) throw error;
-      if (generation !== latestFetchGeneration) return [];
-      latestArtifactDiagnostics = {
-        status: 'error',
-        portalCount: 0,
-        types: [],
-        elapsedMs: performance.now() - startTime,
-        error: error instanceof Error ? error.message : String(error),
-      };
-      return [];
-    }
-  }
-
   function scheduleEntityRefresh(delayMs = FAST_MOVE_REFRESH_DELAY_MS): void {
     const dataSource = getDataSource();
     getLifetime()?.cancelScheduled(refreshTimer);
@@ -233,7 +199,7 @@ export function createMapRequest({
       latestFetchGeneration = generation;
 
       if (dataSource.mode === 'fixture') {
-        resetArtifactDiagnostics('fixture-disabled');
+        artifacts.resetArtifactDiagnostics('fixture-disabled');
         postEntityStatus(`loading fixture ${dataSource.label}`, undefined, {
           requestedTiles: plan.tileKeys.length,
           returnedTiles: 0,
@@ -289,7 +255,7 @@ export function createMapRequest({
       };
       let artifactEntitiesPromise: Promise<IitcRawGameEntity[]> | undefined;
       const getArtifactEntitiesPromise = (): Promise<IitcRawGameEntity[]> => {
-        artifactEntitiesPromise ??= fetchArtifactEntitiesForRender(version, liveAbortController.signal, generation);
+        artifactEntitiesPromise ??= artifacts.fetchArtifactEntitiesForRender(version, liveAbortController.signal, generation);
         return artifactEntitiesPromise;
       };
       const session = createMapRefreshSession(plan.tileKeys, mapDataCache);
@@ -525,6 +491,6 @@ export function createMapRequest({
       latestPlan = undefined;
       latestResponse = undefined;
     },
-    getSnapshot: (): MapRequestSnapshot => ({plan: latestPlan, response: latestResponse, artifacts: latestArtifactDiagnostics}),
+    getSnapshot: (): MapRequestSnapshot => ({plan: latestPlan, response: latestResponse, artifacts: artifacts.getDiagnostics()}),
   };
 }

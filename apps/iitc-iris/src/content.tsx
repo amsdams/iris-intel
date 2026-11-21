@@ -8,10 +8,10 @@ import {usePanelVisibility} from './shell/panel-visibility';
 import {BaseLayerNotice} from './map/layers/base-layer-notice';
 import {ActiveMapFilters} from './map/layers/active-map-filters';
 import {useUiTheme} from './shell/ui-theme';
-import {getExtensionUrl} from './platform/assets';
+import {mountApp} from './shell/mount-app';
 import {installIitcIrisHostBack} from './shell/host-navigation';
 import {Button} from './ui/button';
-import {h, render} from 'preact';
+import {h} from 'preact';
 import './auth/auth.css';
 import {useCallback, useEffect, useLayoutEffect, useMemo, useState} from 'preact/hooks';
 import './iitc-iris.css';
@@ -150,15 +150,6 @@ type PortalSectionId = IitcIrisPortalDetailSectionId;
 
 
 
-
-function injectScript(src: string): void {
-  if (document.querySelector(`script[data-iitc-iris-src="${CSS.escape(src)}"]`)) return;
-  const script = document.createElement('script');
-  script.src = src;
-  script.async = false;
-  script.dataset.iitcIrisSrc = src;
-  (document.head || document.documentElement).appendChild(script);
-}
 
 function App(): h.JSX.Element {
   useShellViewport();
@@ -953,59 +944,4 @@ function App(): h.JSX.Element {
   );
 }
 
-function createRoot(): HTMLElement {
-  const existingRoot = document.getElementById('iitc-iris-root');
-  if (existingRoot) return existingRoot;
-
-  const root = document.createElement('div');
-  root.id = 'iitc-iris-root';
-  (document.body || document.documentElement).appendChild(root);
-  return root;
-}
-
-function hasIntelDashboardBootstrap(): boolean {
-  return document.querySelector('script[src*="gen_dashboard_"]') !== null;
-}
-
-function shouldBypassForIntelLogin(): boolean {
-  try {
-    const value = Number(window.sessionStorage.getItem(LOGIN_BYPASS_STORAGE_KEY) ?? 0);
-    if (!Number.isFinite(value) || value <= Date.now() || hasIntelDashboardBootstrap()) {
-      window.sessionStorage.removeItem(LOGIN_BYPASS_STORAGE_KEY);
-      return false;
-    }
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function mount(): void {
-  if (!document.body) {
-    window.setTimeout(mount, 50);
-    return;
-  }
-
-  if (shouldBypassForIntelLogin()) {
-    window.setTimeout(mount, 1000);
-    return;
-  }
-
-  const root = createRoot();
-  render(<App />, root);
-  injectScript(getExtensionUrl('page-map-runtime.js'));
-  window.dispatchEvent(new CustomEvent('IITC_IRIS_CONTAINER_READY'));
-
-  if (window.__iitcIrisContentInitialized) return;
-  window.__iitcIrisContentInitialized = true;
-
-  const observer = new MutationObserver(() => {
-    if (!document.getElementById('iitc-iris-root')) {
-      render(<App />, createRoot());
-      window.dispatchEvent(new CustomEvent('IITC_IRIS_CONTAINER_READY'));
-    }
-  });
-  observer.observe(document.documentElement, {childList: true, subtree: true});
-}
-
-mount();
+mountApp(() => <App />, LOGIN_BYPASS_STORAGE_KEY);

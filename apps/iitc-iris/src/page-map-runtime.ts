@@ -28,7 +28,8 @@ import {isIitcPlayerTrackerVisibleForZoom} from '@iris/iitc-core';
 import {IitcIrisCanvasMap} from './map/map-canvas';
 import L, {type Layer as LeafletLayer, type Map as LeafletMap} from 'leaflet';
 import {IITC_IRIS_MESSAGES, type IitcIrisBaseLayerId, type IitcIrisDataSourceSettings, type IitcIrisLifecycleSettings, type IitcIrisMessage, type IitcIrisRenderEntities, type IitcIrisRenderPortal} from './messages';
-import {type IitcGetEntitiesResponse, type IitcMapDataPlan} from '@iris/iitc-core';
+import {createUserLocationOverlay} from './map/user-location-overlay';
+import {createTileDebugOverlay} from './map/tile-debug-overlay';
 
 const IITC_IRIS_ASSET_BASE_URL = ((): string => {
   const script = document.currentScript instanceof HTMLScriptElement ? document.currentScript.src : '';
@@ -231,6 +232,16 @@ const playerTracker = createPlayerTrackerRuntime({
 });
 const {renderPlayerTracker, processPlayerTrackerCommMessages} = playerTracker;
 
+const renderUserLocation = createUserLocationOverlay(
+  () => clearRenderedLayers(ensureLayers().userLocation),
+  (layer) => addRenderedLayer(ensureLayers().userLocation, layer),
+);
+const renderTileDebug = createTileDebugOverlay(
+  () => Boolean(window.__iitcIrisMap),
+  () => mapSettings.getLayerSettings().tiles,
+  () => clearRenderedLayers(ensureLayers().tiles),
+  (layer) => addRenderedLayer(ensureLayers().tiles, layer),
+);
 const mapRequests = createMapRequest({
   getMap: () => window.__iitcIrisMap,
   getLifetime: () => mapLifetime,
@@ -367,62 +378,6 @@ function clearAllRenderedLayers(): void {
   clearRenderedLayers(layers.userLocation);
   clearEntityLayerIndexes(layers);
   resetRenderDiagnostics();
-}
-
-function renderUserLocation(lat: number | undefined, lng: number | undefined, accuracy: number | undefined): void {
-  const layers = ensureLayers();
-  clearRenderedLayers(layers.userLocation);
-  if (typeof lat !== 'number' || typeof lng !== 'number') return;
-  const latLng: [number, number] = [lat, lng];
-  if (typeof accuracy === 'number' && Number.isFinite(accuracy) && accuracy > 0) {
-    addRenderedLayer(layers.userLocation, L.circle(latLng, {
-      radius: accuracy,
-      color: '#65d9ff',
-      fillColor: '#65d9ff',
-      fillOpacity: 0.08,
-      opacity: 0.24,
-      pane: getLayerPane('userLocation'),
-      interactive: false,
-      weight: 1,
-    }));
-  }
-  addRenderedLayer(layers.userLocation, L.marker(latLng, {
-    icon: L.divIcon({
-      className: 'iitc-iris-user-location-pin',
-      html: '<span></span>',
-      iconSize: [22, 30],
-      iconAnchor: [11, 30],
-    }),
-    pane: getLayerPane('userLocation'),
-    interactive: false,
-  }));
-}
-
-function renderTileDebug(plan: IitcMapDataPlan, response: IitcGetEntitiesResponse): void {
-  if (!window.__iitcIrisMap) return;
-  const layers = ensureLayers();
-  clearRenderedLayers(layers.tiles);
-  if (!mapSettings.getLayerSettings().tiles) return;
-
-  const tilePayloads = response.result?.map ?? {};
-  for (const tile of plan.tiles) {
-    const payload = tilePayloads[tile.id];
-    const entityCount = payload?.gameEntities?.length ?? 0;
-    const color = payload ? (entityCount > 0 ? '#00ff73' : '#ffce00') : '#ff1010';
-
-    addRenderedLayer(layers.tiles, L.rectangle([
-      [tile.bounds.south, tile.bounds.west],
-      [tile.bounds.north, tile.bounds.east],
-    ], {
-      color,
-      fillColor: color,
-      fillOpacity: entityCount > 0 ? 0.08 : 0.14,
-      opacity: 0.75,
-      pane: getLayerPane('tiles'),
-      weight: 1,
-      interactive: false,
-    }));
-  }
 }
 
 function renderLatestTileDebug(): void {

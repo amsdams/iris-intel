@@ -1,13 +1,14 @@
+import {areFieldLayersEqual, areLinkLayersEqual, arePortalLayersEqual} from './entity-layer-comparison';
+import {createEntityRenderScope} from './entity-render-scope';
 import {createPortalDecorationOverlays, createEmptyOrnamentDiagnostics, type OrnamentDiagnostics} from './portal-decoration-overlays';
 import {createEntityLayerSync, compactRenderedLayers, mapEntitiesByGuid, createEmptyRenderMutationLayerDiagnostics} from './entity-layer-sync';
 import {createPortalLabelOverlays} from './portal-label-overlays';
 import {
-  isPortalVisibleWith, isLinkVisibleWith, isFieldVisibleWith, getPortalLevelBucket,
+  isPortalVisibleWith, isLinkVisibleWith, isFieldVisibleWith,
   getSecondaryEntityRenderUpdate as getSecondaryUpdate, getFactionLayerSetting,
   arePortalLevelFiltersEnabled, getDirectFactionToggleTeam, getCoreEntityRenderScope,
   getWholeCoreOverlayToggleKey, ALL_CORE_ENTITY_RENDER_SCOPE, ALL_SECONDARY_ENTITY_RENDER_UPDATE,
   type IitcIrisSecondaryEntityRenderUpdate, type IitcIrisCoreEntityRenderScope,
-  type IitcIrisPortalLevelBucket,
 } from './entity-visibility';
 import L, {type Layer as LeafletLayer, type LeafletMouseEvent, type Map as LeafletMap} from 'leaflet';
 import type {
@@ -85,6 +86,7 @@ export function createMapRenderer({
   const getTeamColor = (team: keyof typeof TEAM_COLORS): string => TEAM_COLORS[team] ?? TEAM_COLORS.N;
   const roundTimingMs = (value: number): number => Math.round(value * 10) / 10;
   const {addEntityRenderedLayer, removeEntityRenderedLayers, syncEntityLayers} = createEntityLayerSync(addRenderedLayer);
+  const {getRenderEntityBuckets, getScopedFields, getScopedLinks, getScopedPortals} = createEntityRenderScope();
   const labelOverlays = createPortalLabelOverlays({getMap, getLayerSettings, getPortalKeyCount, getPortalRadius,
     syncEntityLayers, clearRenderedLayers});
   const decorationOverlays = createPortalDecorationOverlays({getMap, defaultZoom, getPortalRadius,
@@ -312,49 +314,6 @@ export function createMapRenderer({
     };
   }
 
-  function areFieldPointsEqual(a: IitcIrisRenderField['points'], b: IitcIrisRenderField['points']): boolean {
-    return a.length === b.length && a.every((point, index) =>
-      point.guid === b[index]?.guid &&
-      point.latE6 === b[index]?.latE6 &&
-      point.lngE6 === b[index]?.lngE6);
-  }
-
-  function areFieldLayersEqual(a: IitcIrisRenderField, b: IitcIrisRenderField): boolean {
-    return a.team === b.team && areFieldPointsEqual(a.points, b.points);
-  }
-
-  function areLinkLayersEqual(a: IitcIrisRenderLink, b: IitcIrisRenderLink): boolean {
-    return a.team === b.team &&
-      a.oGuid === b.oGuid &&
-      a.oLatE6 === b.oLatE6 &&
-      a.oLngE6 === b.oLngE6 &&
-      a.dGuid === b.dGuid &&
-      a.dLatE6 === b.dLatE6 &&
-      a.dLngE6 === b.dLngE6;
-  }
-
-  function getPortalHistoryForLayer(portal: IitcIrisRenderPortal): NonNullable<IitcIrisRenderPortal['history']> | undefined {
-    return portal.history ?? getPortalHistory(portal.guid);
-  }
-
-  function arePortalHistoriesEqual(a: IitcIrisRenderPortal, b: IitcIrisRenderPortal): boolean {
-    const aHistory = getPortalHistoryForLayer(a);
-    const bHistory = getPortalHistoryForLayer(b);
-    return aHistory?.visited === bHistory?.visited &&
-      aHistory?.captured === bHistory?.captured &&
-      aHistory?.scoutControlled === bHistory?.scoutControlled;
-  }
-
-  function arePortalLayersEqual(a: IitcIrisRenderPortal, b: IitcIrisRenderPortal): boolean {
-    return a.team === b.team &&
-      a.latE6 === b.latE6 &&
-      a.lngE6 === b.lngE6 &&
-      a.level === b.level &&
-      a.health === b.health &&
-      a.isPlaceholder === b.isPlaceholder &&
-      arePortalHistoriesEqual(a, b);
-  }
-
   function refreshPortalMarkerStylesForHighlighter(): boolean {
     const latestEntities = getEntities();
     if (!latestEntities || !getMap()) return false;
@@ -427,83 +386,6 @@ export function createMapRenderer({
       (previousEntities !== nextEntities || previousLayerSettings !== undefined) &&
       (latestEntityRenderContextKey === renderContextKey || previousLayerSettings !== undefined) &&
       !hasPendingPortalSelection();
-  }
-
-  interface IitcIrisRenderEntityBuckets {
-    fieldsByTeam: Map<IitcIrisRenderField['team'], IitcIrisRenderField[]>;
-    linksByTeam: Map<IitcIrisRenderLink['team'], IitcIrisRenderLink[]>;
-    portalsByTeam: Map<IitcIrisRenderPortal['team'], IitcIrisRenderPortal[]>;
-    portalsByLevel: Map<IitcIrisPortalLevelBucket, IitcIrisRenderPortal[]>;
-  }
-  const renderEntityBuckets = new WeakMap<IitcIrisRenderEntities, IitcIrisRenderEntityBuckets>();
-
-  function addToBucket<K, T>(buckets: Map<K, T[]>, key: K, value: T): void {
-    const bucket = buckets.get(key);
-    if (bucket) {
-      bucket.push(value);
-    } else {
-      buckets.set(key, [value]);
-    }
-  }
-
-  function getRenderEntityBuckets(entities: IitcIrisRenderEntities): IitcIrisRenderEntityBuckets {
-    const cached = renderEntityBuckets.get(entities);
-    if (cached) return cached;
-
-    const buckets: IitcIrisRenderEntityBuckets = {
-      fieldsByTeam: new Map(),
-      linksByTeam: new Map(),
-      portalsByTeam: new Map(),
-      portalsByLevel: new Map(),
-    };
-    for (const field of entities.fields) addToBucket(buckets.fieldsByTeam, field.team, field);
-    for (const link of entities.links) addToBucket(buckets.linksByTeam, link.team, link);
-    for (const portal of entities.portals) {
-      addToBucket(buckets.portalsByTeam, portal.team, portal);
-      addToBucket(buckets.portalsByLevel, getPortalLevelBucket(portal), portal);
-    }
-    renderEntityBuckets.set(entities, buckets);
-    return buckets;
-  }
-
-  function appendUniqueEntities<T extends {guid: string}>(target: T[], seen: Set<string>, source: T[] | undefined): void {
-    if (!source) return;
-    for (const entity of source) {
-      if (seen.has(entity.guid)) continue;
-      seen.add(entity.guid);
-      target.push(entity);
-    }
-  }
-
-  function getScopedFields(entities: IitcIrisRenderEntities, scope: IitcIrisCoreEntityRenderScope): IitcIrisRenderField[] {
-    if (!scope.fields) return [];
-    if (scope.allFields) return entities.fields;
-    const buckets = getRenderEntityBuckets(entities);
-    const fields: IitcIrisRenderField[] = [];
-    const seen = new Set<string>();
-    for (const team of scope.fieldTeams) appendUniqueEntities(fields, seen, buckets.fieldsByTeam.get(team));
-    return fields;
-  }
-
-  function getScopedLinks(entities: IitcIrisRenderEntities, scope: IitcIrisCoreEntityRenderScope): IitcIrisRenderLink[] {
-    if (!scope.links) return [];
-    if (scope.allLinks) return entities.links;
-    const buckets = getRenderEntityBuckets(entities);
-    const links: IitcIrisRenderLink[] = [];
-    const seen = new Set<string>();
-    for (const team of scope.linkTeams) appendUniqueEntities(links, seen, buckets.linksByTeam.get(team));
-    return links;
-  }
-
-  function getScopedPortals(entities: IitcIrisRenderEntities, scope: IitcIrisCoreEntityRenderScope): IitcIrisRenderPortal[] {
-    if (!scope.portals) return [];
-    if (scope.allPortals) return entities.portals;
-    const buckets = getRenderEntityBuckets(entities);
-    const portals: IitcIrisRenderPortal[] = [];
-    const seen = new Set<string>();
-    for (const team of scope.portalTeams) appendUniqueEntities(portals, seen, buckets.portalsByTeam.get(team));
-    for (const level of scope.portalLevels) appendUniqueEntities(portals, seen, buckets.portalsByLevel.get(level));
-    return portals;
   }
 
   function syncFactionBucketLayers<T extends {guid: string}>(
@@ -806,7 +688,7 @@ export function createMapRenderer({
         layers.entityLayerIndex.portals,
         getScopedPortals(previousEntities, scope).filter((portal) => isPortalVisibleWith(previousLayerSettings, portal)),
         getScopedPortals(entities, scope).filter(isPortalVisible),
-        arePortalLayersEqual,
+        (a, b) => arePortalLayersEqual(a, b, getPortalHistory),
         (portal) => createPortalLayer(portal, renderPolicy),
         layers.coreLayerGroups.portals,
       )
