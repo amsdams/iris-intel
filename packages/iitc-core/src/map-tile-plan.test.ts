@@ -1,0 +1,119 @@
+import {describe, expect, it} from 'vitest';
+import {
+  clampIitcBounds,
+  createIitcMapDataPlan,
+  getIitcReusableCacheClassification,
+  getIitcMapZoomTileParameters,
+  iitcTileToLat,
+  iitcTileToLng,
+  iitcBoundsContainsBounds,
+  latToIitcTile,
+  lngToIitcTile,
+  pointToIitcTileId,
+  shouldRefreshIitcMapData,
+  type IitcGetEntitiesResponse,
+} from './index';
+
+describe('map tile plan', () => {
+  it('clamps bounds to the range accepted by Intel', () => {
+    expect(clampIitcBounds({south: -90, west: -190, north: 90, east: 190})).toEqual({
+      south: -85.051128,
+      west: -180,
+      north: 85.051128,
+      east: 179.999999,
+    });
+  });
+
+  it('uses IITC tile id format and reversible tile boundaries', () => {
+    const params = getIitcMapZoomTileParameters(15);
+    const x = lngToIitcTile(4.8924534, params);
+    const y = latToIitcTile(52.3730796, params);
+
+    expect(pointToIitcTileId(params, x, y)).toBe(`${params.zoom}_${x}_${y}_${params.level}_8_100`);
+    expect(iitcTileToLng(x, params)).toBeLessThanOrEqual(4.8924534);
+    expect(iitcTileToLng(x + 1, params)).toBeGreaterThan(4.8924534);
+    expect(iitcTileToLat(y, params)).toBeGreaterThanOrEqual(52.3730796);
+    expect(iitcTileToLat(y + 1, params)).toBeLessThan(52.3730796);
+  });
+
+  it('creates an IITC ordered tile queue and first request batches', () => {
+    const plan = createIitcMapDataPlan(
+      {south: 52.368, west: 4.887, north: 52.378, east: 4.899},
+      {lat: 52.3730796, lng: 4.8924534},
+      15,
+    );
+
+    expect(plan.dataZoom).toBe(15);
+    expect(plan.tileParams.hasPortals).toBe(true);
+    expect(plan.tiles.length).toBeGreaterThan(0);
+    expect(plan.tileKeys).toHaveLength(plan.tiles.length);
+    expect(plan.requestBatches.length).toBeGreaterThan(0);
+    expect(plan.requestBatches[0].length).toBeLessThanOrEqual(25);
+    expect(plan.tileKeys[0]).toBe(plan.tiles[0].id);
+  });
+
+  it('can put live-compatible batches directly in the map data plan', () => {
+    const plan = createIitcMapDataPlan(
+      {south: 52.35830440667059, west: 4.960670471191407, north: 52.37620175110521, east: 5.032424926757813},
+      {lat: 52.36725398525056, lng: 4.99654769897461},
+      15,
+      {boundsPaddingRatio: 0.25, tilesPerRequest: 5, sequentialRequestBatches: true},
+    );
+
+    expect(plan.requestBatches.every((batch) => batch.length <= 5)).toBe(true);
+  });
+
+  it('matches IITC refresh skipping for same-zoom moves inside fetched bounds', () => {
+    const fetched = {
+      mapZoom: 15,
+      dataBounds: {south: 52.35, west: 4.86, north: 52.39, east: 4.93},
+    };
+
+    expect(iitcBoundsContainsBounds(fetched.dataBounds, {south: 52.36, west: 4.87, north: 52.38, east: 4.91})).toBe(true);
+    expect(shouldRefreshIitcMapData(fetched, {
+      mapZoom: 15,
+      viewportBounds: {south: 52.36, west: 4.87, north: 52.38, east: 4.91},
+    })).toBe(false);
+    expect(shouldRefreshIitcMapData(fetched, {
+      mapZoom: 15,
+      viewportBounds: {south: 52.36, west: 4.87, north: 52.38, east: 4.94},
+    })).toBe(true);
+    expect(shouldRefreshIitcMapData(fetched, {
+      mapZoom: 14,
+      viewportBounds: {south: 52.36, west: 4.87, north: 52.38, east: 4.91},
+    })).toBe(true);
+  });
+
+  it('reuses cached responses only when bounds and tile coverage match', () => {
+    const fetched = {
+      mapZoom: 15,
+      dataBounds: {south: 52.35, west: 4.86, north: 52.39, east: 4.93},
+    };
+    const response: IitcGetEntitiesResponse = {
+      result: {
+        map: {
+          a: {gameEntities: [['a.1', 1, ['p', 'E', 1, 2]]]},
+          b: {gameEntities: []},
+        },
+      },
+    };
+
+    const reusable = getIitcReusableCacheClassification(fetched, {
+      mapZoom: 15,
+      viewportBounds: {south: 52.36, west: 4.87, north: 52.38, east: 4.91},
+      tileKeys: ['a', 'b'],
+    }, response);
+
+    expect(reusable?.returnedTiles).toBe(2);
+    expect(getIitcReusableCacheClassification(fetched, {
+      mapZoom: 15,
+      viewportBounds: {south: 52.36, west: 4.87, north: 52.38, east: 4.91},
+      tileKeys: ['a', 'missing'],
+    }, response)).toBeNull();
+    expect(getIitcReusableCacheClassification(fetched, {
+      mapZoom: 15,
+      viewportBounds: {south: 52.36, west: 4.87, north: 52.38, east: 4.94},
+      tileKeys: ['a', 'b'],
+    }, response)).toBeNull();
+  });
+});
