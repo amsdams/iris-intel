@@ -47,7 +47,8 @@ Build downloadable artifacts when requested for testing or a release handoff, no
 | `npm run android:bundle`                        | Native release tests/lint and signed Play AAB; does not submit it.                                               |
 | `npm run serve` (`npm run android:serve` alias) | Existing ZIP/XPI/APK downloads on port 6969; prints a same-Wi-Fi URL, builds nothing. `PORT` overrides the port. |
 
-Extension packages are under `apps/iitc-iris/builds/`; unpacked output is `apps/iitc-iris/dist/`.
+Extension packages are under `apps/iitc-iris/builds/`, which each packaging run replaces.
+Unpacked output is under `apps/iitc-iris/dist/`.
 Android output paths, SDK/signing setup and update constraints are in [the Android guide](apps/android/README.md).
 Browser builds, extension packaging and Android asset preparation share outputs: run them sequentially.
 After a successful build with unchanged production inputs, avoid rebuilding:

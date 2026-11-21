@@ -5,7 +5,7 @@ import '../../ui/panel/panel.css';
 import './portal-image-preview.css';
 import type {IitcIrisSelectedPortal} from '../../messages';
 import {ClearButton} from '../../ui/clear-button';
-import {PanelHeader, PanelTitle} from '../../ui/panel';
+import {PanelBody, PanelHeader, PanelTitle} from '../../ui/panel';
 
 interface IitcIrisPortalImageModalProps {
   isOpen: boolean;
@@ -47,11 +47,13 @@ export function IitcIrisPortalImageModal({
             />
           </span>
         </PanelHeader>
-        <img src={portal.image} alt={portal.title || 'Portal image'} />
-        <div className="iitc-iris-image-preview-caption">
-          <b>{portal.title || 'Selected portal'}</b>
-          <span>{portal.guid}</span>
-        </div>
+        <PanelBody tabIndex={0} role="region" aria-label="Portal image and caption">
+          <img src={portal.image} alt={portal.title || 'Portal image'} />
+          <div className="iitc-iris-image-preview-caption">
+            <b>{portal.title || 'Selected portal'}</b>
+            <span>{portal.guid}</span>
+          </div>
+        </PanelBody>
       </div>
     </div>
   );

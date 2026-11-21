@@ -22,11 +22,6 @@
     pointer-events: auto;
 }
 
-.iitc-iris-system-panel {
-    grid-template-rows: none;
-    overflow: auto;
-}
-
 .iitc-iris-panel-topbar,
 .iitc-iris-request-panel-header {
     display: grid;
@@ -163,7 +158,6 @@
     position: sticky;
     top: 0;
     z-index: 3;
-    background: rgb(var(--iitc-iris-header-rgb) / 96%);
 }
 
 .iitc-iris-panel-header-actions > .iitc-iris-clear-selection { min-width: 32px; min-height: 32px; }

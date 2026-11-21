@@ -30,7 +30,7 @@ import {
   type IitcIrisPortalHighlighterId,
 } from '../../messages';
 import {ClearButton} from '../../ui/clear-button';
-import {PanelFrame, PanelHeader, PanelTitle} from '../../ui/panel';
+import {PanelBody, PanelFrame, PanelHeader, PanelTitle} from '../../ui/panel';
 import {MapDataNotice} from '../map-data-notice';
 
 export interface IitcIrisMapControlsPanelContainerProps {
@@ -218,135 +218,137 @@ export function IitcIrisMapControlsPanelContainer(props: IitcIrisMapControlsPane
           </span>
         </PanelHeader>
       )}
-      {activeSheet === 'view' && (
-        <IitcIrisMapNavigationPanel
-          canPan={canPan}
-          geolocationStatus={geolocationStatus}
-          locateBrowserPosition={locateBrowserPosition}
-          panMap={panMap}
-          zoomMap={zoomMap}
-        />
-      )}
-      {mapContext && (
-        (activeSheet === 'view' && mapContext.target === 'map') ||
-        (activeSheet === 'selectedLink' && mapContext.target === 'link') ||
-        (activeSheet === 'selectedField' && mapContext.target === 'field')
-      ) && (
-        <IitcIrisMapContextPanel
-          centerMapContext={centerMapContext}
-          copyMapContextGuid={copyMapContextGuid}
-          copyMapContextLatLng={copyMapContextLatLng}
-          copyMapContextPortalGuids={copyMapContextPortalGuids}
-          copyMapContextUrl={copyMapContextUrl}
-          copyStatus={copyStatus}
-          formatMapObjectDistance={formatMapObjectDistance}
-          formatTeamLabel={formatTeamLabel}
-          mapContext={mapContext}
-          selectMapContextAnchor={selectMapContextAnchor}
-        />
-      )}
-      {activeSheet === 'drawLinks' && (
-        <IitcIrisDrawToolsPanel
-          allItemsCount={drawToolsItems.length}
-          clearConfirm={drawToolsClearConfirm}
-          editingMarkerIndex={editingDrawToolsMarkerIndex}
-          importMerge={drawToolsImportMerge}
-          importStatus={drawToolsImportStatus}
-          importText={drawToolsImportText}
-          linkItems={drawToolsLinkItems}
-          linkEndpointLabelsByStorageIndex={drawToolsLinkEndpointLabelsByStorageIndex}
-          linkStart={drawToolsLinkStart}
-          markerItems={drawToolsMarkerItems}
-          markerLabel={drawToolsMarkerLabel}
-          markerPortalInfoByStorageIndex={drawToolsMarkerPortalInfoByStorageIndex}
-          mode="links"
-          target={drawToolsTarget}
-          addLinkPoint={addDrawToolsLinkPoint}
-          addMarker={addDrawToolsMarker}
-          centerItem={centerDrawToolsItem}
-          clearItems={clearDrawToolsItems}
-          copyItems={copyDrawToolsItems}
-          deleteAtContext={deleteDrawToolsAtContext}
-          deleteItem={deleteDrawToolsItem}
-          importItems={importDrawToolsItems}
-          saveMarkerLabel={saveDrawToolsMarkerLabel}
-          setEditingMarkerIndex={setEditingMarkerIndex}
-          setImportMerge={setImportMerge}
-          setImportText={setImportText}
-          setLinkStart={setLinkStart}
-          setMarkerLabel={setMarkerLabel}
-          undoItem={undoDrawToolsItem}
-        />
-      )}
-      {activeSheet === 'drawMarkers' && (
-        <IitcIrisDrawToolsPanel
-          allItemsCount={drawToolsItems.length}
-          clearConfirm={drawToolsClearConfirm}
-          editingMarkerIndex={editingDrawToolsMarkerIndex}
-          importMerge={drawToolsImportMerge}
-          importStatus={drawToolsImportStatus}
-          importText={drawToolsImportText}
-          linkItems={drawToolsLinkItems}
-          linkEndpointLabelsByStorageIndex={drawToolsLinkEndpointLabelsByStorageIndex}
-          linkStart={drawToolsLinkStart}
-          markerItems={drawToolsMarkerItems}
-          markerLabel={drawToolsMarkerLabel}
-          markerPortalInfoByStorageIndex={drawToolsMarkerPortalInfoByStorageIndex}
-          mode="markers"
-          target={drawToolsTarget}
-          addLinkPoint={addDrawToolsLinkPoint}
-          addMarker={addDrawToolsMarker}
-          centerItem={centerDrawToolsItem}
-          clearItems={clearDrawToolsItems}
-          copyItems={copyDrawToolsItems}
-          deleteAtContext={deleteDrawToolsAtContext}
-          deleteItem={deleteDrawToolsItem}
-          importItems={importDrawToolsItems}
-          saveMarkerLabel={saveDrawToolsMarkerLabel}
-          setEditingMarkerIndex={setEditingMarkerIndex}
-          setImportMerge={setImportMerge}
-          setImportText={setImportText}
-          setLinkStart={setLinkStart}
-          setMarkerLabel={setMarkerLabel}
-          undoItem={undoDrawToolsItem}
-        />
-      )}
-      {(activeSheet === 'portalCounts' || activeSheet === 'portalsList' || activeSheet === 'scoreboard') && (
-        <MapDataNotice cameraZoom={cameraZoom} analysis />
-      )}
-      {activeSheet === 'portalCounts' && (
-        <IitcIrisPortalCountsPanel portalAnalysis={portalAnalysis} />
-      )}
-      {activeSheet === 'portalsList' && (
-        <IitcIrisPortalsListPanel
-          cameraZoom={cameraZoom}
-          portalAnalysis={portalAnalysis}
-          portalsListLevelFilter={portalsListLevelFilter}
-          portalsListSortBy={portalsListSortBy}
-          portalsListSortOrder={portalsListSortOrder}
-          portalsListSummary={portalsListSummary}
-          portalsListTeamFilter={portalsListTeamFilter}
-          portalsListTextFilter={portalsListTextFilter}
-          sortedPortalsList={sortedPortalsList}
-          setPortalsListLevelFilter={setPortalsListLevelFilter}
-          setPortalsListTeamFilter={setPortalsListTeamFilter}
-          setPortalsListTextFilter={setPortalsListTextFilter}
-          sortPortalsListBy={sortPortalsListBy}
-          zoomToAndShowPortal={zoomToAndShowPortal}
-        />
-      )}
-      {activeSheet === 'scoreboard' && (
-        <IitcIrisScoreboardPanel portalAnalysis={portalAnalysis} />
-      )}
-      {activeSheet === 'layers' && (
-        <IitcIrisDisplayPanel
-          cameraZoom={cameraZoom}
-          highlighterSettings={highlighterSettings}
-          layerSettings={layerSettings}
-          selectPortalHighlighter={selectPortalHighlighter}
-          toggleLayerSetting={toggleLayerSetting}
-        />
-      )}
+      <PanelBody>
+        {activeSheet === 'view' && (
+          <IitcIrisMapNavigationPanel
+            canPan={canPan}
+            geolocationStatus={geolocationStatus}
+            locateBrowserPosition={locateBrowserPosition}
+            panMap={panMap}
+            zoomMap={zoomMap}
+          />
+        )}
+        {mapContext && (
+          (activeSheet === 'view' && mapContext.target === 'map') ||
+          (activeSheet === 'selectedLink' && mapContext.target === 'link') ||
+          (activeSheet === 'selectedField' && mapContext.target === 'field')
+        ) && (
+          <IitcIrisMapContextPanel
+            centerMapContext={centerMapContext}
+            copyMapContextGuid={copyMapContextGuid}
+            copyMapContextLatLng={copyMapContextLatLng}
+            copyMapContextPortalGuids={copyMapContextPortalGuids}
+            copyMapContextUrl={copyMapContextUrl}
+            copyStatus={copyStatus}
+            formatMapObjectDistance={formatMapObjectDistance}
+            formatTeamLabel={formatTeamLabel}
+            mapContext={mapContext}
+            selectMapContextAnchor={selectMapContextAnchor}
+          />
+        )}
+        {activeSheet === 'drawLinks' && (
+          <IitcIrisDrawToolsPanel
+            allItemsCount={drawToolsItems.length}
+            clearConfirm={drawToolsClearConfirm}
+            editingMarkerIndex={editingDrawToolsMarkerIndex}
+            importMerge={drawToolsImportMerge}
+            importStatus={drawToolsImportStatus}
+            importText={drawToolsImportText}
+            linkItems={drawToolsLinkItems}
+            linkEndpointLabelsByStorageIndex={drawToolsLinkEndpointLabelsByStorageIndex}
+            linkStart={drawToolsLinkStart}
+            markerItems={drawToolsMarkerItems}
+            markerLabel={drawToolsMarkerLabel}
+            markerPortalInfoByStorageIndex={drawToolsMarkerPortalInfoByStorageIndex}
+            mode="links"
+            target={drawToolsTarget}
+            addLinkPoint={addDrawToolsLinkPoint}
+            addMarker={addDrawToolsMarker}
+            centerItem={centerDrawToolsItem}
+            clearItems={clearDrawToolsItems}
+            copyItems={copyDrawToolsItems}
+            deleteAtContext={deleteDrawToolsAtContext}
+            deleteItem={deleteDrawToolsItem}
+            importItems={importDrawToolsItems}
+            saveMarkerLabel={saveDrawToolsMarkerLabel}
+            setEditingMarkerIndex={setEditingMarkerIndex}
+            setImportMerge={setImportMerge}
+            setImportText={setImportText}
+            setLinkStart={setLinkStart}
+            setMarkerLabel={setMarkerLabel}
+            undoItem={undoDrawToolsItem}
+          />
+        )}
+        {activeSheet === 'drawMarkers' && (
+          <IitcIrisDrawToolsPanel
+            allItemsCount={drawToolsItems.length}
+            clearConfirm={drawToolsClearConfirm}
+            editingMarkerIndex={editingDrawToolsMarkerIndex}
+            importMerge={drawToolsImportMerge}
+            importStatus={drawToolsImportStatus}
+            importText={drawToolsImportText}
+            linkItems={drawToolsLinkItems}
+            linkEndpointLabelsByStorageIndex={drawToolsLinkEndpointLabelsByStorageIndex}
+            linkStart={drawToolsLinkStart}
+            markerItems={drawToolsMarkerItems}
+            markerLabel={drawToolsMarkerLabel}
+            markerPortalInfoByStorageIndex={drawToolsMarkerPortalInfoByStorageIndex}
+            mode="markers"
+            target={drawToolsTarget}
+            addLinkPoint={addDrawToolsLinkPoint}
+            addMarker={addDrawToolsMarker}
+            centerItem={centerDrawToolsItem}
+            clearItems={clearDrawToolsItems}
+            copyItems={copyDrawToolsItems}
+            deleteAtContext={deleteDrawToolsAtContext}
+            deleteItem={deleteDrawToolsItem}
+            importItems={importDrawToolsItems}
+            saveMarkerLabel={saveDrawToolsMarkerLabel}
+            setEditingMarkerIndex={setEditingMarkerIndex}
+            setImportMerge={setImportMerge}
+            setImportText={setImportText}
+            setLinkStart={setLinkStart}
+            setMarkerLabel={setMarkerLabel}
+            undoItem={undoDrawToolsItem}
+          />
+        )}
+        {(activeSheet === 'portalCounts' || activeSheet === 'portalsList' || activeSheet === 'scoreboard') && (
+          <MapDataNotice cameraZoom={cameraZoom} analysis />
+        )}
+        {activeSheet === 'portalCounts' && (
+          <IitcIrisPortalCountsPanel portalAnalysis={portalAnalysis} />
+        )}
+        {activeSheet === 'portalsList' && (
+          <IitcIrisPortalsListPanel
+            cameraZoom={cameraZoom}
+            portalAnalysis={portalAnalysis}
+            portalsListLevelFilter={portalsListLevelFilter}
+            portalsListSortBy={portalsListSortBy}
+            portalsListSortOrder={portalsListSortOrder}
+            portalsListSummary={portalsListSummary}
+            portalsListTeamFilter={portalsListTeamFilter}
+            portalsListTextFilter={portalsListTextFilter}
+            sortedPortalsList={sortedPortalsList}
+            setPortalsListLevelFilter={setPortalsListLevelFilter}
+            setPortalsListTeamFilter={setPortalsListTeamFilter}
+            setPortalsListTextFilter={setPortalsListTextFilter}
+            sortPortalsListBy={sortPortalsListBy}
+            zoomToAndShowPortal={zoomToAndShowPortal}
+          />
+        )}
+        {activeSheet === 'scoreboard' && (
+          <IitcIrisScoreboardPanel portalAnalysis={portalAnalysis} />
+        )}
+        {activeSheet === 'layers' && (
+          <IitcIrisDisplayPanel
+            cameraZoom={cameraZoom}
+            highlighterSettings={highlighterSettings}
+            layerSettings={layerSettings}
+            selectPortalHighlighter={selectPortalHighlighter}
+            toggleLayerSetting={toggleLayerSetting}
+          />
+        )}
+      </PanelBody>
     </PanelFrame>
   );
 }

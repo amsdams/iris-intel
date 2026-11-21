@@ -40,7 +40,7 @@ export function IitcIrisPortalCountsPanel({
 }: IitcIrisPortalCountsPanelProps): h.JSX.Element {
   if (!portalAnalysis) {
     return (
-      <Section className="iitc-iris-portal-analysis" titleHeading="Portal Counts">
+      <Section className="iitc-iris-portal-analysis">
         <EmptyState>No portal count data for the current view.</EmptyState>
       </Section>
     );
@@ -52,7 +52,7 @@ export function IitcIrisPortalCountsPanel({
   const portalCountsLevelRingSegments = getPortalCountsLevelRingSegments(portalCountsPieSegments, portalcounts.levels, portalcounts.total);
 
   return (
-    <Section className="iitc-iris-portal-analysis" titleHeading="Portal Counts">
+    <Section className="iitc-iris-portal-analysis">
       <SummaryGrid className="iitc-iris-analysis-summary-grid">
         <SummaryCell value={formatInteger(portalcounts.total)} label="visible" />
         <SummaryCell value={formatInteger(portalcounts.real)} label="real" />

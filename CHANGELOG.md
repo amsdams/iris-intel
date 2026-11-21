@@ -5,6 +5,15 @@ Unreleased is reserved for changes awaiting publication. Alpha app builds are sh
 [latest release](https://github.com/amsdams/iris-intel/releases/tag/latest); these are not stable releases.
 Earlier prototype entries record development/testing milestones; 0.5.0 aligns Android and browser versions.
 
+## 0.6.1 — 2026-11-21
+
+- Keep headers above scrolling content in map tools, Diagnostics and the portal image preview.
+  Use the panel background behind shared headers, align scrollbar spacing in portal details, and remove repeated titles.
+- Fit focus rings inside field borders and use shared styling for compact filters and marker labels.
+- Add a **Search address** button for online lookup, show a single clear button inside the Search field,
+  and label the footer action **Clear search**.
+- Split COMM and map-tile logic into smaller modules and separate browser and Android runtime responsibilities.
+
 ## 2026-11-18 — Dependency and Android maintenance
 
 - Updated compatible Playwright, ESLint, typescript-eslint and MapLibre dependencies, including MapLibre's new dependency notice.

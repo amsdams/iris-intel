@@ -15,15 +15,11 @@
 
 .iitc-iris-request-panel-body,
 .iitc-iris-scroll-region,
-.iitc-iris-portal-scroll-body,
-.iitc-iris-map-controls,
-.iitc-iris-system-panel {
+.iitc-iris-portal-scroll-body {
     overscroll-behavior: contain;
 }
 
 @media (hover: hover) and (pointer: fine) {
     .iitc-iris-request-panel-body,
-    .iitc-iris-portal-scroll-body,
-    .iitc-iris-map-controls,
-    .iitc-iris-system-panel { scrollbar-gutter: stable; }
+    .iitc-iris-portal-scroll-body { scrollbar-gutter: stable; }
 }

@@ -35,7 +35,7 @@ export function IitcIrisMapNavigationPanel({
   zoomMap,
 }: IitcIrisMapNavigationPanelProps): h.JSX.Element {
   return (
-    <Section titleHeading="Controls">
+    <Section>
       <ControlRow>
         <div className="iitc-iris-pan-grid" aria-label="Pan controls">
           <Button className="iitc-iris-nav-button iitc-iris-pan-north" disabled={!canPan} onClick={() => panMap('north')} title="Pan north" aria-label="Pan north">N</Button>

@@ -17,9 +17,17 @@ input.iitc-iris-input-surface {
     padding: 0 10px;
 }
 
-.iitc-iris-input-surface:focus-within {
-    outline: 2px solid rgb(var(--iitc-iris-focus-rgb) / 70%);
-    outline-offset: 1px;
+.iitc-iris-input-surface.iitc-iris-input-surface-compact {
+    height: 32px;
+    padding: 0 var(--iitc-iris-space-3);
+    font-size: var(--iitc-iris-text-md);
+}
+
+select.iitc-iris-input-surface { appearance: auto; }
+
+#iitc-iris-root .iitc-iris-input-surface:focus-within {
+    outline: 2px solid rgb(var(--iitc-iris-focus-rgb) / 95%);
+    outline-offset: -2px;
 }
 
 input.iitc-iris-input-surface::placeholder {

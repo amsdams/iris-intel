@@ -12,7 +12,7 @@ android {
         minSdk 26
         targetSdk 36
         versionCode Integer.parseInt(System.getenv('IRIS_ANDROID_VERSION_CODE') ?: '16')
-        versionName '0.6.0-alpha' + (System.getenv('IRIS_ANDROID_BUILD_SHA') ? '+' + System.getenv('IRIS_ANDROID_BUILD_SHA') : '')
+        versionName '0.6.1-alpha' + (System.getenv('IRIS_ANDROID_BUILD_SHA') ? '+' + System.getenv('IRIS_ANDROID_BUILD_SHA') : '')
         resValue 'string', 'spike_version', versionName
     }
 

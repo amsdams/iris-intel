@@ -195,7 +195,7 @@ test('fast submission keeps online results; closing clears previews and reopenin
   });
   const input = page.locator('.iitc-iris-search-input');
   await input.fill('Amsterdam');
-  await input.press('Enter');
+  await page.getByRole('button', {name: 'Search address', exact: true}).click();
   const result = results(page).filter({hasText: 'Amsterdam test area'});
   await expect(result).toHaveCount(1);
   const requests = await page.evaluate(() => window.__smokeSearchRequests);

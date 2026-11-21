@@ -13,7 +13,7 @@ import {
 import {
   type IitcMapDataPlan,
 } from '@iris/iitc-core';
-import {PanelFrame, PanelHeader, PanelTitle} from '../../ui/panel';
+import {PanelBody, PanelFrame, PanelHeader, PanelTitle} from '../../ui/panel';
 import {ClearButton} from '../../ui/clear-button';
 import {PanelDetails, type PanelDetailsProps} from './panel-details';
 
@@ -94,40 +94,42 @@ export function IitcIrisDiagnosticsPanelContainer(props: IitcIrisDiagnosticsPane
           <ClearButton onClick={closeDiagnostics} title="Close diagnostics" aria-label="Close diagnostics" />
         </span>
       </PanelHeader>
-      <IitcIrisSystemDiagnosticsPanel
-        activeByEndpoint={requestDiagnostics.activeByEndpoint}
-        camera={camera}
-        debugDockVisible={debugDockVisible}
-        detailOverlaysActive={detailOverlaysActive}
-        entityFetch={entityFetch}
-        innerStatus={innerStatus}
-        plan={plan}
-        requestBatches={requestBatches}
-        selectedPortalLabel={formatSelectedPortalLabel()}
-        status={status}
-        summaryMode={summaryMode}
-        clearPortalSelection={clearPortalSelection}
-        formatRenderMutationSummary={formatRenderMutationSummary}
-        openIntelLogin={openIntelLogin}
-        toggleDebugDock={toggleDebugDock}
-      />
-      <PanelDetails {...props.panelDetails} />
-      <IitcIrisSystemControlsPanel
-        copyDockText={copyDockText}
-        copyIntelUrl={copyIntelUrl}
-        copyStatus={copyStatus}
-        jumpToViewInput={jumpToViewInput}
-        lifecycleSettings={lifecycleSettings}
-        logoutIntel={logoutIntel}
-        mapFocusMode={mapFocusMode}
-        setLifecycleSettings={setLifecycleSettings}
-        setMapFocusMode={setMapFocusMode}
-        setShortcutsEnabled={setShortcutsEnabled}
-        setViewInput={setViewInput}
-        shortcutsEnabled={shortcutsEnabled}
-        viewInput={viewInput}
-        viewInputStatus={viewInputStatus}
-      />
+      <PanelBody>
+        <IitcIrisSystemDiagnosticsPanel
+          activeByEndpoint={requestDiagnostics.activeByEndpoint}
+          camera={camera}
+          debugDockVisible={debugDockVisible}
+          detailOverlaysActive={detailOverlaysActive}
+          entityFetch={entityFetch}
+          innerStatus={innerStatus}
+          plan={plan}
+          requestBatches={requestBatches}
+          selectedPortalLabel={formatSelectedPortalLabel()}
+          status={status}
+          summaryMode={summaryMode}
+          clearPortalSelection={clearPortalSelection}
+          formatRenderMutationSummary={formatRenderMutationSummary}
+          openIntelLogin={openIntelLogin}
+          toggleDebugDock={toggleDebugDock}
+        />
+        <PanelDetails {...props.panelDetails} />
+        <IitcIrisSystemControlsPanel
+          copyDockText={copyDockText}
+          copyIntelUrl={copyIntelUrl}
+          copyStatus={copyStatus}
+          jumpToViewInput={jumpToViewInput}
+          lifecycleSettings={lifecycleSettings}
+          logoutIntel={logoutIntel}
+          mapFocusMode={mapFocusMode}
+          setLifecycleSettings={setLifecycleSettings}
+          setMapFocusMode={setMapFocusMode}
+          setShortcutsEnabled={setShortcutsEnabled}
+          setViewInput={setViewInput}
+          shortcutsEnabled={shortcutsEnabled}
+          viewInput={viewInput}
+          viewInputStatus={viewInputStatus}
+        />
+      </PanelBody>
     </PanelFrame>
   );
 }

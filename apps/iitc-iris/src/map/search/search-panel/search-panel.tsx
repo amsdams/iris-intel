@@ -9,6 +9,7 @@ import {Panel, PanelHeader, PanelTitle, PanelBody, PanelFooter} from '../../../u
 import {getPanelStatusClass} from '../../../ui-status';
 import {TextInput} from '../../../ui/text-input';
 import {ClearButton} from '../../../ui/clear-button';
+import {ActionButton} from '../../../ui/action-button';
 import {ChipButton} from '../../../ui/chip-button';
 import {StatusText} from '../../../ui/status-text';
 
@@ -74,30 +75,35 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
     </PanelHeader>
     <PanelBody>
       <form
-        className="iitc-iris-input-surface iitc-iris-search-box"
+        className="iitc-iris-search-form"
         onSubmit={(event) => {
           event.preventDefault();
-          props.requestSearch(props.searchTerm, true);
+          if (trimmedSearchTerm) props.requestSearch(props.searchTerm, true);
         }}
       >
-        <TextInput
-          className="iitc-iris-search-input"
-          type="search"
-          value={props.searchTerm}
-          placeholder="Search portal or address"
-          title="Type to search loaded portals. Press Enter to search OpenStreetMap."
-          onInput={(event) => props.setSearchTerm(event.currentTarget.value)}
-          onKeyDown={handleResultNavigation}
-        />
-        {props.searchTerm && (
-          <button className="iitc-iris-search-clear" type="button" onClick={props.clearSearch} title="Clear search" aria-label="Clear search">x</button>
-        )}
+        <div className="iitc-iris-input-surface iitc-iris-search-box">
+          <TextInput
+            className="iitc-iris-search-input"
+            type="search"
+            value={props.searchTerm}
+            placeholder="Search portal or address"
+            title="Type to search loaded portals. Press Enter to search OpenStreetMap."
+            onInput={(event) => props.setSearchTerm(event.currentTarget.value)}
+            onKeyDown={handleResultNavigation}
+          />
+          {props.searchTerm && (
+            <button className="iitc-iris-search-clear" type="button" onClick={(event) => {
+              props.clearSearch();
+              event.currentTarget.form?.querySelector('input')?.focus();
+            }} title="Clear search" aria-label="Clear search">×</button>
+          )}
+        </div>
+        <ActionButton type="submit" disabled={!trimmedSearchTerm}>Search address</ActionButton>
       </form>
       {trimmedSearchTerm.length > 0 && (
         <div className="iitc-iris-search-results" ref={resultsRef}>
           <div className="iitc-iris-search-status">
             <span>{props.searchState.status === 'loading' ? 'searching online' : props.searchState.results.length > 0 ? `${props.searchState.results.length} results` : trimmedSearchTerm.length < 3 ? 'type 3+ chars' : 'no local results'}</span>
-            {!props.searchState.confirmed && trimmedSearchTerm.length >= 3 && <span>Enter for address</span>}
           </div>
           {groupedSearchResults.map((group) => (
             <div className="iitc-iris-search-result-group" key={group.id}>
@@ -144,8 +150,8 @@ export function IitcIrisSearchPanel(props: IitcIrisSearchPanelProps): h.JSX.Elem
         </div>
       )}
       {props.searchState.results.length > 0 && <PanelFooter>
-        <ChipButton onClick={props.clearSearch} title="Clear search results and map overlay">
-          clear overlay
+        <ChipButton onClick={props.clearSearch} title="Clear the query, results and map overlay">
+          Clear search
         </ChipButton>
       </PanelFooter>}
     </PanelBody>

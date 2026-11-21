@@ -114,27 +114,6 @@
     gap: var(--iitc-iris-space-3);
 }
 
-.iitc-iris-portals-list-filters input,
-.iitc-iris-portals-list-filters select {
-    height: 30px;
-    background: rgb(var(--iitc-iris-input-rgb) / 94%);
-    font-size: var(--iitc-iris-text-md);
-}
-
-.iitc-iris-portals-list-filters .iitc-iris-select-input {
-    padding: 0 5px;
-    color: var(--iitc-iris-color-text);
-}
-
-.iitc-iris-portals-list-search {
-    border-color: rgb(var(--iitc-iris-border-rgb) / 24%);
-    color: var(--iitc-iris-color-text);
-}
-
-.iitc-iris-portals-list-filters input {
-    padding: 0 8px;
-}
-
 .iitc-iris-portals-list-summary {
     grid-template-columns: repeat(4, minmax(0, 1fr));
 }

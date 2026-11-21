@@ -55,10 +55,6 @@
     font-size: var(--iitc-iris-text-md);
 }
 
-.iitc-iris-comm-filter-content select.iitc-iris-input-surface {
-    appearance: auto;
-}
-
 .iitc-iris-comm-filter-wide { grid-column: 1 / -1; }
 
 .iitc-iris-comm-saved-views > .iitc-iris-status {
