@@ -12,7 +12,7 @@ None selected.
 
 **Release/LCM audit:** review permissions, native handoffs, Firefox signing, actual update routes and backup restoration
 before broader delivery. Check advisories and compatibility; keep major Preact/Vite/Vitest/TypeScript/Stylelint upgrades
-as separate work, including peer ranges, AGP/Gradle pairing and Leaflet's private canvas seam.
+as separate work, including peer ranges and Leaflet's private canvas seam.
 
 ## Later
 

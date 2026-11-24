@@ -50,7 +50,7 @@ final class UpdateDialog {
                 ReleaseUpdate update = ReleaseUpdate.fetch();
                 message = activity.getString(update.isNewerThan(installedVersionCode())
                         ? R.string.updates_available : R.string.updates_current,
-                        activity.getString(R.string.spike_version), update.versionName);
+                        activity.getString(R.string.spike_version), update.versionName());
             } catch (IOException | PackageManager.NameNotFoundException error) {
                 message = activity.getString(R.string.updates_failed);
             }

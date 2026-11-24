@@ -5,6 +5,11 @@ Unreleased is reserved for changes awaiting publication. Alpha app builds are sh
 [latest release](https://github.com/amsdams/iris-intel/releases/tag/latest); these are not stable releases.
 Earlier prototype entries record development/testing milestones; 0.5.0 aligns Android and browser versions.
 
+## Unreleased
+
+- Use Node 26 LTS for local development and CI builds.
+- Update the Android build toolchain to JDK 25 LTS, Gradle 9.6.1 and Android Gradle Plugin 9.5.2, and compile the Android app at Java 21.
+
 ## 0.6.1 — 2026-11-21
 
 - Keep headers above scrolling content in map tools, Diagnostics and the portal image preview.

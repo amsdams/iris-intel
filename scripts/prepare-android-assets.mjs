@@ -4,10 +4,12 @@ import {dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const assetDirectory = process.argv[2];
+if (!assetDirectory) throw new Error('Pass the Gradle asset output directory.');
 const build = spawnSync(process.execPath, ['scripts/web-build.mjs', process.env.IRIS_REUSE_WEB_BUILD === '1' ? 'verify' : 'build'], {cwd: root, stdio: 'inherit'});
 if (build.status !== 0) process.exit(build.status ?? 1);
 const source = join(root, 'apps/iitc-iris/dist');
-const output = join(root, 'apps/android/app/build/generated/iris-assets/iris');
+const output = join(assetDirectory, 'iris');
 const files = ['content.js', 'page-map-runtime.js', 'maplibre-worker.cjs', 'iitc-iris.css', 'leaflet.css', 'images', 'licenses'];
 // Fail before replacing generated assets if the web build is incomplete.
 for (const file of files) statSync(join(source, file));

@@ -2,7 +2,7 @@
 
 Start with the [project goal and definition of done](README.md), [roadmap](docs/ROADMAP.md),
 [IITC porting doctrine](docs/iitc-iris/port-plan.md) and [architecture](docs/iitc-iris/architecture.md).
-Use Node 24 and `npm ci`; commit the root lockfile when dependency resolution changes.
+Use the Node 26 LTS version in `.nvmrc` and run `npm ci`. Commit the root lockfile when dependency resolution changes.
 
 ## Development
 

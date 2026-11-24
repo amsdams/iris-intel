@@ -14,7 +14,7 @@
     "clean": "npm run clean --workspaces --if-present",
     "check": "npm run test:release && npm run test:build && npm run test:architecture && npm run lint:browser && npm run check --workspaces --if-present && npm run lint:css && npm run build:wb",
     "lint": "npm run lint --workspaces --if-present && npm run lint:css && npm run lint:browser",
-    "lint:browser": "eslint --config eslint.browser.config.mjs tests/browser",
+    "lint:browser": "eslint tests/browser",
     "lint:fix": "npm run lint:fix --workspaces --if-present && npm run lint:css:fix",
     "lint:css": "stylelint 'apps/iitc-iris/**/*.css'",
     "lint:css:fix": "stylelint 'apps/iitc-iris/**/*.css' --fix",
@@ -45,7 +45,7 @@
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.65.1",
     "@types/chrome": "^0.3.7",
-    "@types/node": "^24.19.2",
+    "@types/node": "^26.6.6",
     "eslint": "^10.15.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.14.0",
@@ -58,7 +58,7 @@
     "vitest": "^4.1.12"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=26.13.1"
   },
   "overrides": {
     "minimatch@^10.0.0": "^11.0.8"
