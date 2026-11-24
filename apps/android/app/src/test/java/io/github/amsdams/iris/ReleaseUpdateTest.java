@@ -18,7 +18,7 @@ public class ReleaseUpdateTest {
 
     @Test public void comparesAndroidCodesRatherThanVersionNamesOrCommitHashes() throws Exception {
         ReleaseUpdate update = ReleaseUpdate.parse(metadata("1833", "0.4.1-alpha+abc1234"));
-        assertEquals("0.4.1-alpha+abc1234", update.versionName);
+        assertEquals("0.4.1-alpha+abc1234", update.versionName());
         assertTrue(update.isNewerThan(1832));
         assertFalse(update.isNewerThan(1833));
         assertFalse(update.isNewerThan(1834)); // A local build can be ahead of GitHub.
@@ -40,7 +40,7 @@ public class ReleaseUpdateTest {
         String body = metadata("1833", "0.4.1-alpha+abc1234");
         try (TestServer server = new TestServer("HTTP/1.1 302 Found\r\nLocation: /asset\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
                 response(200, body))) {
-            assertEquals(1833, ReleaseUpdate.fetch(server.url()).versionCode);
+            assertEquals(1833, ReleaseUpdate.fetch(server.url()).versionCode());
         }
     }
 

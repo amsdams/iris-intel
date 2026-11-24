@@ -6,7 +6,11 @@ updates and device smoke; [CONTRIBUTING](../../CONTRIBUTING.md) owns shared vali
 
 ## SDK and debug builds
 
-Use Node 24, `npm ci`, JDK 21, Android platform 36 and Build Tools 36.0.0. Gradle 8.14.7/AGP 8.13.2 are pinned.
+Use Node 26 LTS from the root `.nvmrc`, `npm ci`, JDK 25 LTS, Android platform 36 and Build Tools 36.0.0.
+Gradle 9.6.1 and AGP 9.5.2 are pinned.
+CI uses Temurin and reads the JDK version from `.java-version`. The app uses Java 21 source and bytecode targets.
+Check newer Java library calls against Android's API levels. For example, `List.getFirst()` and `List.reversed()`
+were added in API 35, while the app supports API 26 and newer.
 Root tooling discovers the normal macOS SDK/registered JDK; `JAVA_HOME` / `ANDROID_HOME` override discovery.
 Accept SDK licenses; Gradle can then install missing components. First build needs internet.
 

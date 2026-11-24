@@ -10,18 +10,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 
 /** Public release metadata only; independent of Intel's WebView and session. */
-final class ReleaseUpdate {
+record ReleaseUpdate(long versionCode, String versionName) {
     static final String RELEASES_URL = "https://github.com/amsdams/iris-intel/releases/tag/latest";
     static final String METADATA_URL = "https://github.com/amsdams/iris-intel/releases/download/latest/iitc-iris-android-update.properties";
     private static final int MAX_BYTES = 4096;
-    final long versionCode;
-    final String versionName;
-
-    private ReleaseUpdate(long versionCode, String versionName) {
-        this.versionCode = versionCode;
-        this.versionName = versionName;
-    }
-
     boolean isNewerThan(long installedCode) { return versionCode > installedCode; }
 
     static ReleaseUpdate fetch() throws IOException {

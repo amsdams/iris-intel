@@ -1,7 +1,7 @@
 # Browser fixtures and comparison
 
-Use Node 24, `npm ci` and installed Google Chrome. Tests run compiled IRIS against a local Intel-like host with
-isolated storage, simulated responses and hostile host styles; no credentials or real COMM sends.
+Use Node 26 LTS from the root `.nvmrc`, `npm ci` and installed Google Chrome. Tests run compiled IRIS against a local
+Intel-like host with isolated storage, simulated responses and hostile host styles; no credentials or real COMM sends.
 [CONTRIBUTING](../../CONTRIBUTING.md#testing) owns when to test, build reuse and packaging policy.
 
 ## Running

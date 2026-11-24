@@ -7,9 +7,38 @@ import {importBoundaries} from './scripts/architecture-rules.mjs';
 
 export default defineConfig(
   eslint.configs.recommended,
-  ...tseslint.configs.recommended,
-  ...tseslint.configs.strict,
-  ...tseslint.configs.stylistic,
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    extends: [tseslint.configs.recommended, tseslint.configs.strict, tseslint.configs.stylistic],
+  },
+  {
+    files: ['scripts/**/*.mjs', 'tests/browser/**/*.mjs', 'apps/android/**/*.mjs', 'playwright.config.mjs'],
+    languageOptions: {globals: globals.nodeBuiltin},
+  },
+  {
+    // These modules pass callbacks into browser pages as well as running in Node.
+    files: [
+      'tests/browser/**/*.smoke.mjs',
+      'tests/browser/**/*-fixture.mjs',
+      'tests/browser/{smoke-fixtures,investigate-comm-map,profile-level-labels}.mjs',
+      'apps/android/store-listing/render.mjs',
+    ],
+    languageOptions: {globals: globals.browser},
+  },
+  {
+    files: ['tests/browser/**/*.mjs'],
+    rules: {'no-unused-vars': ['error', {args: 'none', caughtErrors: 'none'}]},
+  },
+  {
+    files: ['tests/browser/**/*.smoke.mjs'],
+    rules: {
+      'no-restricted-imports': ['error', {paths: [{
+        name: '@playwright/test',
+        importNames: ['test'],
+        message: 'Import test from smoke-fixtures.mjs or a fixture extending it.',
+      }]}],
+    },
+  },
   {
     files: ['**/vite.config.ts'],
     languageOptions: {

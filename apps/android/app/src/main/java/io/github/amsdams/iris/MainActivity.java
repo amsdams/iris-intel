@@ -402,7 +402,7 @@ public final class MainActivity extends Activity {
             String message = null;
             try {
                 Object value = new JSONTokener(result).nextValue();
-                if (value instanceof String) message = (String) value;
+                if (value instanceof String text) message = text;
             } catch (JSONException ignored) { /* A navigation can discard the JS result. */ }
             if (message != null && !message.equals(getString(irisProbe ? R.string.iris_loading : R.string.checking))) {
                 webView.evaluateJavascript("delete window[" + JSONObject.quote(key) + "]", null);

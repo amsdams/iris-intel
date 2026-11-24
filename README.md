@@ -25,7 +25,7 @@ It uses live Intel with OSM/OpenFreeMap base maps; UI theme and text size are in
 
 ## Project setup
 
-Use Node 24 (`nvm use`) and npm. Reference checkouts are optional and must not be required for builds or normal tests.
+Use Node 26 LTS (`nvm install` and `nvm use`) and npm. Reference checkouts are optional and must not be required for builds or normal tests.
 
 ```sh
 npm ci
@@ -34,7 +34,7 @@ npm run dev
 
 Load `apps/iitc-iris/dist` using Chrome's Load unpacked or Firefox's temporary add-on loader (`manifest.json`).
 This is an extension build, not a hosted web page. `npm run dev:wb` opens the component workbench.
-Android additionally needs JDK 21 and the SDK described in its guide below.
+Android builds use JDK 25 and the SDK described in the Android guide below.
 
 | Location | Responsibility |
 | --- | --- |

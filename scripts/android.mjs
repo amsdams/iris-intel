@@ -1,6 +1,6 @@
 import {spawn, spawnSync} from 'node:child_process';
 import {verifyWebBuild} from './web-build.mjs';
-import {existsSync} from 'node:fs';
+import {existsSync, readFileSync} from 'node:fs';
 import {homedir} from 'node:os';
 import {dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -11,7 +11,8 @@ const sdk = process.env.ANDROID_HOME || process.env.ANDROID_SDK_ROOT
   || (process.platform === 'darwin' ? join(homedir(), 'Library/Android/sdk') : '');
 let javaHome = process.env.JAVA_HOME;
 if (!javaHome && process.platform === 'darwin') {
-  const result = spawnSync('/usr/libexec/java_home', ['-v', '21'], {encoding: 'utf8'});
+  const javaVersion = readFileSync(join(project, '.java-version'), 'utf8').trim();
+  const result = spawnSync('/usr/libexec/java_home', ['-F', '-v', javaVersion], {encoding: 'utf8'});
   if (result.status === 0) javaHome = result.stdout.trim();
 }
 if (!sdk || !existsSync(sdk)) throw new Error('Set ANDROID_HOME to an installed Android SDK.');
